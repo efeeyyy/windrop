@@ -39,6 +39,8 @@ final class TransferCoordinator {
     @ObservationIgnored var isWifiConnected: @MainActor () -> Bool = { true }
     /// Bu cihazda Bluetooth ses etkin mi? (PROTOCOL §6.4: BLE veri yolu yalnız false iken.) Bilinmezse temkinli: true.
     @ObservationIgnored var isBluetoothAudioActive: @MainActor () -> Bool = { true }
+    /// Ayardaki aktarma sunucusu adresi (`relayUrl`); boş/okunamıyorsa nil = aktarma yolu kapalı. Uzantı kendi ayarını okur.
+    @ObservationIgnored var relayUrl: () -> String? = { RelaySettings.configuredURL() }
     @ObservationIgnored private var offerTimes: [String: [Date]] = [:]
 
     static let infoCardShownKey = "infoCardShown"
@@ -142,9 +144,8 @@ final class TransferCoordinator {
             if let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), canUseBle(item) {
                 beginBle(item, peer: peer)
             }
-        case .relay:
-            // TODO(relay): PROTOCOL §6.3 aktarma sunucusu henüz tasarlanmadı.
-            break
+        case .relay(let relay):
+            handleRelay(relay, from: peer)
         case .hello, .status, .path, .pairInfo:
             break
         }
@@ -284,10 +285,44 @@ final class TransferCoordinator {
         }
     }
 
-    /// Kota uyarısı onaylandı. TODO(relay): PROTOCOL §6.3 aktarma sunucusu yok; şimdilik başarısız olur.
+    /// Kota uyarısı onaylandı (iki tarafta da kullanıcı onaylar; reddetmek = `cancel`): aktarma odasına bağlanılır
+    /// (PROTOCOL §6.3). Bağlantı/el sıkışma başarısızsa `path relay_fail` gider ve aktarım başarısız olur.
     func confirmRelay(_ item: TransferItem) {
-        guard item.state == .awaitingRelayConsent else { return }
-        fail(item, TransferFailure.relayUnavailable.localizedDescription)
+        guard item.state == .awaitingRelayConsent, item.task == nil else { return }
+        guard let endpoint = item.relayEndpoint, let peer = signals.peer(item.pcID) else {
+            Task { await report(.relayFail, item: item) }
+            fail(item, TransferFailure.relayNotConfigured.localizedDescription)
+            return
+        }
+        item.state = .connecting
+        item.task = Task { [weak self] in
+            guard let self else { return }
+            let socket: RelaySocket
+            do {
+                socket = try await RelaySocket.connect(to: endpoint)
+            } catch {
+                if Task.isCancelled { return }
+                await self.report(.relayFail, item: item)
+                self.fail(item, error.localizedDescription)
+                return
+            }
+            await self.report(.relayOk, item: item)
+            await self.run(item, transport: RelayMessageTransport(socket: socket), peer: peer, onFinish: { await socket.close() })
+        }
+    }
+
+    /// `relay {transferId, token}`: yalnız onaylanmış aktarımda. Adres mesajdan değil ayardan (`relayUrl`) gelir
+    /// (PROTOCOL §6 madde 3); ayar boş/geçersizse veya token bozuksa `relay_fail` gider. Kullanıcı onayı beklenir.
+    private func handleRelay(_ message: RelayMessage, from peer: NearbyPeer) {
+        guard let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), !item.isFinished,
+              item.task == nil, item.state == .awaitingPeer, item.relayEndpoint == nil else { return }
+        guard let base = relayUrl(), let token = RelayRoom.decodeToken(message.token),
+              let endpoint = RelayRoom.endpoint(relayUrl: base, roomId: RelayRoom.roomId(token: token), role: .phone) else {
+            Task { await report(.relayFail, item: item) }
+            return
+        }
+        item.relayEndpoint = endpoint
+        item.state = .awaitingRelayConsent   // bağlantı, kullanıcı kota uyarısını onaylayana dek kurulmaz
     }
 
     func saveToPhotos(_ item: TransferItem) {
@@ -319,7 +354,7 @@ final class TransferCoordinator {
             } catch {
                 if Task.isCancelled { return }
                 await self.report(.tcpFail, item: item)
-                self.offerRelay(item)
+                self.awaitNextPath(item)
             }
         }
     }
@@ -333,7 +368,7 @@ final class TransferCoordinator {
         guard let credentials = identity.hotspot(for: peer.id) else {
             // TODO(windows-sync): eşleştirmesiz ilk temasta PC `hotspot` mesajına ssid/pass koymalı (PROTOCOL §4, §6.2).
             Task { await report(.hotspotFail, item: item) }
-            offerRelay(item)
+            awaitNextPath(item)
             return
         }
         let target = HostPort(host: message.ip, port: UInt16(clamping: message.port))
@@ -356,21 +391,28 @@ final class TransferCoordinator {
                 if Task.isCancelled { return }
                 item.hotspotPrompt = nil
                 await self.report(.hotspotFail, item: item)
-                self.offerRelay(item)
+                self.awaitNextPath(item)
             }
         }
     }
 
-    /// Aktarma yolu: kota uyarısı önce gösterilir (relay henüz uygulanmadı).
-    private func offerRelay(_ item: TransferItem) {
+    /// Doğrudan yol başarısız: yolu PC seçer (`bleData` veya `relay`, §6.3/§6.4a). Kota uyarısı `relay` gelince gösterilir.
+    private func awaitNextPath(_ item: TransferItem) {
         guard !item.isFinished else { return }
         item.task = nil
-        item.state = .awaitingRelayConsent
+        item.state = .awaitingPeer
     }
 
     /// Kit kanalını açıp FileSender/FileReceiver'ı çalıştırır (TCP açıldıktan sonra).
     private func run(_ item: TransferItem, stream: NWByteStream, peer: NearbyPeer) async {
-        defer { stream.close() }
+        await run(item, transport: TcpMessageTransport(stream: stream), peer: peer, onFinish: { stream.close() })
+    }
+
+    /// Ortak çalıştırıcı: taşıma TCP (`taşıma=2`) veya aktarma WebSocket'i (`taşıma=3`) olabilir; kanal deseni aynı.
+    private func run(
+        _ item: TransferItem, transport: MessageTransport, peer: NearbyPeer, onFinish: @escaping () async -> Void
+    ) async {
+        defer { Task { await onFinish() } }
         do {
             let key = try identity.deviceKey()
             guard let tid = TransferId.parse(item.id) else { throw TransferFailure.invalidTransferId }
@@ -384,10 +426,10 @@ final class TransferCoordinator {
             switch item.direction {
             case .send:
                 summary = try await TransferRunner.send(
-                    stream: stream, transferId: tid.bytes, crypto: crypto, files: item.outgoing, progress: progress)
+                    transport: transport, transferId: tid.bytes, crypto: crypto, files: item.outgoing, progress: progress)
             case .receive:
                 summary = try await TransferRunner.receive(
-                    stream: stream, transferId: tid.bytes, crypto: crypto, peerKeyID: peer.id,
+                    transport: transport, transferId: tid.bytes, crypto: crypto, peerKeyID: peer.id,
                     expectedCount: item.fileCount, expectedTotal: item.totalBytes,
                     destination: AppPaths.receivedDirectory, progress: progress)
             }

@@ -22,6 +22,10 @@
             <TextBox Text="{Binding AutoAcceptMaxMb, UpdateSourceTrigger=LostFocus}" Width="90" Margin="8,0,0,0" />
         </StackPanel>
 
+        <TextBlock Text="{infra:T Settings.RelayUrl}" FontWeight="SemiBold" />
+        <TextBox Text="{Binding RelayUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,4" />
+        <TextBlock Text="{infra:T Settings.RelayHelp}" TextWrapping="Wrap" Opacity="0.7" FontSize="12" Margin="0,0,0,14" />
+
         <CheckBox Content="{infra:T Settings.SendTo}" IsChecked="{Binding SendToEnabled}" Margin="0,0,0,8" />
         <CheckBox Content="{infra:T Settings.AutoStart}" IsChecked="{Binding AutoStartEnabled}" Margin="0,0,0,14" />
 

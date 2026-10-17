@@ -109,6 +109,12 @@ private struct SendingView: View {
                 Text("Bilgisayarda onaylayın. Kod: \(item.code)")
                     .font(.subheadline.monospacedDigit())
             }
+            if item.state == .awaitingRelayConsent {
+                HStack {
+                    Button("Devam et") { model.confirmRelay() }.buttonStyle(.borderedProminent)
+                    Button("Vazgeç", role: .destructive) { model.cancel() }.buttonStyle(.bordered)
+                }
+            }
             if item.state == .needsManualHotspot, let creds = item.hotspotPrompt {
                 Text("Ayarlar > Wi-Fi'dan \"\(creds.ssid)\" ağına katılın (parola: \(creds.pass)); sonra buraya dönün.")
                     .font(.footnote).multilineTextAlignment(.center)

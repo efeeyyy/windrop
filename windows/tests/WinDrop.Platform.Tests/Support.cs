@@ -185,6 +185,7 @@ internal sealed class Harness : IAsyncDisposable
             CommitHook = new MotwCommitHook(),
             BluetoothAudio = BtAudio,
             BleBytesPerSecond = blePace,
+            LocalKey = Identity.LoadOrCreate(),
             Timeouts = timeouts ?? new TransferTimeouts
             {
                 Accept = TimeSpan.FromSeconds(10),
@@ -192,6 +193,8 @@ internal sealed class Harness : IAsyncDisposable
                 Connect = TimeSpan.FromSeconds(3),
                 HotspotConnect = TimeSpan.FromSeconds(3),
                 Reconnect = TimeSpan.FromSeconds(3),
+                RelayPeer = TimeSpan.FromSeconds(8),
+                RelayApproval = TimeSpan.FromSeconds(10),
                 Poll = TimeSpan.FromMilliseconds(20),
             },
         });

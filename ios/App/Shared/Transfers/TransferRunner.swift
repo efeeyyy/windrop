@@ -55,13 +55,15 @@ struct TransferSummary: Sendable {
 
 enum TransferFailure: Error, LocalizedError {
     case invalidTransferId
-    case relayUnavailable
+    case relayNotConfigured
+    case relayInvalidToken
     case message(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidTransferId: return "Geçersiz aktarım kimliği."
-        case .relayUnavailable: return "Aktarma sunucusu bu sürümde henüz yok."
+        case .relayNotConfigured: return "Aktarma sunucusu adresi ayarlı değil (Ayarlar > Aktarma sunucusu)."
+        case .relayInvalidToken: return "Aktarma bilgisi geçersiz."
         case .message(let text): return text
         }
     }
@@ -70,11 +72,11 @@ enum TransferFailure: Error, LocalizedError {
 enum TransferRunner {
     static let acceptAutoLimit: Int64 = 2 * 1024 * 1024 * 1024
 
-    /// TCP üstünde Noise kanalı (iPhone her zaman başlatan).
-    static func openChannel(stream: NWByteStream, transferId: TransferId, crypto: ChannelCrypto) async throws -> SecureChannel {
+    /// Taşıma (TCP veya aktarma sunucusu WebSocket'i) üstünde Noise kanalı (iPhone her zaman başlatan). Ön ekteki taşıma
+    /// türü `transport.kind` olur (2 = TCP, 3 = aktarma).
+    static func openChannel(transport: MessageTransport, transferId: TransferId, crypto: ChannelCrypto) async throws -> SecureChannel {
         let key = try NoisePrivateKey(rawRepresentation: crypto.localPrivateKey)
-        let prefix = try Prefix(transport: .tcp, transferId: transferId.bytes)
-        let transport = TcpMessageTransport(stream: stream)
+        let prefix = try Prefix(transport: transport.kind, transferId: transferId.bytes)
         if crypto.useIK {
             return try await SecureChannel.connectIK(
                 transport: transport, prefix: prefix, localKey: key, remoteStaticKey: crypto.remoteStaticKey)
@@ -87,23 +89,23 @@ enum TransferRunner {
     }
 
     static func send(
-        stream: NWByteStream, transferId: Data, crypto: ChannelCrypto, files: [OutgoingFile],
+        transport: MessageTransport, transferId: Data, crypto: ChannelCrypto, files: [OutgoingFile],
         progress: @escaping @Sendable (TransferProgress) -> Void
     ) async throws -> TransferSummary {
         guard let tid = TransferId(bytes: transferId) else { throw TransferFailure.invalidTransferId }
-        let channel = try await openChannel(stream: stream, transferId: tid, crypto: crypto)
+        let channel = try await openChannel(transport: transport, transferId: tid, crypto: crypto)
         let items = try files.map { try DiskFileSource.makeItem(id: $0.id, url: $0.url, name: $0.name) }
         let result = try await FileSender(channel: channel, items: items, progress: progress).run()
         return summarize(result)
     }
 
     static func receive(
-        stream: NWByteStream, transferId: Data, crypto: ChannelCrypto, peerKeyID: String,
+        transport: MessageTransport, transferId: Data, crypto: ChannelCrypto, peerKeyID: String,
         expectedCount: Int, expectedTotal: Int64, destination: URL,
         progress: @escaping @Sendable (TransferProgress) -> Void
     ) async throws -> TransferSummary {
         guard let tid = TransferId(bytes: transferId) else { throw TransferFailure.invalidTransferId }
-        let channel = try await openChannel(stream: stream, transferId: tid, crypto: crypto)
+        let channel = try await openChannel(transport: transport, transferId: tid, crypto: crypto)
         let storage = try DirectoryReceiverStorage(directory: destination)
         let options = ReceiverOptions(
             peerId: peerKeyID, transferId: tid, expectedCount: expectedCount, expectedTotal: expectedTotal)

@@ -44,6 +44,12 @@ public sealed record TransferSnapshot(
 public sealed record OfferRequest(TransferId Id, string PeerId, string PeerName, int FileCount, long TotalBytes,
     IReadOnlyList<string> Preview, string? VerificationCode = null, bool IsKnownPeer = false);
 
+/// <summary>
+/// PROTOCOL §6.3: doğrudan yol/etkin nokta/BLE yok; aktarma sunucusu (internet/hücresel veri) kullanılacak — kullanıcı onayı bekler
+/// (<see cref="TransferCoordinator.RespondToRelay"/>). Onaylanmazsa aktarma sunucusuna hiç bağlanılmaz.
+/// </summary>
+public sealed record RelayApprovalRequest(TransferId Id, string PeerId, string PeerName, int FileCount, long TotalBytes);
+
 /// <summary>PC'nin BLE'de gördüğü yakındaki iPhone (iPhone'un kurduğu bağlantı + hello).</summary>
 public sealed record NearbyPeer(string PeerId, string Name, bool IsKnown, bool IsPaired);
 
@@ -62,6 +68,10 @@ public sealed class TransferTimeouts
     public TimeSpan HotspotConnect { get; set; } = TimeSpan.FromSeconds(90);
     /// <summary>Aktarım ortasında kopunca aynı transferId ile yeniden bağlanma süresi.</summary>
     public TimeSpan Reconnect { get; set; } = TimeSpan.FromMinutes(2);
+    /// <summary>Aktarma: odaya girişten kurulmuş Noise oturumuna kadar (iPhone'un bağlanmasını bekleme dahil; sunucu eşi 60 sn bekler).</summary>
+    public TimeSpan RelayPeer { get; set; } = TimeSpan.FromSeconds(75);
+    /// <summary>Aktarma yolu için PC'deki kullanıcı onayı.</summary>
+    public TimeSpan RelayApproval { get; set; } = TimeSpan.FromMinutes(2);
     /// <summary>Bekleme döngüsü aralığı.</summary>
     public TimeSpan Poll { get; set; } = TimeSpan.FromMilliseconds(250);
 }
@@ -111,6 +121,9 @@ public sealed class TransferCoordinatorOptions
     /// <summary>BLE veri yolunun (PROTOCOL §6.4) gönderim hız üst sınırı, bayt/sn; ≤ 0: sınırsız (yalnız test).</summary>
     public int BleBytesPerSecond { get; init; } = TransferCoordinator.BleDefaultBytesPerSecond;
 
+    /// <summary>PC'nin statik Noise anahtarı (aktarma yolunda yanıtlayan olarak el sıkışmak için). null: aktarma yolu kapalı.</summary>
+    public NoiseKeyPair? LocalKey { get; init; }
+
     public Func<long>? FreeSpaceProvider { get; init; }
     public IFileCommitHook? CommitHook { get; init; }
     public TransferTimeouts Timeouts { get; init; } = new();
@@ -122,8 +135,10 @@ public sealed class TransferCoordinatorOptions
 /// (offer → accept → addr/hotspot → veri kanalı → DONE) ve PC'ye gelen (offer → onay → accept + addr/hotspot) yollarını yürütür.
 /// Aynı anda birden çok aktarım desteklenir; her biri kendi iptal belirtecine sahiptir.
 /// <para>§6.4 BLE yolu: doğrudan yol ve etkin nokta mümkün değilse/başarısızsa, toplam ≤ 64 KB ve iki tarafta
-/// <c>btAudio=false</c> ise §5 çerçeveleri BLE oturumundan hız sınırlı gider. TODO (henüz yok): aktarma (relay) yolu §6.3 —
-/// aksi halde "yol yok" hatası verilir.</para>
+/// <c>btAudio=false</c> ise §5 çerçeveleri BLE oturumundan hız sınırlı gider.</para>
+/// <para>§6.3 aktarma (relay) yolu: BLE de uygun değilse ve <see cref="AppSettings.RelayUrl"/> doluysa, kullanıcı onayından
+/// (<see cref="RelayApprovalRequested"/>) sonra PC token üretir, <c>relay</c> yollar, odaya bağlanıp yanıtlayan olarak el sıkışır
+/// (en çok 1 yeniden deneme, RESUME ile devam). Adres boşsa "yol yok" hatası verilir.</para>
 /// </summary>
 public sealed class TransferCoordinator : IAsyncDisposable
 {
@@ -183,6 +198,9 @@ public sealed class TransferCoordinator : IAsyncDisposable
 
     /// <summary>Otomatik kabul dışı gelen teklif; yanıt için <see cref="RespondToOffer"/>.</summary>
     public event Action<OfferRequest>? OfferReceived;
+
+    /// <summary>Aktarma sunucusu yolu için kullanıcı onayı gerekiyor; yanıt için <see cref="RespondToRelay"/>.</summary>
+    public event Action<RelayApprovalRequest>? RelayApprovalRequested;
 
     /// <summary>Yakındaki (BLE oturumu açık) cihaz kümesi değişti.</summary>
     public event Action? PeersChanged;
@@ -329,8 +347,11 @@ public sealed class TransferCoordinator : IAsyncDisposable
         if (Owned(p.TransferId, session) is not { } s) return;
         PlatformLog.Write($"path {s.Id}: {p.Result}");
         s.Touch(_o.Time);
-        if (p.Result is PathResult.TcpFail or PathResult.HotspotFail or PathResult.RelayFail && !s.ConnectionActive)
+        if (s.ConnectionActive) return;
+        if (p.Result is PathResult.TcpFail or PathResult.HotspotFail)
             s.PathFailed.TrySetResult(p.Result);
+        else if (p.Result == PathResult.RelayFail)
+            s.ReportRelayFail();
     }
 
     private void FailNegotiating(string peerId, string message)
@@ -779,15 +800,141 @@ public sealed class TransferCoordinator : IAsyncDisposable
             reason = ex.Message;
         }
 
+        // §6: doğrudan yol → etkin nokta → BLE (küçük dosya) → aktarma sunucusu.
         var why = BleIneligibleReason(s.Total, session);
-        if (why is not null)
-            throw new TransferException($"{reason} BLE (küçük dosya) yolu da kullanılamıyor: {why}.");
-        if (!TryActivateBle(s, session))
-            throw new TransferException($"{reason} BLE yolu bu eşle başka bir aktarım için kullanılıyor.");
-        // Önce kanal etkin (gelen çerçeveler kabul edilir), sonra `bleData`: gönderen taraf MANIFEST ile başlar.
-        await session.Channel.SendSignalAsync(new BleDataMessage(s.Id), ct).ConfigureAwait(false);
-        PlatformLog.Write($"bleData gönderildi {s.Id}");
-        await RunBleTransferAsync(s, ct).ConfigureAwait(false);
+        if (why is null)
+        {
+            if (TryActivateBle(s, session))
+            {
+                // Önce kanal etkin (gelen çerçeveler kabul edilir), sonra `bleData`: gönderen taraf MANIFEST ile başlar.
+                await session.Channel.SendSignalAsync(new BleDataMessage(s.Id), ct).ConfigureAwait(false);
+                PlatformLog.Write($"bleData gönderildi {s.Id}");
+                await RunBleTransferAsync(s, ct).ConfigureAwait(false);
+                return;
+            }
+        }
+
+        var bleNote = why is not null
+            ? $"{reason} BLE (küçük dosya) yolu da kullanılamıyor: {why}."
+            : $"{reason} BLE yolu bu eşle başka bir aktarım için kullanılıyor.";
+        if (string.IsNullOrWhiteSpace(_o.Settings.RelayUrl) || _o.LocalKey is null)
+            throw new TransferException(bleNote);   // aktarma kapalı (RelayUrl boş): "yol yok"
+        await RunRelayAsync(s, session, bleNote, ct).ConfigureAwait(false);
+    }
+
+    // ---------------------------------------------------------------- aktarma sunucusu (§6.3)
+
+    /// <summary>Aktarma onayını yanıtlar (<see cref="RelayApprovalRequested"/>).</summary>
+    public void RespondToRelay(TransferId id, bool allow)
+    {
+        State? s;
+        lock (_lock) _states.TryGetValue(id, out s);
+        s?.RelayDecision.TrySetResult(allow);
+    }
+
+    /// <summary>
+    /// §6.3: kullanıcı onayı → token + <c>relay</c> → odaya bağlan, yanıtlayan olarak el sıkış → §5 çerçeveleri.
+    /// iPhone kopar/oda kapanırsa yeni token ile en çok <b>1</b> yeniden deneme (RESUME ile kaldığı yerden).
+    /// </summary>
+    private async Task RunRelayAsync(State s, PeerSession session, string whyNoOtherPath, CancellationToken ct)
+    {
+        if (RelayRoom.BuildRoomUri(_o.Settings.RelayUrl, new string('0', RelayRoom.RoomIdLength), "pc") is null)
+            throw new TransferException($"{whyNoOtherPath} Aktarma sunucusu adresi geçersiz (Ayarlar'da wss://… biçiminde girin).");
+
+        // PC her iki rolde de kendi kullanıcısına sorar; onaylanmadan aktarma sunucusuna hiç bağlanılmaz.
+        s.Touch(_o.Time);
+        Update(s, TransferPhase.Connecting);
+        RelayApprovalRequested?.Invoke(new RelayApprovalRequest(s.Id, s.PeerId, s.PeerName, s.Count, s.Total));
+        bool allowed;
+        try { allowed = await s.RelayDecision.Task.WaitAsync(_o.Timeouts.RelayApproval, ct).ConfigureAwait(false); }
+        catch (TimeoutException) { allowed = false; }
+        if (!allowed)
+        {
+            PlatformLog.Write($"aktarma yolu onaylanmadı {s.Id}");
+            await SendSignalQuietly(session, new CancelSignalMessage(s.Id)).ConfigureAwait(false);
+            Finish(s, TransferPhase.Canceled, "Aktarma sunucusu üzerinden gönderim onaylanmadı.");
+            return;
+        }
+
+        // TCP kaydı kapanır: geç gelen bir TCP bağlantısı ikinci bir oturum açmasın.
+        s.Registration?.Dispose();
+        s.Registration = null;
+
+        var lastFailure = "";
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                if (await TryRelayAttemptAsync(s, session, ct).ConfigureAwait(false)) return;
+                lastFailure = "Aktarma bağlantısı koptu.";
+            }
+            catch (RelayConnectException ex)
+            {
+                if (ex.Status == System.Net.HttpStatusCode.TooManyRequests) throw new TransferException($"{ex.Message} Yol yok.");
+                lastFailure = ex.Message;
+            }
+            catch (TimeoutException ex)
+            {
+                lastFailure = ex.Message;
+            }
+            catch (RelayFailedException)
+            {
+                lastFailure = "iPhone aktarma sunucusuna bağlanamadı (relay_fail).";
+            }
+            catch (Exception ex) when (ex is IOException or ProtocolException or NoiseException or ObjectDisposedException or PeerNotTrustedException)
+            {
+                lastFailure = "Aktarma el sıkışması başarısız: " + ex.Message;
+            }
+            PlatformLog.Write($"aktarma denemesi {attempt + 1}/2 başarısız {s.Id}: {lastFailure}");
+            s.Touch(_o.Time);
+        }
+        throw new TransferException($"{lastFailure} {whyNoOtherPath} Aktarma yolu da başarısız. Yol yok.");
+    }
+
+    /// <summary>iPhone <c>relay_fail</c> bildirdi (oda denemesi iptal).</summary>
+    private sealed class RelayFailedException : Exception;
+
+    /// <returns>true: aktarım bitti (sonuç işlendi); false: bağlantı koptu, yeniden denenebilir.</returns>
+    private async Task<bool> TryRelayAttemptAsync(State s, PeerSession session, CancellationToken ct)
+    {
+        var token = RelayRoom.NewToken();
+        var uri = RelayRoom.BuildRoomUri(_o.Settings.RelayUrl, RelayRoom.ComputeRoomId(token), "pc")
+            ?? throw new TransferException("Aktarma sunucusu adresi geçersiz.");
+
+        using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        s.BeginRelayAttempt(attemptCts);
+        RelayPcSession? relay = null;
+        try
+        {
+            try
+            {
+                relay = await RelayPcClient.AcceptAsync(uri, s.Id, _o.LocalKey!, s.PeerKey, session.Channel.Kind,
+                    // Önce odaya gir, sonra eşe bildir: iPhone geldiğinde oda hazır olsun.
+                    sendCt => session.Channel.SendSignalAsync(new RelayMessage(s.Id, RelayRoom.EncodeToken(token)), sendCt).AsTask(),
+                    _o.Timeouts.RelayPeer, attemptCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                throw new RelayFailedException();
+            }
+            PlatformLog.Write($"aktarma odası kuruldu {s.Id}");
+            await OnDataConnectionAsync(s, relay.Channel).ConfigureAwait(false);
+            await relay.CloseAsync().ConfigureAwait(false);
+            if (s.FailureMessage is { } failure) throw new TransferException(failure);
+            if (s.DataDone.Task.IsCompletedSuccessfully)
+            {
+                FinishFromResult(s, s.DataDone.Task.Result);
+                return true;
+            }
+            ct.ThrowIfCancellationRequested();
+            return false;
+        }
+        finally
+        {
+            s.EndRelayAttempt();
+            relay?.Dispose();
+        }
     }
 
     /// <summary>Yol kurulamadı (BLE yoluna düşülebilir); ileti kullanıcıya "yol yok" nedeni olarak gösterilir.</summary>
@@ -810,7 +957,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             }
             if (s.PathFailed.Task.IsCompleted && !s.ConnectionActive)
                 throw new PathUnavailableException(
-                    "Doğrudan bağlantı kurulamadı (iPhone bildirdi: " + s.PathFailed.Task.Result + ") ve aktarma yolu henüz yok. Yol yok.");   // TODO §6.3 relay
+                    "Doğrudan bağlantı kurulamadı (iPhone bildirdi: " + s.PathFailed.Task.Result + "). Yol yok.");
 
             if (!s.ConnectionActive)
             {
@@ -818,7 +965,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 if (_o.Time.GetUtcNow() - s.LastActivity > limit)
                 {
                     if (!s.EverConnected)
-                        throw new PathUnavailableException("iPhone veri bağlantısını kuramadı (zaman aşımı). Aktarma yolu henüz yok. Yol yok.");   // TODO §6.3 relay
+                        throw new PathUnavailableException("iPhone veri bağlantısını kuramadı (zaman aşımı). Yol yok.");
                     throw new TransferException("Bağlantı koptu ve iPhone yeniden bağlanmadı.");
                 }
             }
@@ -1069,6 +1216,27 @@ public sealed class TransferCoordinator : IAsyncDisposable
         /// <summary>§6.4: bu aktarımın BLE veri kanalı (etkinleştirildiyse).</summary>
         public volatile BleDataChannel? Ble;
         public TimeSpan ConnectTimeout = TimeSpan.FromSeconds(30);
+
+        public TaskCompletionSource<bool> RelayDecision { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private CancellationTokenSource? _relayAttempt;
+
+        /// <summary>Yeni aktarma denemesi başlar: iPhone'un <c>relay_fail</c>'i bu belirteci iptal eder.</summary>
+        public void BeginRelayAttempt(CancellationTokenSource attempt)
+        {
+            lock (Gate) _relayAttempt = attempt;
+        }
+
+        public void EndRelayAttempt()
+        {
+            lock (Gate) _relayAttempt = null;
+        }
+
+        public void ReportRelayFail()
+        {
+            CancellationTokenSource? attempt;
+            lock (Gate) attempt = _relayAttempt;
+            try { attempt?.Cancel(); } catch (ObjectDisposedException) { }
+        }
 
         public volatile bool ConnectionActive;
         public volatile bool EverConnected;

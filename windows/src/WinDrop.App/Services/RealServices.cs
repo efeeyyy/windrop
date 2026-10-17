@@ -79,11 +79,15 @@ public sealed class TransferService : ITransferService
         _coord.TransferUpdated += snap => _ui.Post(_ => Apply(snap), null);
         _coord.OfferReceived += o => _ui.Post(_ =>
             OfferReceived?.Invoke(this, new IncomingOffer(o.Id.ToString(), o.PeerName, o.FileCount, o.TotalBytes, o.VerificationCode)), null);
+        _coord.RelayApprovalRequested += r => _ui.Post(_ =>
+            RelayApprovalRequested?.Invoke(this, new RelayApproval(r.Id.ToString(), r.PeerName, r.TotalBytes)), null);
     }
 
     public ObservableCollection<TransferItem> Transfers { get; } = [];
 
     public event EventHandler<IncomingOffer>? OfferReceived;
+
+    public event EventHandler<RelayApproval>? RelayApprovalRequested;
 
     /// <summary>Hemen döner; ilerleme/sonuç satırda görünür. Eşzamanlı sorunlar (cihaz yakında değil, dosya yok) istisna olur.</summary>
     public Task SendAsync(string deviceId, IReadOnlyList<string> paths)
@@ -102,6 +106,11 @@ public sealed class TransferService : ITransferService
     public void RespondToOffer(IncomingOffer offer, bool accept)
     {
         if (TransferId.TryParse(offer.OfferId, out var id)) _coord.RespondToOffer(id, accept);
+    }
+
+    public void RespondToRelay(RelayApproval approval, bool allow)
+    {
+        if (TransferId.TryParse(approval.TransferId, out var id)) _coord.RespondToRelay(id, allow);
     }
 
     public void ShowInFolder(TransferItem transfer) => Explorer.Reveal(transfer.SavedPath);

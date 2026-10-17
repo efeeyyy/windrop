@@ -36,7 +36,8 @@ public sealed class WinDropRuntime : IAsyncDisposable
         LocalName = Environment.MachineName;
         Pairing = new PairingService(Identity, Trusted, HotspotConfig, LocalName);
         Acceptor = new SignalSessionAcceptor(Identity, Trusted, Pairing);
-        Listener = new DataListener(Identity.LoadOrCreate(), Pending, dataPort);
+        var localKey = Identity.LoadOrCreate();
+        Listener = new DataListener(localKey, Pending, dataPort);
         Coordinator = new TransferCoordinator(new TransferCoordinatorOptions
         {
             Settings = settings,
@@ -50,6 +51,7 @@ public sealed class WinDropRuntime : IAsyncDisposable
             RotateHotspotPassphrase = () => HotspotConfig.RotatePassphrase(),
             BluetoothAudio = BluetoothAudio,
             CommitHook = new MotwCommitHook(),
+            LocalKey = localKey,
         });
         Acceptor.SessionHandler = Coordinator.HandleSessionAsync;
     }

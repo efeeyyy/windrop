@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(AppModel.deviceNameKey) private var deviceName = ""
+    @AppStorage(RelaySettings.key) private var relayUrl = ""
     @State private var removalCandidate: KnownPC?
     @State private var showRemovalDialog = false
     @State private var showPairing = false
@@ -27,6 +28,22 @@ struct SettingsView: View {
                     }
                 } footer: {
                     Text("İsteğe bağlı. Windows'taki WinDrop'ta gösterilen QR kodu okutursanız o bilgisayardan gelen küçük dosyalar sormadan kabul edilir. Normal kullanım için eşleştirme gerekmez.")
+                }
+
+                Section {
+                    TextField("wss://…workers.dev", text: $relayUrl)
+                        .keyboardType(.URL)
+                        .textContentType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    if !relayUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !RelaySettings.isValid(relayUrl) {
+                        Text("Geçersiz adres. wss://alan-adi biçiminde yazın.")
+                            .font(.caption).foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("Aktarma sunucusu")
+                } footer: {
+                    Text("İsteğe bağlı. Bilgisayara ne doğrudan ne etkin noktayla ulaşılamazsa gönderim internet üzerinden bu sunucudan geçer (uçtan uca şifreli; sunucu içeriği göremez). Her seferinde kota uyarısıyla onayınız istenir. Boşsa bu yol kapalıdır.")
                 }
 
                 Section("Tanıdık bilgisayarlar") {

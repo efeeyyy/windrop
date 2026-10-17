@@ -53,8 +53,12 @@ private struct TransferRow: View {
             }
 
             if item.state == .awaitingRelayConsent {
-                Button("Devam et") { model.transfers.confirmRelay(item) }
-                    .buttonStyle(.borderedProminent)
+                HStack {
+                    Button("Devam et") { model.transfers.confirmRelay(item) }
+                        .buttonStyle(.borderedProminent)
+                    Button("Vazgeç", role: .destructive) { model.transfers.cancel(item) }   // karşıya `cancel` gider
+                        .buttonStyle(.bordered)
+                }
             }
             if item.state == .awaitingUser {
                 HStack {
@@ -65,7 +69,7 @@ private struct TransferRow: View {
                 }
             }
 
-            if item.isCancellable {
+            if item.isCancellable, item.state != .awaitingRelayConsent {
                 Button("İptal", role: .destructive) { model.transfers.cancel(item) }
                     .buttonStyle(.bordered)
             }

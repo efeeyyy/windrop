@@ -54,7 +54,11 @@
   <data name="Offer.Reject" xml:space="preserve"><value>Reddet</value></data>
   <data name="Offer.Code" xml:space="preserve"><value>Doğrulama kodu: {0}. İsterseniz gönderenin ekranındaki kodla karşılaştırın; kabul ederseniz bu cihaz hatırlanır.</value></data>
   <data name="Offer.Unknown" xml:space="preserve"><value>Bu cihaz daha önce tanınmıyor; kabul etmezseniz hiçbir şey kaydedilmez.</value></data>
-  <data name="Relay.Warning" xml:space="preserve"><value>Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir ({0}); uçtan uca şifrelidir.</value></data>
+  <data name="Relay.Title" xml:space="preserve"><value>İnternet üzerinden aktarım</value></data>
+  <data name="Relay.Intro" xml:space="preserve"><value>‘{0}’ ile doğrudan bağlantı kurulamadı.</value></data>
+  <data name="Relay.Warning" xml:space="preserve"><value>Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir. ({0}) Uçtan uca şifreli.</value></data>
+  <data name="Relay.Confirm" xml:space="preserve"><value>Onayla</value></data>
+  <data name="Relay.Cancel" xml:space="preserve"><value>İptal</value></data>
   <data name="Offer.Timeout" xml:space="preserve"><value>{0} sn içinde yanıt verilmezse reddedilir.</value></data>
 
   <data name="Settings.Title" xml:space="preserve"><value>Ayarlar</value></data>
@@ -70,6 +74,8 @@
   <data name="Settings.RemoveAll" xml:space="preserve"><value>Tümünü kaldır</value></data>
   <data name="Settings.RemoveConfirm" xml:space="preserve"><value>‘{0}’ eşleşmesi kaldırılsın mı?</value></data>
   <data name="Settings.RemoveAllConfirm" xml:space="preserve"><value>Tüm eşleşmeler kaldırılsın mı?</value></data>
+  <data name="Settings.RelayUrl" xml:space="preserve"><value>Aktarma sunucusu adresi</value></data>
+  <data name="Settings.RelayHelp" xml:space="preserve"><value>İsteğe bağlı. Doğrudan bağlantı, etkin nokta ve Bluetooth mümkün değilse dosyalar internet üzerinden bu sunucudan geçer (uçtan uca şifreli, sunucu içeriği göremez). Kendi Cloudflare sunucunuzun adresi, ör. wss://windrop-relay.hesabiniz.workers.dev — kurulum: relay\README.md. Boşsa bu yol kapalıdır.</value></data>
   <data name="Settings.Save" xml:space="preserve"><value>Kaydet</value></data>
   <data name="Settings.Cancel" xml:space="preserve"><value>Vazgeç</value></data>
   <data name="Settings.SaveError" xml:space="preserve"><value>Ayarlar uygulanamadı: {0}</value></data>

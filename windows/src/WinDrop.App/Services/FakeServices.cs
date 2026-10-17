@@ -66,6 +66,15 @@ public sealed class FakeTransferService : ITransferService
 
     public event EventHandler<IncomingOffer>? OfferReceived;
 
+    public event EventHandler<RelayApproval>? RelayApprovalRequested;
+
+    /// <summary>Deneme: aktarma sunucusu onayı üretir.</summary>
+    public void SimulateRelayApproval(string device = "Efe'nin iPhone'u", long bytes = 48L * 1024 * 1024) =>
+        _ui.Post(_ => RelayApprovalRequested?.Invoke(this, new RelayApproval(Guid.NewGuid().ToString("N"), device, bytes)), null);
+
+    public void RespondToRelay(RelayApproval approval, bool allow) =>
+        AppLog.Write($"[fake] aktarma yolu {(allow ? "onaylandı" : "reddedildi")}: {approval.DeviceName}");
+
     public Task SendAsync(string deviceId, IReadOnlyList<string> paths)
     {
         var name = _devices.Devices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? "?";

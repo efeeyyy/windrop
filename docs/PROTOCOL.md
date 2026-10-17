@@ -175,7 +175,10 @@ Aktarımın sonucu **yalnız veri kanalındaki `DONE`** ile belirlenir (BLE'de `
   içerik uçtan uca Noise ile şifreli, sunucu dosya adını bile görmez.
 - **Oda:** PC 32 B rastgele `token` üretir, `relay {transferId, token}` ile (şifreli BLE) iPhone'a
   verir. `roomId = hex(SHA-256("WinDrop-relay" || token))[0:32]`. İki taraf da istemcidir:
-  `wss://<relay>/v1/room/<roomId>?role=pc|phone`. Token URL'de gitmez.
+  `wss://<relay>/v1/room/<roomId>?role=pc|phone`. Token URL'de gitmez. `relay` sinyalinde `token`
+  = ham 32 baytın **dolgusuz base64url**'i (43 karakter); roomId ham baytlardan hesaplanır
+  (vektörler: `protocol/vectors/relay.json`). Ön ek ve her Noise mesajı **ayrı** ikili WebSocket
+  mesajıdır.
 - **Eşleme:** oda ilk `pc` ve ilk `phone` bağlantısını eşler; üçüncü bağlantı ve aynı rolden ikinci
   bağlantı 409 ile reddedilir. Eş 60 sn içinde gelmezse oda kapanır.
 - **Aktarım:** her WebSocket ikili mesajı = bir Noise mesajı (≤ 65535 B; uzunluk öneki yok).

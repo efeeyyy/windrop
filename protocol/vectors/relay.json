@@ -1,0 +1,20 @@
+{
+  "description": "PROTOCOL 6.3: roomId = hex(SHA-256(\"WinDrop-relay\" || token))[0:32]; token = 32 ham bayt (relay sinyalinde 43 karakterlik dolgusuz base64url). Bagimsiz Python (hashlib) referansi.",
+  "vectors": [
+    {
+      "token_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "token_b64url": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "room_id": "35b2bac200b0b327c1c7da7b54c4ef51"
+    },
+    {
+      "token_hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "token_b64url": "__________________________________________8",
+      "room_id": "73c62e7e9976a962aaf7c97f817e5db0"
+    },
+    {
+      "token_hex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "token_b64url": "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI",
+      "room_id": "8e3aa71f29e8152c0900e019741fe588"
+    }
+  ]
+}

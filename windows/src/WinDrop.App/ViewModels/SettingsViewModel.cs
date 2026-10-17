@@ -24,6 +24,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         DownloadFolder = settings.DownloadFolder;
         AutoAccept = settings.AutoAccept;
         AutoAcceptMaxMb = Math.Max(1, settings.AutoAcceptMaxBytes / (1024 * 1024));
+        RelayUrl = settings.RelayUrl;
         // Gerçek durumu göster (ayardaki "istenen" değil).
         SendToEnabled = shell.IsSendToInstalled;
         AutoStartEnabled = shell.IsAutoStartEnabled;
@@ -36,6 +37,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string DownloadFolder { get; set; }
     [ObservableProperty] public partial bool AutoAccept { get; set; }
     [ObservableProperty] public partial long AutoAcceptMaxMb { get; set; }
+    [ObservableProperty] public partial string RelayUrl { get; set; }
     [ObservableProperty] public partial bool SendToEnabled { get; set; }
     [ObservableProperty] public partial bool AutoStartEnabled { get; set; }
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
@@ -82,6 +84,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.DownloadFolder = string.IsNullOrWhiteSpace(DownloadFolder) ? AppSettings.DefaultDownloadFolder() : DownloadFolder;
         _settings.AutoAccept = AutoAccept;
         _settings.AutoAcceptMaxBytes = Math.Max(1, AutoAcceptMaxMb) * 1024 * 1024;
+        _settings.RelayUrl = (RelayUrl ?? "").Trim();
         _settings.SendToEnabled = SendToEnabled;
         _settings.AutoStartEnabled = AutoStartEnabled;
         try

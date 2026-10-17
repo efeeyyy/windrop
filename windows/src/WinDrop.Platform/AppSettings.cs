@@ -31,6 +31,12 @@ public sealed class AppSettings
     /// <summary>Windows ile otomatik başlat (<c>--hidden</c>).</summary>
     public bool AutoStartEnabled { get; set; }
 
+    /// <summary>
+    /// Aktarma sunucusu adresi (PROTOCOL §6.3; kendi Cloudflare sunucunuz, <c>relay\README.md</c>): <c>host</c> veya <c>wss://host</c>.
+    /// Boş = aktarma yolu kapalı ("yol yok"). Uygulamada ayarlıdır, eşten gelen mesajla değişmez.
+    /// </summary>
+    public string RelayUrl { get; set; } = "";
+
     public static AppSettings Load(string? path = null)
     {
         path ??= DefaultPath;
@@ -52,6 +58,7 @@ public sealed class AppSettings
     private AppSettings Sanitized()
     {
         if (string.IsNullOrWhiteSpace(DownloadFolder)) DownloadFolder = DefaultDownloadFolder();
+        RelayUrl = (RelayUrl ?? "").Trim();
         if (AutoAcceptMaxBytes < 0) AutoAcceptMaxBytes = DefaultAutoAcceptMaxBytes;
         return this;
     }

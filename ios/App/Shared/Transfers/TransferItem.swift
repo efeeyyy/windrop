@@ -17,7 +17,7 @@ final class TransferItem: Identifiable {
         case joiningHotspot
         /// Yetki yok: kullanıcı Ayarlar'dan etkin noktaya bir kez katılmalı.
         case needsManualHotspot
-        /// Aktarma (relay) yolu gerekir: kullanıcı kota uyarısını onaylamalı (PROTOCOL §6.3; relay henüz yok).
+        /// Aktarma (relay) yolu önerildi (`relay` sinyali geldi): kullanıcı kota uyarısını onaylamalı (PROTOCOL §6.3).
         case awaitingRelayConsent
         case transferring
         case done
@@ -28,6 +28,12 @@ final class TransferItem: Identifiable {
 
     /// PROTOCOL §6.3 / ARCHITECTURE: aktarma yolu seçilirse gösterilecek uyarı.
     static let relayWarning = "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir."
+
+    /// Uyarının tam metni: boyut ve uçtan uca şifreleme bilgisi dahil (iki tarafta da aynı).
+    var relayWarningText: String {
+        let size = ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .file)
+        return "\(TransferItem.relayWarning) (\(size)) Uçtan uca şifreli."
+    }
 
     let id: String
     let direction: Direction
@@ -54,6 +60,8 @@ final class TransferItem: Identifiable {
     var photosSaveMessage: String?
 
     @ObservationIgnored var outgoing: [OutgoingFile] = []
+    /// Aktarma odası adresi (`relay` sinyalinden türetilir: ayardaki `relayUrl` + roomId). Kullanıcı onaylayana dek bağlanılmaz.
+    @ObservationIgnored var relayEndpoint: URL?
     @ObservationIgnored var task: Task<Void, Never>?
 
     init(
@@ -97,7 +105,7 @@ final class TransferItem: Identifiable {
         case .connecting: return "Bağlanılıyor…"
         case .joiningHotspot: return "Bilgisayarın etkin noktasına katılınıyor…"
         case .needsManualHotspot: return "Etkin noktaya elle katılmanız gerekiyor"
-        case .awaitingRelayConsent: return TransferItem.relayWarning
+        case .awaitingRelayConsent: return relayWarningText
         case .transferring: return direction == .send ? "Gönderiliyor…" : "Alınıyor…"
         case .done: return direction == .send ? "Gönderildi" : "Alındı"
         case .failed: return errorMessage ?? "Başarısız"

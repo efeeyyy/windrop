@@ -11,11 +11,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WinDrop.Core\WinDrop.Core.csproj" />
+    <!-- Yerel WebSocket test sunucusu (Kestrel): aktarma sunucusu sahtesi. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Ortak test vektörleri (protocol/vectors); yalnız veri, çıktı klasörüne kopyalanır. -->
     <Content Include="..\..\..\protocol\vectors\cacophony.txt" Link="vectors\cacophony.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\protocol\vectors\relay.json" Link="vectors\relay.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

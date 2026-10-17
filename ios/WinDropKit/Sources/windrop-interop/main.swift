@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import WinDropKit
 #if canImport(CryptoKit)
 import CryptoKit
@@ -18,6 +21,9 @@ import Darwin
 //                [--kill-at-bytes N] <dosyalar...>        Swift -> C# (C# alıcı)
 //   receive-from --host H --port P --prefix-transfer-id <b64url> --pattern ik|xx --my-key <hex32> --peer-pub <hex32>
 //                --out DIR --count N --total BYTES         C# -> Swift (Swift alıcı)
+//   relay-phone  --relay-url wss://H[:P] --token <b64url 43> --mode send|receive-from --prefix-transfer-id <b64url>
+//                --pattern ik|xx --my-key <hex32> --peer-pub <hex32> [send: dosyalar... | receive-from: --out DIR --count N --total BYTES]
+//                PROTOCOL §6.3: aktarma sunucusunda `phone` rolüyle bağlanır (ön ek taşıma=3), sonra send/receive-from gibi çalışır.
 //   pubkey       --my-key <hex32>                          açık anahtarı yazdırır
 //
 // Çıktı: "KEY=değer" satırları (betikler ayrıştırır). Çıkış kodu: 0 = Completed, 1 = diğer sonuç, 2 = hata.
@@ -150,7 +156,7 @@ struct Options {
 }
 
 let argv = Array(CommandLine.arguments.dropFirst())
-guard let command = argv.first else { fail("komut yok: send | receive-from | pubkey") }
+guard let command = argv.first else { fail("komut yok: send | receive-from | relay-phone | pubkey") }
 let opts = Options(Array(argv.dropFirst()))
 
 func loadKey(_ name: String) -> NoisePrivateKey {
@@ -218,8 +224,14 @@ if command == "signals-verify" {
     exit(bad == 0 ? 0 : 1)
 }
 
-let host = opts.need("host")
-guard let port = UInt16(opts.need("port")) else { fail("--port geçersiz") }
+let isRelay = command == "relay-phone"
+let action = isRelay ? opts.need("mode") : command   // relay-phone: --mode send|receive-from
+let host = isRelay ? "" : opts.need("host")
+func parsePort() -> UInt16 {
+    guard let p = UInt16(opts.need("port")) else { fail("--port geçersiz") }
+    return p
+}
+let port: UInt16 = isRelay ? 0 : parsePort()
 guard let transferId = TransferId.parse(opts.need("prefix-transfer-id")) else { fail("--prefix-transfer-id 22 karakter base64url olmalı") }
 let pattern = opts.need("pattern")
 let myKey = loadKey("my-key")
@@ -233,11 +245,55 @@ func sha256Hex(of url: URL) throws -> String {
     return hasher.finalize().map { String(format: "%02x", $0) }.joined()
 }
 
+/// PROTOCOL §6.3: `URLSessionWebSocketTask` (FoundationNetworking'de var) -> `WebSocketLike`. Bağlantı hatası ilk
+/// gönderme/almada görünür (sunucu 409/410/429 dönerse yükseltme başarısız olur).
+final class InteropWebSocket: WebSocketLike, @unchecked Sendable {
+    private let task: URLSessionWebSocketTask
+    init(url: URL) {
+        task = URLSession(configuration: .ephemeral).webSocketTask(with: url)
+        task.maximumMessageSize = 1 << 17
+        task.resume()
+    }
+    func send(binary: Data) async throws { try await task.send(.data(binary)) }
+    func receive() async throws -> WebSocketMessage? {
+        do {
+            switch try await task.receive() {
+            case .data(let d): return .binary(d)
+            case .string(let t): return .text(t)
+            @unknown default: return nil
+            }
+        } catch {
+            if task.closeCode == .normalClosure || task.closeCode == .goingAway { return nil }
+            if let http = task.response as? HTTPURLResponse, http.statusCode != 101 {
+                out("RELAY_HTTP_STATUS=\(http.statusCode)")
+            }
+            throw error
+        }
+    }
+    func close() async { task.cancel(with: .normalClosure, reason: nil) }
+}
+
 func connectChannel() async throws -> SecureChannel {
-    out("CONNECT=\(host):\(port) pattern=\(pattern) transferId=\(transferId)")
-    let stream = try PosixTcpStream.connect(host: host, port: port)
-    let transport = TcpMessageTransport(stream: stream)
-    let prefix = try Prefix(transport: .tcp, transferId: transferId.bytes)
+    let transport: MessageTransport
+    let prefix: Prefix
+    if isRelay {
+        let tokenText = opts.need("token")
+        // relay-pc ile aynı: 43 karakter base64url veya 64 onaltılık karakter.
+        guard let token = tokenText.count == 64 ? parseHex(tokenText) : RelayRoom.decodeToken(tokenText), token.count == RelayRoom.tokenLength else {
+            fail("--token 43 karakter base64url veya 64 hex (32 bayt) olmalı")
+        }
+        let roomId = RelayRoom.roomId(token: token)
+        guard let url = RelayRoom.endpoint(relayUrl: opts.need("relay-url"), roomId: roomId, role: .phone) else {
+            fail("--relay-url geçersiz (wss://host; ws:// yalnız localhost)")
+        }
+        out("CONNECT=relay roomId=\(roomId) role=phone pattern=\(pattern) transferId=\(transferId)")
+        transport = RelayMessageTransport(socket: InteropWebSocket(url: url))
+        prefix = try Prefix(transport: .relay, transferId: transferId.bytes)
+    } else {
+        out("CONNECT=\(host):\(port) pattern=\(pattern) transferId=\(transferId)")
+        transport = TcpMessageTransport(stream: try PosixTcpStream.connect(host: host, port: port))
+        prefix = try Prefix(transport: .tcp, transferId: transferId.bytes)
+    }
     switch pattern {
     case "ik":
         return try await SecureChannel.connectIK(transport: transport, prefix: prefix, localKey: myKey, remoteStaticKey: peerPub)
@@ -262,7 +318,7 @@ func run() async -> Int32 {
     do {
         let channel = try await connectChannel()
         out("HANDSHAKE=ok kind=\(pattern) sas=\(channel.verificationCode) hash=\(hex(channel.handshakeHash))")
-        switch command {
+        switch action {
         case "send":
             guard !opts.positional.isEmpty else { fail("gönderilecek dosya yok") }
             var items: [SendItem] = []
@@ -291,10 +347,13 @@ func run() async -> Int32 {
             }
             return report(result)
         default:
-            fail("bilinmeyen komut: \(command)")
+            fail("bilinmeyen komut: \(action)")
         }
     } catch {
         out("ERROR=\(type(of: error)): \(error)")
+        if "\(error)".contains("WebSockets not supported by libcurl") {
+            out("HINT=Bu Linux'un libcurl'ü WebSocket desteklemiyor (swift-corelibs-foundation URLSessionWebSocketTask libcurl'e dayanır); relay-phone macOS'ta veya WS destekli libcurl ile çalışır.")
+        }
         return 2
     }
 }

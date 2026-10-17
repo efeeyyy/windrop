@@ -58,6 +58,7 @@ public partial class App : Application, IAppShell
             _ = StartRuntimeAsync(_runtime);
         }
         _transfers.OfferReceived += OnOfferReceived;
+        _transfers.RelayApprovalRequested += OnRelayApprovalRequested;
 
         _mainVm = new MainViewModel(_devices, _transfers, this);
         _main = new MainWindow(_mainVm);
@@ -157,6 +158,13 @@ public partial class App : Application, IAppShell
     }
 
     // ---- Gelen teklif ----
+
+    private void OnRelayApprovalRequested(object? sender, RelayApproval approval)
+    {
+        AppLog.Write($"aktarma sunucusu onayı isteniyor: {approval.DeviceName}, {approval.TotalBytes} bayt");
+        var window = new RelayApprovalWindow(approval, allow => _transfers.RespondToRelay(approval, allow));
+        window.Show();
+    }
 
     private void OnOfferReceived(object? sender, IncomingOffer offer)
     {

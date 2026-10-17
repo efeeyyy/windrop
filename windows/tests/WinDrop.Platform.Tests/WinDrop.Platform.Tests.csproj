@@ -12,6 +12,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\WinDrop.Platform\WinDrop.Platform.csproj" />
+    <!-- Yerel WebSocket test sunucusu (Kestrel): aktarma sunucusu sahtesi (Core.Tests ile paylaşılan kaynak). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="..\WinDrop.Core.Tests\Support\FakeRelayServer.cs" Link="Support\FakeRelayServer.cs" />
     <!-- Ortak test vektörü (protocol/vectors/sas.json). -->
     <Content Include="..\..\..\protocol\vectors\sas.json" Link="vectors\sas.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

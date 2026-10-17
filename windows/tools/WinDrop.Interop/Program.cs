@@ -12,6 +12,10 @@ using WinDrop.Platform;
 //   serve  --port P --my-key <hex32> --peer-pub <hex32> --transfer-id <b64url> --pattern ik|xx
 //          [--mode receive|send] [--out DIR] [--count N --total BYTES] [--expect-completed N] [--timeout SN]
 //          [dosyalar...]            (mode=send: bu dosyalar Swift'e gönderilir)
+//   relay-pc --relay-url URL --token <43 karakter base64url | 64 hex> --my-key <hex32> --peer-pub <hex32> --transfer-id <b64url>
+//          --pattern ik|xx [--mode receive|send] [--out DIR] [--count N --total BYTES] [--timeout SN] [dosyalar...]
+//          PC rolünde (yanıtlayan) aktarma odasına (PROTOCOL §6.3, role=pc) bağlanır; odaya girince "RELAY_READY room=<id>" yazar,
+//          iPhone (Swift, başlatan) token'dan aynı odaya girer. Sonrası serve ile aynı (HANDSHAKE/FILE/OUTCOME/SERVER_DONE satırları).
 //   Çıkış kodu: 0 = beklenen sayıda aktarım tamamlandı (veya expect=0 ve oturum yok), 3 = zaman aşımı, 1 = beklenmeyen oturum.
 
 return await Cli.RunAsync(args);
@@ -20,7 +24,7 @@ internal static class Cli
 {
     public static async Task<int> RunAsync(string[] args)
     {
-        if (args.Length == 0) return Fail("komut yok: pubkey | serve");
+        if (args.Length == 0) return Fail("komut yok: pubkey | serve | relay-pc");
         var o = new Opts(args.Skip(1));
         try
         {
@@ -32,6 +36,8 @@ internal static class Cli
                     return 0;
                 case "serve":
                     return await ServeAsync(o);
+                case "relay-pc":
+                    return await RelayPcAsync(o);
                 case "signals":
                     File.WriteAllLines(o.Need("out"), SampleSignals().Select(m => System.Text.Encoding.UTF8.GetString(SignalMessages.Encode(m))));
                     Console.WriteLine($"SIGNALS_WRITTEN={SampleSignals().Count}");
@@ -105,47 +111,58 @@ internal static class Cli
 
     private static byte[] Hex(string s) => Convert.FromHexString(s);
 
-    private static async Task<int> ServeAsync(Opts o)
+    /// <summary>serve ve relay-pc için ortak oturum yürütücüsü (kurulmuş SecureChannel üstünde gönder/al + günlük satırları).</summary>
+    private sealed class SessionRunner
     {
-        var port = int.Parse(o.Need("port"));
-        var mode = o.Get("mode") ?? "receive";
-        var pattern = o.Need("pattern");
-        var kind = pattern switch { "ik" => HandshakeKind.IK, "xx" => HandshakeKind.XX, _ => throw new ArgumentException("--pattern ik|xx") };
-        var id = TransferId.Parse(o.Need("transfer-id"));
-        var expect = int.Parse(o.Get("expect-completed") ?? "1");
-        var timeout = TimeSpan.FromSeconds(double.Parse(o.Get("timeout") ?? "60"));
-        var peerPub = Hex(o.Need("peer-pub"));
-        using var myKey = NoiseKeyPair.FromPrivateKey(Hex(o.Need("my-key")));
+        private readonly Opts _o;
+        private readonly FileSystemPartialStore? _store;
+        private readonly int _count;
+        private readonly long _total;
+        private readonly int _expect;
+        private int _completed;
+        private int _sessions;
+        private readonly TaskCompletionSource _enough = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        PlatformLog.Sink = s => Console.WriteLine("LOG " + s);
-
-        FileSystemPartialStore? store = null;
-        string? outDir = null;
-        if (mode == "receive")
+        public SessionRunner(Opts o)
         {
-            outDir = Path.GetFullPath(o.Need("out"));
-            store = new FileSystemPartialStore(Path.Combine(outDir, ".partial"), Path.Combine(outDir, "final"));
+            _o = o;
+            Mode = o.Get("mode") ?? "receive";
+            Pattern = o.Need("pattern");
+            Kind = Pattern switch { "ik" => HandshakeKind.IK, "xx" => HandshakeKind.XX, _ => throw new ArgumentException("--pattern ik|xx") };
+            Id = TransferId.Parse(o.Need("transfer-id"));
+            _expect = int.Parse(o.Get("expect-completed") ?? "1");
+            Timeout = TimeSpan.FromSeconds(double.Parse(o.Get("timeout") ?? "60"));
+            PeerPub = Hex(o.Need("peer-pub"));
+            if (Mode == "receive")
+            {
+                var outDir = Path.GetFullPath(o.Need("out"));
+                _store = new FileSystemPartialStore(Path.Combine(outDir, ".partial"), Path.Combine(outDir, "final"));
+            }
+            else if (Mode != "send") throw new ArgumentException("--mode receive|send");
+            _count = int.Parse(o.Get("count") ?? "0");
+            _total = long.Parse(o.Get("total") ?? "0");
         }
-        else if (mode != "send") throw new ArgumentException("--mode receive|send");
-        var count = int.Parse(o.Get("count") ?? "0");
-        var total = long.Parse(o.Get("total") ?? "0");
 
-        var completed = 0;
-        var sessions = 0;
-        var enough = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (expect == 0) { /* yalnız zaman aşımını bekler */ }
+        public string Mode { get; }
+        public string Pattern { get; }
+        public HandshakeKind Kind { get; }
+        public TransferId Id { get; }
+        public byte[] PeerPub { get; }
+        public TimeSpan Timeout { get; }
+        public int Completed => _completed;
+        public Task Enough => _enough.Task;
 
-        async Task Handler(SecureChannel ch)
+        public async Task HandleAsync(SecureChannel ch)
         {
-            Interlocked.Increment(ref sessions);
+            Interlocked.Increment(ref _sessions);
             Console.WriteLine($"HANDSHAKE=ok kind={ch.Kind.ToString().ToLowerInvariant()} sas={Sas.Compute(ch.HandshakeHash)} hash={Convert.ToHexStringLower(ch.HandshakeHash)}");
             TransferResult result;
             try
             {
-                if (mode == "receive")
+                if (Mode == "receive")
                 {
-                    var ropts = new ReceiverOptions(DeviceId.HexFromPublicKey(peerPub), id, new OfferInfo(count, total));
-                    result = await new FileReceiver(ch, store!, ropts).RunAsync();
+                    var ropts = new ReceiverOptions(DeviceId.HexFromPublicKey(PeerPub), Id, new OfferInfo(_count, _total));
+                    result = await new FileReceiver(ch, _store!, ropts).RunAsync();
                     foreach (var f in result.ReceivedFiles)
                     {
                         await using var fs = File.OpenRead(f.StoredPath);
@@ -155,7 +172,7 @@ internal static class Cli
                 }
                 else
                 {
-                    var sources = o.Positional.Select(p => (IFileSource)new FileSystemFileSource(p)).ToList();
+                    var sources = _o.Positional.Select(p => (IFileSource)new FileSystemFileSource(p)).ToList();
                     result = await new FileSender(ch, sources).RunAsync();
                 }
             }
@@ -168,22 +185,74 @@ internal static class Cli
             Console.WriteLine($"FAILED=[{string.Join(", ", result.FailedFileIds)}]");
             if (result.Error is { } err) Console.WriteLine($"TRANSFER_ERROR={err}");
             foreach (var (fid, off) in result.ResumeOffsets.OrderBy(p => p.Key)) Console.WriteLine($"RESUME file={fid} offset={off}");
-            if (result.Outcome == TransferOutcome.Completed && Interlocked.Increment(ref completed) >= expect && expect > 0)
-                enough.TrySetResult();
+            if (result.Outcome == TransferOutcome.Completed && Interlocked.Increment(ref _completed) >= _expect && _expect > 0)
+                _enough.TrySetResult();
         }
 
+        /// <summary>SERVER_DONE satırı + çıkış kodu (expect=0: oturum olmamalı).</summary>
+        public async Task<int> FinishAsync()
+        {
+            await Task.Delay(200);   // son günlük satırları
+            var ok = _enough.Task.IsCompleted;
+            Console.WriteLine($"SERVER_DONE completed={_completed} sessions={_sessions} timedOut={(!ok).ToString().ToLowerInvariant()}");
+            if (_expect == 0) return _sessions == 0 ? 0 : 1;
+            return ok ? 0 : 3;
+        }
+    }
+
+    private static async Task<int> ServeAsync(Opts o)
+    {
+        var port = int.Parse(o.Need("port"));
+        var runner = new SessionRunner(o);
+        using var myKey = NoiseKeyPair.FromPrivateKey(Hex(o.Need("my-key")));
+        PlatformLog.Sink = s => Console.WriteLine("LOG " + s);
+
         var pending = new PendingTransferTable();
-        using var reg = pending.Register(id, peerPub, Handler, kind);
+        using var reg = pending.Register(runner.Id, runner.PeerPub, runner.HandleAsync, runner.Kind);
         await using var listener = new DataListener(myKey, pending, port);
         listener.Start();
-        Console.WriteLine($"LISTENING port={listener.Port} mode={mode} pattern={pattern} transferId={id}");
+        Console.WriteLine($"LISTENING port={listener.Port} mode={runner.Mode} pattern={runner.Pattern} transferId={runner.Id}");
 
-        var finished = await Task.WhenAny(enough.Task, Task.Delay(timeout));
-        await Task.Delay(200);   // son günlük satırları
-        var ok = finished == enough.Task;
-        Console.WriteLine($"SERVER_DONE completed={completed} sessions={sessions} timedOut={(!ok).ToString().ToLowerInvariant()}");
-        if (expect == 0) return sessions == 0 ? 0 : 1;
-        return ok ? 0 : 3;
+        await Task.WhenAny(runner.Enough, Task.Delay(runner.Timeout));
+        return await runner.FinishAsync();
+    }
+
+    /// <summary>relay-pc: PC rolünde (yanıtlayan) aktarma odasına bağlanır (PROTOCOL §6.3); iPhone başlatandır.</summary>
+    private static async Task<int> RelayPcAsync(Opts o)
+    {
+        var runner = new SessionRunner(o);
+        using var myKey = NoiseKeyPair.FromPrivateKey(Hex(o.Need("my-key")));
+        var tokenText = o.Need("token");
+        byte[] token;
+        if (tokenText.Length == 64 && tokenText.All(Uri.IsHexDigit)) token = Convert.FromHexString(tokenText);
+        else if (!RelayRoom.TryDecodeToken(tokenText, out token)) throw new ArgumentException("--token 43 karakter base64url veya 64 hex olmalı");
+        var roomId = RelayRoom.ComputeRoomId(token);
+        var uri = RelayRoom.BuildRoomUri(o.Need("relay-url"), roomId, "pc") ?? throw new ArgumentException("--relay-url geçersiz");
+        PlatformLog.Sink = s => Console.WriteLine("LOG " + s);
+
+        RelayPcSession session;
+        try
+        {
+            session = await RelayPcClient.AcceptAsync(uri, runner.Id, myKey, runner.PeerPub, runner.Kind,
+                _ =>
+                {
+                    Console.WriteLine($"RELAY_READY room={roomId} mode={runner.Mode} pattern={runner.Pattern} transferId={runner.Id}");
+                    return Task.CompletedTask;
+                },
+                runner.Timeout, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is TimeoutException or IOException or ProtocolException or NoiseException or PeerNotTrustedException)
+        {
+            Console.WriteLine($"RELAY_FAILED={ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine($"SERVER_DONE completed=0 sessions=0 timedOut={(ex is TimeoutException).ToString().ToLowerInvariant()}");
+            return ex is TimeoutException ? 3 : 1;
+        }
+        using (session)
+        {
+            await runner.HandleAsync(session.Channel);
+            await session.CloseAsync();
+        }
+        return await runner.FinishAsync();
     }
 
     private sealed class Opts

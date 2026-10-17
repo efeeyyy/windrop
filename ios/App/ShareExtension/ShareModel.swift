@@ -121,6 +121,11 @@ final class ShareModel {
         }
     }
 
+    /// Aktarma yolu kota uyarısı onaylandı (ayar okunabiliyorsa; uzantıda `relayUrl` genelde boştur = yol kapalı).
+    func confirmRelay() {
+        if let item { transfers.confirmRelay(item) }
+    }
+
     /// "Vazgeç" / "Kapat".
     func cancel() {
         if let item, !item.isFinished {

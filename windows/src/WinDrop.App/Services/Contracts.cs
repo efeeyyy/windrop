@@ -84,6 +84,9 @@ public sealed partial class TransferItem : ObservableObject
 /// <param name="VerificationCode">Eşleştirmesiz (XX) oturumda 4 haneli doğrulama kodu (PROTOCOL §2b); yoksa null.</param>
 public sealed record IncomingOffer(string OfferId, string SenderName, int FileCount, long TotalBytes, string? VerificationCode = null);
 
+/// <summary>Aktarma sunucusu (internet/hücresel veri) yolu için kullanıcı onayı (PROTOCOL §6.3).</summary>
+public sealed record RelayApproval(string TransferId, string DeviceName, long TotalBytes);
+
 public interface ITransferService
 {
     ObservableCollection<TransferItem> Transfers { get; }
@@ -95,6 +98,11 @@ public interface ITransferService
     event EventHandler<IncomingOffer>? OfferReceived;
 
     void RespondToOffer(IncomingOffer offer, bool accept);
+
+    /// <summary>Doğrudan yol/etkin nokta/Bluetooth yok; aktarma sunucusu kullanılacak — onay bekler.</summary>
+    event EventHandler<RelayApproval>? RelayApprovalRequested;
+
+    void RespondToRelay(RelayApproval approval, bool allow);
 
     void ShowInFolder(TransferItem transfer);
 }
