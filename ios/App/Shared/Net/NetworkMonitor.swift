@@ -1,9 +1,8 @@
-import AVFoundation
 import Foundation
 import Network
 import Observation
 
-/// Wi-Fi durumu (`hello.wifi` / `status.wifi`, PROTOCOL §4) ve Bluetooth ses çıkışı (`btAudio`).
+/// Wi-Fi durumu (`hello.wifi` / `status.wifi`, PROTOCOL §4). Bluetooth ses için bkz. `BluetoothAudioMonitor`.
 @MainActor
 @Observable
 final class NetworkMonitor {
@@ -31,13 +30,5 @@ final class NetworkMonitor {
         guard wifi != isWifiConnected else { return }
         isWifiConnected = wifi
         onChange?()
-    }
-}
-
-enum AudioRoute {
-    /// Bluetooth ses çıkışı (A2DP/HFP/LE) etkin mi? (PROTOCOL §6.4: BLE yolu yalnız `btAudio=false` iken.)
-    static func bluetoothAudioActive() -> Bool {
-        let bluetoothPorts: [AVAudioSession.Port] = [.bluetoothA2DP, .bluetoothHFP, .bluetoothLE]
-        return AVAudioSession.sharedInstance().currentRoute.outputs.contains { bluetoothPorts.contains($0.portType) }
     }
 }

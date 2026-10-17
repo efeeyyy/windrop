@@ -37,6 +37,8 @@ final class TransferCoordinator {
     @ObservationIgnored var rejectsIncomingOffers = false
     /// iPhone şu an Wi-Fi'a bağlı mı? `hotspot` yalnız `wifi=none` iken işlenir; bağlanmazsa güvenli varsayılan: bağlı say.
     @ObservationIgnored var isWifiConnected: @MainActor () -> Bool = { true }
+    /// Bu cihazda Bluetooth ses etkin mi? (PROTOCOL §6.4: BLE veri yolu yalnız false iken.) Bilinmezse temkinli: true.
+    @ObservationIgnored var isBluetoothAudioActive: @MainActor () -> Bool = { true }
     @ObservationIgnored private var offerTimes: [String: [Date]] = [:]
 
     static let infoCardShownKey = "infoCardShown"
@@ -134,6 +136,11 @@ final class TransferCoordinator {
                 item.state = .cancelled
                 notifications.clear(transferId: item.id)
                 finishCleanup(item)
+            }
+        case .bleData(let message):
+            // Yolu PC seçer (PROTOCOL §6.4a): gönderen MANIFEST'i BLE'den başlatır, alıcı BLE'den MANIFEST bekler.
+            if let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), canUseBle(item) {
+                beginBle(item, peer: peer)
             }
         case .relay:
             // TODO(relay): PROTOCOL §6.3 aktarma sunucusu henüz tasarlanmadı.
@@ -384,25 +391,71 @@ final class TransferCoordinator {
                     expectedCount: item.fileCount, expectedTotal: item.totalBytes,
                     destination: AppPaths.receivedDirectory, progress: progress)
             }
-            item.receivedFiles = summary.received
-            if summary.ok {
-                if item.direction == .send {
-                    signals.remember(peer.id)   // giden aktarım `DONE ok=true` ile bitti -> tanıdık (PROTOCOL §2b)
-                    item.peerIsKnown = true
-                }
-                item.bytesDone = item.totalBytes
-                item.state = .done
-                noteSuccess()
-            } else if summary.canceledByRemote {
-                item.state = .cancelled
-            } else {
-                fail(item, summary.error ?? "\(summary.failedFileIDs.count) dosya aktarılamadı.")
-            }
-            finishCleanup(item)
+            complete(item, summary: summary, peer: peer)
         } catch {
             if Task.isCancelled || item.state == .cancelled { return }
             fail(item, error.localizedDescription)
         }
+    }
+
+    /// Aktarım sonucunu satıra işler (TCP ve BLE ortak).
+    private func complete(_ item: TransferItem, summary: TransferSummary, peer: NearbyPeer) {
+        item.receivedFiles = summary.received
+        if summary.ok {
+            if item.direction == .send {
+                signals.remember(peer.id)   // giden aktarım `DONE ok=true` ile bitti -> tanıdık (PROTOCOL §2b)
+                item.peerIsKnown = true
+            }
+            item.bytesDone = item.totalBytes
+            item.state = .done
+            noteSuccess()
+        } else if summary.canceledByRemote {
+            item.state = .cancelled
+        } else {
+            fail(item, summary.error ?? "\(summary.failedFileIDs.count) dosya aktarılamadı.")
+        }
+        finishCleanup(item)
+    }
+
+    // MARK: BLE küçük dosya yolu (PROTOCOL §6.4)
+
+    /// BLE yolunu PC seçer (`bleData`, §6.4a); burada yalnız yerel sınırlar: toplam <= 64 KB ve bu cihazda Bluetooth ses yok.
+    private func canUseBle(_ item: TransferItem) -> Bool {
+        item.totalBytes <= TransferLimits.bleMaxTotalBytes && !isBluetoothAudioActive()
+    }
+
+    /// BLE oturumunu veri kanalı olarak devralır. Hub çerçeve yönlendirmesi eşzamanlı başlar (PC'nin hemen ardından
+    /// gelen MANIFEST kaçmasın: `bleData` ve çerçeveler aynı ana aktör döngüsünde sırayla işlenir).
+    @discardableResult
+    private func beginBle(_ item: TransferItem, peer: NearbyPeer) -> Bool {
+        guard item.task == nil, item.state == .awaitingPeer || item.state == .awaitingRelayConsent,
+              let session = signals.beginBleTransfer(peer.id) else { return false }
+        item.state = .transferring
+        let pcID = peer.id
+        item.task = Task { [weak self] in
+            guard let self else { return }
+            defer { self.signals.endBleTransfer(pcID) }
+            do {
+                let progress: @Sendable (TransferProgress) -> Void = { [weak item] value in
+                    Task { @MainActor in item?.apply(value) }
+                }
+                let summary: TransferSummary
+                switch item.direction {
+                case .send:
+                    summary = try await TransferRunner.sendOverBle(session: session, files: item.outgoing, progress: progress)
+                case .receive:
+                    guard let tid = TransferId.parse(item.id) else { throw TransferFailure.invalidTransferId }
+                    summary = try await TransferRunner.receiveOverBle(
+                        session: session, transferId: tid.bytes, peerKeyID: peer.id, expectedCount: item.fileCount,
+                        expectedTotal: item.totalBytes, destination: AppPaths.receivedDirectory, progress: progress)
+                }
+                self.complete(item, summary: summary, peer: peer)
+            } catch {
+                if Task.isCancelled || item.state == .cancelled { return }
+                self.fail(item, error.localizedDescription)
+            }
+        }
+        return true
     }
 
     /// İlk başarılı aktarımdan sonra bilgi kartı bir kez gösterilir.

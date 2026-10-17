@@ -200,7 +200,8 @@ public class TransferCoordinatorTests
         }
         Assert.Equal(TransferPhase.Completed, (await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait)).Phase);
         Assert.Equal(1, h.Hotspot.Started);
-        Assert.Equal(1, h.Hotspot.Finished);   // boşta zamanlayıcısı için bildirildi
+        // boşta zamanlayıcısı için bildirildi (RunGuarded'ın finally'si Completion'dan hemen sonra çalışır: kısa bekle)
+        await Poll.UntilAsync(() => h.Hotspot.Finished == 1, "etkin nokta bitişi bildirilmedi");
     }
 
     [Fact]
@@ -209,7 +210,7 @@ public class TransferCoordinatorTests
         await using var h = new Harness();
         h.Hotspot.Result = false;   // kullanıcının etkin noktası açık
         using var phone = await h.ConnectPhoneAsync(WifiState.None);
-        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100))]);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100_000))]);
         var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
         await phone.SendAsync(new AcceptMessage(offer.TransferId));
 
@@ -218,7 +219,7 @@ public class TransferCoordinatorTests
         Assert.Contains("etkin nokta", final.Error, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("zaten", final.Error);
         Assert.IsType<CancelSignalMessage>(await phone.ReceiveAsync());
-        Assert.Equal(1, h.Hotspot.Finished);
+        await Poll.UntilAsync(() => h.Hotspot.Finished == 1, "etkin nokta bitişi bildirilmedi");
     }
 
     [Fact]
@@ -227,7 +228,7 @@ public class TransferCoordinatorTests
         await using var h = new Harness();
         h.Hotspot.Throw = new HotspotException("Bu bilgisayarda etkin nokta desteklenmiyor.");
         using var phone = await h.ConnectPhoneAsync(WifiState.None);
-        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100))]);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100_000))]);
         var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
         await phone.SendAsync(new AcceptMessage(offer.TransferId));
         var final = await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait);
@@ -240,7 +241,7 @@ public class TransferCoordinatorTests
     {
         await using var h = new Harness();
         using var phone = await h.ConnectPhoneAsync(WifiState.Connected);
-        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100))]);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100_000))]);
         var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
         await phone.SendAsync(new AcceptMessage(offer.TransferId));
         Assert.IsType<AddrMessage>(await phone.ReceiveAsync());
@@ -261,7 +262,7 @@ public class TransferCoordinatorTests
             Accept = TimeSpan.FromSeconds(5), Connect = TimeSpan.FromMilliseconds(300), Poll = TimeSpan.FromMilliseconds(20),
         });
         using var phone = await h.ConnectPhoneAsync(WifiState.Connected);
-        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100))]);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "a.txt", T.Random(100_000))]);
         var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
         await phone.SendAsync(new AcceptMessage(offer.TransferId));
         var final = await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait);

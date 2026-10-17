@@ -31,13 +31,15 @@ public final class FileReceiver {
     private let storage: ReceiverStorage
     private let options: ReceiverOptions
     private let tracker: ProgressTracker
+    private let frameReader: FrameReader?
     private var resumeOffsets: [Int: Int64] = [:]
     private var failed: [Int] = []
     private var received: [ReceivedFile] = []
 
     public init(channel: SecureChannel, storage: ReceiverStorage, options: ReceiverOptions,
-                progress: ((TransferProgress) -> Void)? = nil) {
+                frameReader: FrameReader? = nil, progress: ((TransferProgress) -> Void)? = nil) {
         self.channel = channel
+        self.frameReader = frameReader
         self.storage = storage
         self.options = options
         self.tracker = ProgressTracker(progress)
@@ -49,7 +51,7 @@ public final class FileReceiver {
         } catch SessionError.connectionClosed {
             throw TransferError.connectionLost
         }
-        let inbox = FrameInbox(channel: channel)
+        let inbox = frameReader.map { FrameInbox(reader: $0) } ?? FrameInbox(channel: channel)
         defer { inbox.stop() }
         do {
             return try await receiveAll(inbox)

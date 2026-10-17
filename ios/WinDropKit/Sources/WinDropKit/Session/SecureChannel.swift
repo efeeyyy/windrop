@@ -25,6 +25,39 @@ public enum VerificationCode {
     }
 }
 
+/// Yazmaları sıraya sokan FIFO kilit: şifreleme + taşıma yazması tek parça olur (aynı kanalda aynı anda çerçeve ve
+/// sinyal gönderilebilir; BLE'de iki mesajın parçaları iç içe geçmez, Noise sayacı gönderim sırasıyla gider).
+final class SendGate {
+    private let lock = NSLock()
+    private var busy = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func acquire() async {
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            if enqueue(cont) { cont.resume() }
+        }
+    }
+
+    private func enqueue(_ cont: CheckedContinuation<Void, Never>) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        if !busy {
+            busy = true
+            return true
+        }
+        waiters.append(cont)
+        return false
+    }
+
+    func release() {
+        lock.lock()
+        let next = waiters.isEmpty ? nil : waiters.removeFirst()
+        if next == nil { busy = false }
+        lock.unlock()
+        next?.resume()
+    }
+}
+
 /// Kanaldan gelen tek mesaj: §5 çerçevesi veya §4 sinyali (BLE oturumunda ayrım: düz metnin ilk baytı `{` ise sinyal,
 /// 1–8 ise çerçeve; PROTOCOL §9a).
 public enum SecureMessage: Equatable {
@@ -40,7 +73,7 @@ public enum SecureMessage: Equatable {
 /// (`isEstablished`). Yanıtlayan o ana dek veri göndermez. XXpsk3'te el sıkışmayı başlatan bitirir; yanıtlayan
 /// hemen kurulmuş sayılır.
 ///
-/// Eşzamanlılık: bir okuyucu + bir yazıcı görevi güvenlidir (yazmalar tek görevden sıralı yapılmalıdır).
+/// Eşzamanlılık: bir okuyucu + birden çok yazıcı görevi güvenlidir (yazmalar FIFO kilitle sıralanır).
 public final class SecureChannel {
     public let prefix: Prefix
     public let isInitiator: Bool
@@ -51,6 +84,7 @@ public final class SecureChannel {
     private let transport: MessageTransport
     private let noise: NoiseTransport
     private var pending: Data?
+    private let sendGate = SendGate()
 
     private init(transport: MessageTransport, noise: NoiseTransport, prefix: Prefix, initiator: Bool,
                  remoteStatic: Data, established: Bool) {
@@ -92,6 +126,8 @@ public final class SecureChannel {
 
     private func sendPlaintext(_ plaintext: Data) async throws {
         guard plaintext.count <= maxPlaintextSize else { throw ProtocolError.messageTooLarge(plaintext.count) }
+        await sendGate.acquire()
+        defer { sendGate.release() }
         try await transport.sendMessage(try noise.encrypt(plaintext))
     }
 

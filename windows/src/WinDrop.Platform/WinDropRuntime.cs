@@ -31,6 +31,7 @@ public sealed class WinDropRuntime : IAsyncDisposable
         Trusted = new TrustedDevices(root);
         HotspotConfig = new HotspotConfigStore(root);
         Hotspot = new HotspotManager(root);
+        BluetoothAudio = new BluetoothAudioMonitor();
         Pending = new PendingTransferTable();
         LocalName = Environment.MachineName;
         Pairing = new PairingService(Identity, Trusted, HotspotConfig, LocalName);
@@ -47,6 +48,7 @@ public sealed class WinDropRuntime : IAsyncDisposable
             Hotspot = Hotspot,
             HotspotConfig = HotspotConfig.GetOrCreate,
             RotateHotspotPassphrase = () => HotspotConfig.RotatePassphrase(),
+            BluetoothAudio = BluetoothAudio,
             CommitHook = new MotwCommitHook(),
         });
         Acceptor.SessionHandler = Coordinator.HandleSessionAsync;
@@ -58,6 +60,8 @@ public sealed class WinDropRuntime : IAsyncDisposable
     public TrustedDevices Trusted { get; }
     public HotspotConfigStore HotspotConfig { get; }
     public HotspotManager Hotspot { get; }
+    /// <summary>Varsayılan ses çıkışı Bluetooth mu / ses çalıyor mu (<c>btAudio</c>).</summary>
+    public BluetoothAudioMonitor BluetoothAudio { get; }
     public PendingTransferTable Pending { get; }
     public PairingService Pairing { get; }
     public SignalSessionAcceptor Acceptor { get; }
@@ -122,6 +126,7 @@ public sealed class WinDropRuntime : IAsyncDisposable
         _purgeCts.Dispose();
         if (Ble is not null) await Ble.DisposeAsync();
         await Coordinator.DisposeAsync();
+        BluetoothAudio.Dispose();
         await Listener.DisposeAsync();
         await Hotspot.DisposeAsync();
     }

@@ -26,6 +26,7 @@ public sealed class SignalMessagesTests
         [new RelayMessage(Id, "tok123"), "relay"],
         [new PathMessage(Id, PathResult.HotspotOk), "path"],
         [new CancelSignalMessage(Id), "cancel"],
+        [new BleDataMessage(Id), "bleData"],
     ];
 
     [Theory]

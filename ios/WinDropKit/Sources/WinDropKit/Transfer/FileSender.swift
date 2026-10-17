@@ -30,11 +30,21 @@ public final class FileSender {
     private let items: [SendItem]
     private let chunkSize: Int
     private let tracker: ProgressTracker
+    private let bytesPerSecond: Int?
+    private let frameReader: FrameReader?
+    private let resumeTimeout: TimeInterval?
+    private var pacingStart: UInt64?
+    private var pacedBytes: Int64 = 0
     private var resumeOffsets: [Int: Int64] = [:]
 
     public init(channel: SecureChannel, items: [SendItem], chunkSize: Int = TransferLimits.defaultChunkSize,
+                bytesPerSecond: Int? = nil, frameReader: FrameReader? = nil,
+                resumeTimeout: TimeInterval? = TransferLimits.tcpResumeTimeout,
                 progress: ((TransferProgress) -> Void)? = nil) {
         self.channel = channel
+        self.bytesPerSecond = bytesPerSecond.flatMap { $0 > 0 ? $0 : nil }
+        self.frameReader = frameReader
+        self.resumeTimeout = resumeTimeout
         self.items = items
         self.chunkSize = max(1, min(chunkSize, channel.maxFrameBodySize))
         self.tracker = ProgressTracker(progress)
@@ -48,7 +58,7 @@ public final class FileSender {
         } catch SessionError.connectionClosed {
             throw TransferError.connectionLost
         }
-        let inbox = FrameInbox(channel: channel)
+        let inbox = frameReader.map { FrameInbox(reader: $0) } ?? FrameInbox(channel: channel)
         defer { inbox.stop() }
         do {
             return try await sendAll(inbox)
@@ -86,7 +96,7 @@ public final class FileSender {
         var completedBytes: Int64 = 0
         for (index, item) in items.enumerated() {
             try Task.checkCancellation()
-            let resume = try await expect(.resume, inbox)
+            let resume = try await expectResume(inbox)
             let r = try FrameCodec.decodeResume(resume.body)
             guard r.id == item.id else { throw TransferError.protocolViolation("RESUME id \(r.id), beklenen \(item.id)") }
             guard r.offset >= 0, r.offset <= item.size else {
@@ -119,6 +129,7 @@ public final class FileSender {
                 try await channel.sendEncodedFrame(try FrameCodec.encodeData(d))
                 position += Int64(d.count)
                 tracker.addTransferred(d.count)
+                try await pace(d.count)
                 tracker.report(fileId: item.id, name: item.name, index: index, count: items.count, fileDone: position,
                                fileSize: item.size, done: completedBytes + position, total: total, force: false)
             }
@@ -133,6 +144,33 @@ public final class FileSender {
         let done = try FrameCodec.decodeDone(doneFrame.body)
         return TransferResult(outcome: done.ok && done.failed.isEmpty ? .completed : .completedWithFailures,
                               failedFileIds: done.failed, resumeOffsets: resumeOffsets)
+    }
+
+    /// Hız sınırı (BLE): gönderilen toplam bayta göre hedef zamana kadar uyur (kısa dalgalanmayı sonraki parça kapatır).
+    private func pace(_ count: Int) async throws {
+        guard let rate = bytesPerSecond else { return }
+        let now = DispatchTime.now().uptimeNanoseconds
+        let start = pacingStart ?? now
+        pacingStart = start
+        pacedBytes += Int64(count)
+        let due = start &+ UInt64(pacedBytes) &* 1_000_000_000 / UInt64(rate)
+        if due > now { try await Task.sleep(nanoseconds: due - now) }
+    }
+
+    /// RESUME'u en çok `resumeTimeout` bekler; aşılırsa `TransferError.timeout` (aktarım hata).
+    private func expectResume(_ inbox: FrameInbox) async throws -> Frame {
+        guard let limit = resumeTimeout else { return try await expect(.resume, inbox) }
+        return try await withThrowingTaskGroup(of: Frame?.self) { group in
+            group.addTask { try await self.expect(.resume, inbox) }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(limit * 1_000_000_000))
+                return nil
+            }
+            let first = try await group.next() ?? nil
+            group.cancelAll()
+            guard let frame = first else { throw TransferError.timeout }
+            return frame
+        }
     }
 
     /// İstenen türde çerçeve gelene kadar bekler; aradaki ACK'ler denetlenip atlanır.

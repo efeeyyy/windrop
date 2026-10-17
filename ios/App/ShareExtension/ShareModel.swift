@@ -27,6 +27,7 @@ final class ShareModel {
     let hub: SignalHub
     private let transfers: TransferCoordinator
     private let network: NetworkMonitor
+    private let audio: BluetoothAudioMonitor
     private var providers: [NSItemProvider]
     private var files: [OutgoingFile] = []
     @ObservationIgnored private var started = false
@@ -38,15 +39,17 @@ final class ShareModel {
         self.providers = Array(providers.prefix(Self.maxFiles))
         let identity = IdentityStore()
         let network = NetworkMonitor()
+        let audio = BluetoothAudioMonitor()
         let helloInfo: @MainActor () -> HelloInfo = {
             HelloInfo(
                 name: DeviceInfo.name(), wifiConnected: network.isWifiConnected,
-                btAudio: AudioRoute.bluetoothAudioActive())
+                btAudio: audio.currentValue())
         }
         let hub = SignalHub(identity: identity, helloInfo: helloInfo)
         let transfers = TransferCoordinator(identity: identity, signals: hub, notifications: NoNotifications())
         transfers.rejectsIncomingOffers = true
         transfers.isWifiConnected = { network.isWifiConnected }
+        transfers.isBluetoothAudioActive = { audio.currentValue() }
         hub.onMessage = { [weak transfers] message, peer in
             transfers?.handle(message, from: peer)
         }
@@ -56,7 +59,11 @@ final class ShareModel {
         network.onChange = { [weak hub] in
             hub?.broadcastStatus()
         }
+        audio.onChange = { [weak hub] in
+            hub?.broadcastStatus()
+        }
         self.network = network
+        self.audio = audio
         self.hub = hub
         self.transfers = transfers
         self.totalCount = self.providers.count
@@ -67,6 +74,7 @@ final class ShareModel {
         guard !started else { return }
         started = true
         network.start()
+        audio.start()   // yalnız okur
         hub.startNearby()
         guard !providers.isEmpty else {
             phase = .failed("Paylaşılacak dosya bulunamadı.")

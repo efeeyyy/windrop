@@ -33,10 +33,19 @@ struct NearbyPeer: Identifiable, Equatable, Sendable {
     var peripheralID: UUID
     var isKnown: Bool
     var autoAccept: Bool
+    /// Karşının Bluetooth ses durumu (`hello`/`status`); bilinmiyorsa true (BLE yolu için temkinli varsayım).
+    var remoteBtAudio = true
     /// BLE oturumu IK ile mi kuruldu (veri kanalı aynı deseni kullanır; PROTOCOL §2b).
     var usedIK: Bool
     /// 4 haneli doğrulama kodu (el sıkışma özetinden; iki ekranda aynı olmalı).
     var code: String
+}
+
+/// BLE oturumu üstünde küçük dosya aktarımı için kanal (PROTOCOL §6.4): Kit kanalı + okuma döngüsünün
+/// ayırdığı çerçeveleri veren okuyucu (kanalı doğrudan okumak oturum okuma döngüsüyle yarışır).
+struct BleDataSession {
+    let channel: SecureChannel
+    let nextFrame: FrameReader
 }
 
 /// Aktarım katmanının sinyal gönderme ihtiyacı (dar arayüz).
@@ -47,6 +56,9 @@ protocol SignalSending: AnyObject {
     func send(_ message: SignalMessage, to keyID: String) async throws
     /// Bilinmeyen PC'yi (kullanıcı onayından sonra) "tanıdık" olarak saklar. Reddedilen saklanmaz.
     func remember(_ keyID: String)
+    /// BLE veri aktarımı başlatır: sonraki çerçeveler `BleDataSession.nextFrame`'e yönlenir. Oturum yoksa nil.
+    func beginBleTransfer(_ keyID: String) -> BleDataSession?
+    func endBleTransfer(_ keyID: String)
 }
 
 enum SignalError: Error, LocalizedError {
@@ -67,6 +79,8 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         let channel: SecureChannel
         let link: BlePeripheralLink
         let lock = AsyncLock()
+        /// Etkin BLE veri aktarımının çerçeve kuyruğu (yoksa nil).
+        var frames: AsyncMailbox<Frame>?
         init(channel: SecureChannel, link: BlePeripheralLink) {
             self.channel = channel
             self.link = link
@@ -166,6 +180,22 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         syncWanted()
     }
 
+    func beginBleTransfer(_ keyID: String) -> BleDataSession? {
+        guard let pc = channels[keyID], pc.frames == nil else { return nil }
+        let mailbox = AsyncMailbox<Frame>()
+        pc.frames = mailbox
+        let reader: FrameReader = {
+            do { return try await mailbox.pop(timeout: nil) } catch { return nil }   // kopma/bitiş = temiz kapanış
+        }
+        return BleDataSession(channel: pc.channel, nextFrame: reader)
+    }
+
+    func endBleTransfer(_ keyID: String) {
+        guard let pc = channels[keyID], let mailbox = pc.frames else { return }
+        pc.frames = nil
+        mailbox.fail(MailboxError.closed)   // bekleyen okuyucuyu uyandırır
+    }
+
     /// Ağ/ses durumu değişince `status` gönderir (PROTOCOL §4).
     func broadcastStatus() {
         let status = helloInfo().statusMessage
@@ -194,6 +224,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
     func bleCentral(_ central: BleCentral, didUpdateState state: CBManagerState) {
         bluetoothState = state
         if state != .poweredOn {
+            channels.values.forEach { $0.frames?.fail(BleError.disconnected) }
             channels.removeAll()
             let gone = Array(peers.keys)
             peers.removeAll()
@@ -276,7 +307,11 @@ final class SignalHub: BleCentralDelegate, SignalSending {
 
             while let message = try await channel.receiveMessage() {
                 guard case .signal(let signal) = message else {
-                    continue   // TODO(ble-small-transfer): PROTOCOL §6.4 BLE üstü küçük aktarım çerçeveleri
+                    // BLE çerçevesi (PROTOCOL §6.4a): yalnız `bleData` ile başlayan aktarım kuyruğa alınır, başıboş atılır.
+                    if case .frame(let frame) = message, let pc = channels[kid], pc.channel === channel {
+                        pc.frames?.push(frame)
+                    }
+                    continue
                 }
                 if case .hello(let hello) = signal, var current = peers[kid], !current.isKnown {
                     let name = hello.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -285,6 +320,11 @@ final class SignalHub: BleCentralDelegate, SignalSending {
                         peers[kid] = current
                     }
                 }
+                switch signal {
+                case .hello(let hello): peers[kid]?.remoteBtAudio = hello.btAudio
+                case .status(let status): peers[kid]?.remoteBtAudio = status.btAudio
+                default: break
+                }
                 if let current = peers[kid] { onMessage?(signal, current) }
             }
         } catch {
@@ -292,6 +332,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         }
         endHandshakeTask()
         if let keyID, channels[keyID]?.link === link {
+            channels[keyID]?.frames?.fail(BleError.disconnected)
             channels[keyID] = nil
             peers[keyID] = nil
             onPeerGone?(keyID)

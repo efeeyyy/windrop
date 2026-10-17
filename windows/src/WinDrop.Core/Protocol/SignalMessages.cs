@@ -18,6 +18,7 @@ namespace WinDrop.Core.Protocol;
 [JsonDerivedType(typeof(RelayMessage), "relay")]
 [JsonDerivedType(typeof(PathMessage), "path")]
 [JsonDerivedType(typeof(CancelSignalMessage), "cancel")]
+[JsonDerivedType(typeof(BleDataMessage), "bleData")]
 [JsonDerivedType(typeof(PairInfoMessage), "pairInfo")]
 public abstract record SignalMessage;
 
@@ -78,6 +79,9 @@ public sealed record PathMessage(
 
 /// <summary>cancel (iki yön). Veri kanalındaki CANCEL çerçevesinden ayrıdır.</summary>
 public sealed record CancelSignalMessage([property: JsonRequired] TransferId TransferId) : SignalMessage;
+
+/// <summary>bleData (PC→iPhone, PROTOCOL §6.4a): aktarım BLE oturumu üstünden §5 çerçeveleriyle yapılacak; gönderen taraf MANIFEST ile başlar.</summary>
+public sealed record BleDataMessage([property: JsonRequired] TransferId TransferId) : SignalMessage;
 
 public static class WifiState
 {

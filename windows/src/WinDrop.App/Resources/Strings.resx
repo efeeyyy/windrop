@@ -17,7 +17,7 @@
   <data name="Main.NoDevices" xml:space="preserve"><value>Yakında cihaz görünmüyor. Her iki cihazda da WinDrop’un ve Bluetooth’un açık olduğundan emin olun (iPhone’da WinDrop ön planda olmalı).</value></data>
   <data name="Main.Transfers" xml:space="preserve"><value>Aktarımlar</value></data>
   <data name="Main.NoTransfers" xml:space="preserve"><value>Henüz aktarım yok.</value></data>
-  <data name="Main.AddPhone" xml:space="preserve"><value>iPhone ekle</value></data>
+  <data name="Main.AddPhone" xml:space="preserve"><value>iPhone eşleştir (isteğe bağlı)</value></data>
   <data name="Main.Settings" xml:space="preserve"><value>Ayarlar</value></data>
   <data name="Main.Cancel" xml:space="preserve"><value>İptal</value></data>
   <data name="Main.ShowInFolder" xml:space="preserve"><value>Klasörde göster</value></data>
@@ -36,8 +36,8 @@
   <data name="Status.Cancelled" xml:space="preserve"><value>İptal edildi</value></data>
   <data name="Status.Rejected" xml:space="preserve"><value>Reddedildi</value></data>
 
-  <data name="Pair.Title" xml:space="preserve"><value>iPhone ekle</value></data>
-  <data name="Pair.Instructions" xml:space="preserve"><value>iPhone’da WinDrop uygulamasıyla okutun.</value></data>
+  <data name="Pair.Title" xml:space="preserve"><value>iPhone eşleştir</value></data>
+  <data name="Pair.Instructions" xml:space="preserve"><value>İsteğe bağlı: eşleşen cihazdan gelen dosyalar otomatik kabul edilebilir. iPhone’da WinDrop uygulamasıyla okutun.</value></data>
   <data name="Pair.Waiting" xml:space="preserve"><value>iPhone bekleniyor…</value></data>
   <data name="Pair.Remaining" xml:space="preserve"><value>Kalan süre: {0}</value></data>
   <data name="Pair.Expired" xml:space="preserve"><value>Süre doldu.</value></data>

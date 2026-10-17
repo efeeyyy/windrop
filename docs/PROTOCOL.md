@@ -100,6 +100,7 @@ Gövde: UTF-8 JSON `{"t": "<tür>", ...}`. Bilinmeyen alanlar yok sayılır; bil
 | `relay` | iki yön | `transferId`, `token` (§6.3; URL gönderilmez) |
 | `path` | iPhone→PC | `transferId`, `result`: `tcp_ok`/`tcp_fail`/`hotspot_ok`/`hotspot_fail`/`relay_ok`/`relay_fail` |
 | `cancel` | iki yön | `transferId` |
+| `bleData` | PC→iPhone | `transferId` (§6.4a; ardından gönderen taraf MANIFEST ile BLE üzerinden başlar) |
 
 Aktarımın sonucu **yalnız veri kanalındaki `DONE`** ile belirlenir (BLE'de `done` yok).
 
@@ -157,9 +158,43 @@ Aktarımın sonucu **yalnız veri kanalındaki `DONE`** ile belirlenir (BLE'de `
    (X MB), uçtan uca şifreli". Onaylanırsa: aktarma sunucusu adresi **uygulamaya gömülü/yapılandırılmış**
    alan adıdır, mesajla gelmez (kötü niyetli eşli cihaz iPhone'u kendi sunucusuna yönlendiremez).
    `token` tek kullanımlık, kısa ömürlü, `transferId`'ye bağlı; hesap kimlik bilgisi gönderilmez.
-   Kanal: §1 ön eki (`taşıma=3`) + IK + §5 çerçeveleri. Sunucu tasarımı açık soru.
+   Kanal: §1 ön eki (`taşıma=3`) + IK/XX (BLE oturumuyla aynı desen ve eş anahtarı) + §5 çerçeveleri.
+   Uyarı metni (Efe): "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir." + boyut;
+   iki tarafta da gösterilir, gönderen onaylamadan bağlantı kurulmaz.
+
+### 6.4a BLE veri yolu başlatma (2026-10-17 kesinleşti)
+- Yolu **her zaman PC seçer**. BLE yolu uygunsa (total ≤ 64 KB, iki tarafta btAudio=false, diğer
+  yollar yok/başarısız) PC şifreli BLE kanalından `{"t":"bleData","transferId":...}` gönderir.
+  Bunu alan/gönderen taraf: gönderen ise MANIFEST'i BLE üzerinden başlatır; alıcı ise MANIFEST bekler.
+- iPhone zamanlayıcıyla kendiliğinden BLE'ye geçmez (yarış olmasın). TCP/etkin nokta denemesi
+  başarısız olursa iPhone `path` (`tcp_fail`/`hotspot_fail`) gönderir; PC sonraki yolu seçer.
+- BLE DATA parçası ≤ 2048 B (iOS seçimi), hız ≤ ~20 KB/s.
+
+### 6.3 Aktarma sunucusu (2026-10-17 tasarım)
+- **Sunucu:** Cloudflare Worker + Durable Object (`relay/`); ücretsiz katman. Yalnız bayt aktarır;
+  içerik uçtan uca Noise ile şifreli, sunucu dosya adını bile görmez.
+- **Oda:** PC 32 B rastgele `token` üretir, `relay {transferId, token}` ile (şifreli BLE) iPhone'a
+  verir. `roomId = hex(SHA-256("WinDrop-relay" || token))[0:32]`. İki taraf da istemcidir:
+  `wss://<relay>/v1/room/<roomId>?role=pc|phone`. Token URL'de gitmez.
+- **Eşleme:** oda ilk `pc` ve ilk `phone` bağlantısını eşler; üçüncü bağlantı ve aynı rolden ikinci
+  bağlantı 409 ile reddedilir. Eş 60 sn içinde gelmezse oda kapanır.
+- **Aktarım:** her WebSocket ikili mesajı = bir Noise mesajı (≤ 65535 B; uzunluk öneki yok).
+  Sunucu mesajları sırayla karşıya iletir; metin mesajı gelirse bağlantıyı kapatır.
+- **Sınırlar:** oda başına toplam ≤ 4 GiB, ömür ≤ 2 saat, 60 sn boşta kapanış; IP başına dakikada
+  ≤ 10 oda açma (kötüye kullanım). Aşımda iki bağlantı da 1008 ile kapanır.
+- **Adres:** uygulama ayarında (`relayUrl`); boşsa aktarma yolu kapalıdır ve "yol yok" hatası verilir.
+  Sunucuyu Efe kendi Cloudflare hesabına `wrangler deploy` ile kurar (hesap açma kullanıcıya ait).
+- **Sırası:** iPhone (başlatan) bağlanınca ön ek + el sıkışma ilk mesajını gönderir; PC yanıtlar.
+  Oturum düşerse yeni `token` ile yeni oda; devam ettirme §5 RESUME ile.
 4. **BLE:** yalnız `total ≤ 64 KB` ve iki tarafta `btAudio=false` ise; BLE oturumu üstünden §5
    çerçeveleri (DATA ≤ 8192 − 16 − 1 B). Aksi halde "yol yok" hatası.
+   - **Uygulama (PC, 2026-10-18):** addr/etkin nokta kurulamadı veya başarısız (`path` `*_fail`, bağlantı zaman aşımı) ve `total` ≤ 65536 B
+     ve iki taraf `btAudio=false` ise PC `bleData` yollar (§6.4a). Çerçevelerde `transferId` yoktur: eş başına **tek** süren BLE aktarımına
+     aittir; `bleData`dan önce gelen çerçeve oturumu düşürür. Gönderen PC `bleData`dan hemen sonra `MANIFEST` yollar. DATA ≤ 2048 B,
+     hız ≤ ~20 KB/s. Aktarım sürerken bir tarafın `btAudio`su `true` olursa (`status`) aktarım kesilir; eş 30 sn çerçeve göndermezse düşer.
+     Uygun değilse özgün "yol yok" nedenine BLE nedeni (boyut / Bluetooth ses) eklenir.
+   - `btAudio` (PC): varsayılan ses çıkışı Bluetooth (PKEY_Device_EnumeratorName `BTH*`) **ve** aktif ses oturumu var; oturum
+     durumu okunamazsa Bluetooth çıkış varsayılansa `true`. `hello`'da gerçek değer, değişince `status`.
 
 ## 7. Kullanıcı onayı
 - Eşli cihazdan gelen `offer` varsayılan olarak onay ister; "eşli cihazlardan otomatik kabul"

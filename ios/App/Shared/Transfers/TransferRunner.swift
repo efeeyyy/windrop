@@ -111,6 +111,33 @@ enum TransferRunner {
         return summarize(result)
     }
 
+    /// BLE oturumu üstünde gönderim (PROTOCOL §6.4): küçük DATA parçaları, ~20 KB/s pacing; kanal açık BLE oturumunundur.
+    static func sendOverBle(
+        session: BleDataSession, files: [OutgoingFile], progress: @escaping @Sendable (TransferProgress) -> Void
+    ) async throws -> TransferSummary {
+        let items = try files.map { try DiskFileSource.makeItem(id: $0.id, url: $0.url, name: $0.name) }
+        let sender = FileSender(
+            channel: session.channel, items: items, chunkSize: TransferLimits.bleChunkSize,
+            bytesPerSecond: TransferLimits.bleBytesPerSecond, frameReader: session.nextFrame,
+            resumeTimeout: TransferLimits.bleResumeTimeout, progress: progress)
+        return summarize(try await sender.run())
+    }
+
+    /// BLE oturumu üstünde alma (karşı PC hız sınırını kendi uygular).
+    static func receiveOverBle(
+        session: BleDataSession, transferId: Data, peerKeyID: String, expectedCount: Int, expectedTotal: Int64,
+        destination: URL, progress: @escaping @Sendable (TransferProgress) -> Void
+    ) async throws -> TransferSummary {
+        guard let tid = TransferId(bytes: transferId) else { throw TransferFailure.invalidTransferId }
+        let storage = try DirectoryReceiverStorage(directory: destination)
+        let options = ReceiverOptions(
+            peerId: peerKeyID, transferId: tid, expectedCount: expectedCount, expectedTotal: expectedTotal)
+        let receiver = FileReceiver(
+            channel: session.channel, storage: storage, options: options, frameReader: session.nextFrame,
+            progress: progress)
+        return summarize(try await receiver.run())
+    }
+
     private static func summarize(_ result: TransferResult) -> TransferSummary {
         let stored = result.receivedFiles.map { file -> StoredFile in
             let url = URL(fileURLWithPath: file.storedPath)

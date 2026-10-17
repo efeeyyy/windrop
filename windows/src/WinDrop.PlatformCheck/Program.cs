@@ -4,6 +4,7 @@ using WinDrop.Platform;
 //   PlatformCheck hotspot-read    : mevcut etkin nokta ayarını/durumunu oku
 //   PlatformCheck hotspot-cycle   : oku -> WinDrop ayarıyla başlat -> 10 sn -> durdur -> eski ayarı geri yükle ve doğrula
 //   PlatformCheck net             : aday adresler
+//   PlatformCheck bt-audio [sn]   : Bluetooth ses çıkışı durumunu (btAudio) oku; sn verilirse değişimleri izle
 
 var cmd = args.Length > 0 ? args[0] : "hotspot-read";
 switch (cmd)
@@ -13,6 +14,21 @@ switch (cmd)
             Console.WriteLine($"{c.Address}  [{c.InterfaceName}]{(c.IsWifi ? " wifi" : "")}");
         Console.WriteLine($"HasInternet: {NetworkInfo.HasInternet()}");
         return 0;
+
+    case "bt-audio":
+    {
+        // Yalnız okur: varsayılan ses çıkışı Bluetooth mu, aktif ses oturumu var mı (btAudio). İsteğe bağlı: saniye sayısı (izleme).
+        using var monitor = new BluetoothAudioMonitor();
+        void Print(string tag, BluetoothAudioState st) =>
+            Console.WriteLine($"{tag} varsayılanBT={st.DefaultOutputIsBluetooth} aktifOturum={st.ActiveSession?.ToString() ?? "?"} aygıt={st.DeviceName ?? "-"} btAudio={st.BtAudio}");
+        Print("şimdi", monitor.Current);
+        if (args.Length > 1 && int.TryParse(args[1], out var seconds) && seconds > 0)
+        {
+            monitor.Changed += st => Print("değişti", st);
+            await Task.Delay(TimeSpan.FromSeconds(seconds));
+        }
+        return 0;
+    }
 
     case "hotspot-read":
         return Read();

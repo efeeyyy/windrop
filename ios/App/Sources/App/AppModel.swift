@@ -23,6 +23,7 @@ final class AppModel {
 
     let identity: IdentityStore
     let network: NetworkMonitor
+    let audio: BluetoothAudioMonitor
     let notifications: NotificationManager
     let hub: SignalHub
     let transfers: TransferCoordinator
@@ -31,11 +32,12 @@ final class AppModel {
     init() {
         let identity = IdentityStore()
         let network = NetworkMonitor()
+        let audio = BluetoothAudioMonitor()
         let notifications = NotificationManager()   // delegate atanır, izin istemi çıkmaz
         let helloInfo: @MainActor () -> HelloInfo = {
             HelloInfo(
                 name: DeviceInfo.name(), wifiConnected: network.isWifiConnected,
-                btAudio: AudioRoute.bluetoothAudioActive())
+                btAudio: audio.currentValue())
         }
         let hub = SignalHub(identity: identity, helloInfo: helloInfo)
         let transfers = TransferCoordinator(identity: identity, signals: hub, notifications: notifications)
@@ -43,6 +45,7 @@ final class AppModel {
 
         self.identity = identity
         self.network = network
+        self.audio = audio
         self.notifications = notifications
         self.hub = hub
         self.transfers = transfers
@@ -57,6 +60,9 @@ final class AppModel {
         network.onChange = { [weak hub] in
             hub?.broadcastStatus()
         }
+        audio.onChange = { [weak hub] in
+            hub?.broadcastStatus()
+        }
         notifications.onOpen = { [weak self] _ in
             self?.selectedTab = .home
         }
@@ -64,6 +70,7 @@ final class AppModel {
         hub.beginBackgroundTask = AppBackgroundTask.starter
         notifications.beginBackgroundTask = AppBackgroundTask.starter
         transfers.isWifiConnected = { network.isWifiConnected }
+        transfers.isBluetoothAudioActive = { audio.currentValue() }
         transfers.isAppInBackground = { UIApplication.shared.applicationState != .active }
         notifications.onAccept = { [weak self] transferId in
             self?.selectedTab = .transfers
@@ -73,6 +80,7 @@ final class AppModel {
             await transfers?.rejectFromNotification(transferId: transferId)
         }
         network.start()
+        audio.start()   // yalnız okur; ses oturumunu etkinleştirmez
         // İzin zaten verilmişse (ve tanıdık PC varsa) merkez kurulur; izin istemi çıkarmaz.
         hub.startIfAlreadyAuthorized()
     }

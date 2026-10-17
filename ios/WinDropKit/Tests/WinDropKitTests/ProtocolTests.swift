@@ -213,6 +213,7 @@ final class SignalMessageTests: XCTestCase {
             .relay(RelayMessage(transferId: id, token: "tok")),
             .path(PathMessage(transferId: id, result: .hotspotFail)),
             .cancel(SignalCancelMessage(transferId: id)),
+            .bleData(BleDataMessage(transferId: id)),
         ]
         for m in all {
             let data = try m.encode()

@@ -55,6 +55,8 @@ final class AsyncMailbox<Element: Sendable> {
         }
     }
 
+    func removeAll() { items.removeAll() }
+
     /// Kuyruğu kalıcı olarak hataya çevirir; bekleyen okuyucu uyandırılır.
     func fail(_ error: Error) {
         if failure == nil { failure = error }

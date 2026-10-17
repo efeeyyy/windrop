@@ -41,7 +41,7 @@ public sealed record SecureMessage(Frame? Frame, SignalMessage? Signal);
 /// XXpsk3'te el sıkışmayı başlatan bitirir (msg3 psk ile kimlik doğrulamalı, taze), yanıtlayan hemen kurulmuş sayılır.</para>
 /// <para>Eşzamanlılık: bir okuyucu + bir/birden çok yazıcı güvenlidir (yazmalar sıralanır, nonce sırası = tel sırası).</para>
 /// </summary>
-public sealed class SecureChannel : IDisposable
+public sealed class SecureChannel : IFrameChannel, IDisposable
 {
     private const int TagSize = CipherState.TagSize;
 

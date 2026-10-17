@@ -14,12 +14,12 @@ namespace WinDrop.Core.Transfer;
 /// </summary>
 public sealed class FileSender
 {
-    private readonly SecureChannel _channel;
+    private readonly IFrameChannel _channel;
     private readonly IReadOnlyList<IFileSource> _files;
     private readonly ProgressTracker _tracker;
     private int _used;
 
-    public FileSender(SecureChannel channel, IReadOnlyList<IFileSource> files, IProgress<TransferProgress>? progress = null, TimeSpan? progressInterval = null)
+    public FileSender(IFrameChannel channel, IReadOnlyList<IFileSource> files, IProgress<TransferProgress>? progress = null, TimeSpan? progressInterval = null)
     {
         ArgumentNullException.ThrowIfNull(channel);
         ArgumentNullException.ThrowIfNull(files);
@@ -215,7 +215,7 @@ internal static class TransferCommon
     }
 
     /// <summary>En iyi çaba CANCEL: hata ve zaman aşımı (2 sn) yutulur.</summary>
-    public static async Task TrySendCancelAsync(SecureChannel channel, string? reason)
+    public static async Task TrySendCancelAsync(IFrameChannel channel, string? reason)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         try

@@ -16,7 +16,20 @@ public enum TransferLimits {
     public static let defaultAckIntervalBytes = 4 * 1024 * 1024
     /// Kabulden önce boş alandan düşülen pay.
     public static let defaultSpaceMarginBytes: Int64 = 64 * 1024 * 1024
+    /// BLE yolu (PROTOCOL §6.4): toplam boyut üst sınırı.
+    public static let bleMaxTotalBytes: Int64 = 64 * 1024
+    /// BLE yolunda DATA gövdesi: küçük parçalar gönderimi düzgün dağıtır (pacing ince taneli olur).
+    public static let bleChunkSize = 2048
+    /// BLE yolunda gönderim hızı (bayt/sn): Bluetooth ses akışını aç bırakmamak için (ARCHITECTURE ölçüm bulguları).
+    public static let bleBytesPerSecond = 20_000
+    /// Gönderenin alıcıdan RESUME beklemesi için zaman aşımı (sn): TCP 60, BLE 30. Aşılırsa `TransferError.timeout`.
+    public static let tcpResumeTimeout: TimeInterval = 60
+    public static let bleResumeTimeout: TimeInterval = 30
 }
+
+/// Çerçeve kaynağı: `nil` = temiz kapanış. Varsayılan `SecureChannel.receiveFrame`; BLE'de oturum okuma döngüsü
+/// (sinyalleri ayıran) çerçeveleri buradan besler (PROTOCOL §9a: aynı kanalda `{` = sinyal, 1–8 = çerçeve).
+public typealias FrameReader = () async throws -> Frame?
 
 public enum TransferOutcome: Equatable {
     /// Tüm dosyalar doğrulandı.
@@ -65,6 +78,8 @@ public enum TransferError: Error, Equatable {
     /// Aktarım ortasında bağlantı koptu. Kısmi dosyalar saklanır; yeni oturumla devam edilebilir.
     case connectionLost
     case protocolViolation(String)
+    /// Karşı taraf zamanında yanıt vermedi (RESUME beklenirken).
+    case timeout
 }
 
 /// İç: sınır/politika ihlali -> CANCEL gönder, `aborted` sonucu.
@@ -158,12 +173,16 @@ final class FrameInbox {
     private let state = InboxState()
     private var task: Task<Void, Never>?
 
-    init(channel: SecureChannel) {
+    convenience init(channel: SecureChannel) {
+        self.init(reader: { try await channel.receiveFrame() })
+    }
+
+    init(reader: @escaping FrameReader) {
         let state = self.state
         task = Task {
             while !Task.isCancelled {
                 do {
-                    guard let f = try await channel.receiveFrame() else {
+                    guard let f = try await reader() else {
                         await state.push(.eof)
                         return
                     }

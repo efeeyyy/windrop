@@ -24,7 +24,7 @@ public sealed record ReceiverOptions(string PeerId, TransferId TransferId, Offer
 /// </summary>
 public sealed class FileReceiver
 {
-    private readonly SecureChannel _channel;
+    private readonly IFrameChannel _channel;
     private readonly IPartialStore _store;
     private readonly ReceiverOptions _options;
     private readonly ProgressTracker _tracker;
@@ -33,7 +33,7 @@ public sealed class FileReceiver
     private readonly Dictionary<int, long> _resumeOffsets = [];
     private int _used;
 
-    public FileReceiver(SecureChannel channel, IPartialStore store, ReceiverOptions options, IProgress<TransferProgress>? progress = null, TimeSpan? progressInterval = null)
+    public FileReceiver(IFrameChannel channel, IPartialStore store, ReceiverOptions options, IProgress<TransferProgress>? progress = null, TimeSpan? progressInterval = null)
     {
         ArgumentNullException.ThrowIfNull(channel);
         ArgumentNullException.ThrowIfNull(store);

@@ -99,6 +99,12 @@ public struct SignalCancelMessage: Codable, Equatable {
     public init(transferId: String) { self.transferId = transferId }
 }
 
+/// `bleData` (PC→iPhone, PROTOCOL §6.4a): veri yolu BLE oturumudur; gönderen MANIFEST'i BLE'den başlatır, alıcı bekler.
+public struct BleDataMessage: Codable, Equatable {
+    public var transferId: String
+    public init(transferId: String) { self.transferId = transferId }
+}
+
 /// `t` alanına göre ayrışan sinyal mesajı.
 public enum SignalMessage: Equatable {
     case hello(HelloMessage)
@@ -112,6 +118,7 @@ public enum SignalMessage: Equatable {
     case relay(RelayMessage)
     case path(PathMessage)
     case cancel(SignalCancelMessage)
+    case bleData(BleDataMessage)
 
     public var type: String {
         switch self {
@@ -126,6 +133,7 @@ public enum SignalMessage: Equatable {
         case .relay: return "relay"
         case .path: return "path"
         case .cancel: return "cancel"
+        case .bleData: return "bleData"
         }
     }
 
@@ -145,6 +153,7 @@ public enum SignalMessage: Equatable {
         case .relay(let m): body = try enc.encode(m)
         case .path(let m): body = try enc.encode(m)
         case .cancel(let m): body = try enc.encode(m)
+        case .bleData(let m): body = try enc.encode(m)
         }
         guard var object = try JSONSerialization.jsonObject(with: body) as? [String: Any] else {
             throw ProtocolError.invalidMessage("gövde nesne değil")
@@ -174,6 +183,7 @@ public enum SignalMessage: Equatable {
             case "relay": message = .relay(try dec.decode(RelayMessage.self, from: data))
             case "path": message = .path(try dec.decode(PathMessage.self, from: data))
             case "cancel": message = .cancel(try dec.decode(SignalCancelMessage.self, from: data))
+            case "bleData": message = .bleData(try dec.decode(BleDataMessage.self, from: data))
             default: throw ProtocolError.invalidMessage("bilinmeyen t: \(t)")
             }
             if let id = message.transferId, TransferId.parse(id) == nil {
@@ -198,6 +208,7 @@ public enum SignalMessage: Equatable {
         case .relay(let m): return m.transferId
         case .path(let m): return m.transferId
         case .cancel(let m): return m.transferId
+        case .bleData(let m): return m.transferId
         }
     }
 }

@@ -97,6 +97,25 @@ internal static class T
     }
 }
 
+/// <summary>Bluetooth ses durumu sahtesi (gerçek Core Audio'ya dokunmaz).</summary>
+internal sealed class FakeBluetoothAudioMonitor : IBluetoothAudioMonitor
+{
+    private BluetoothAudioState _current = BluetoothAudioState.None;
+
+    public BluetoothAudioState Current => _current;
+
+    public event Action<BluetoothAudioState>? Changed;
+
+    public void Set(bool btAudio) => Set(new BluetoothAudioState(btAudio, btAudio, btAudio ? "Fake BT" : null));
+
+    public void Set(BluetoothAudioState state)
+    {
+        var changed = _current.BtAudio != state.BtAudio;
+        _current = state;
+        if (changed) Changed?.Invoke(state);
+    }
+}
+
 /// <summary>Etkin nokta sahtesi (gerçek etkin nokta asla açılmaz).</summary>
 internal sealed class FakeHotspot : IHotspotController
 {
@@ -136,7 +155,10 @@ internal sealed class Harness : IAsyncDisposable
     public List<Task> LinkTasks { get; } = [];
     public string DownloadDir => Settings.DownloadFolder;
 
-    public Harness(bool autoAccept = true, bool trustPhone = true, TransferTimeouts? timeouts = null)
+    public FakeBluetoothAudioMonitor BtAudio { get; } = new();
+
+    /// <param name="blePace">BLE veri yolu hız sınırı (bayt/sn); testlerde varsayılan sınırsız.</param>
+    public Harness(bool autoAccept = true, bool trustPhone = true, TransferTimeouts? timeouts = null, int blePace = 0)
     {
         Settings = new AppSettings { DownloadFolder = Path.Combine(Dir.Path, "downloads"), AutoAccept = autoAccept };
         var root = Path.Combine(Dir.Path, "pc");
@@ -161,6 +183,8 @@ internal sealed class Harness : IAsyncDisposable
             CandidateAddresses = () => ["127.0.0.1"],
             HotspotAddress = () => "127.0.0.1",
             CommitHook = new MotwCommitHook(),
+            BluetoothAudio = BtAudio,
+            BleBytesPerSecond = blePace,
             Timeouts = timeouts ?? new TransferTimeouts
             {
                 Accept = TimeSpan.FromSeconds(10),
@@ -180,7 +204,7 @@ internal sealed class Harness : IAsyncDisposable
     public string PcId => DeviceId.HexFromPublicKey(PcPublicKey);
 
     /// <summary>iPhone IK ile BLE'ye bağlanır, PC hello'sunu okur, kendi hello'sunu yollar.</summary>
-    public async Task<Phone> ConnectPhoneAsync(string? wifi, NoiseKeyPair? key = null, bool xx = false)
+    public async Task<Phone> ConnectPhoneAsync(string? wifi, NoiseKeyPair? key = null, bool xx = false, bool btAudio = false)
     {
         var (phoneLink, pcLink) = MemoryBleLink.CreatePair();
         LinkTasks.Add(Acceptor.RunLinkAsync(pcLink, CancellationToken.None));
@@ -191,7 +215,8 @@ internal sealed class Harness : IAsyncDisposable
         var phone = new Phone(this, channel, phoneLink);
         var hello = Assert.IsType<HelloMessage>(await phone.ReceiveAsync());
         Assert.Equal("TestPC", hello.Name);
-        await phone.SendAsync(new HelloMessage(1, "iPhone", ["tcp", "hotspot"], wifi, false));
+        phone.PcHello = hello;
+        await phone.SendAsync(new HelloMessage(1, "iPhone", ["tcp", "hotspot"], wifi, btAudio));
         var deadline = DateTime.UtcNow + T.Wait;
         while (!Coord.IsNearby(DeviceId.HexFromPublicKey((key ?? PhoneKey).PublicKey)))
         {
@@ -215,6 +240,9 @@ internal sealed class Phone(Harness h, SecureChannel channel, MemoryBleLink link
     public SecureChannel Channel { get; } = channel;
     public string Sas => WinDrop.Platform.Sas.Compute(Channel.HandshakeHash);
     public Harness Harness { get; } = h;
+
+    /// <summary>PC'nin <c>hello</c> mesajı.</summary>
+    public HelloMessage? PcHello { get; set; }
 
     public Task SendAsync(SignalMessage m) => Channel.SendSignalAsync(m).AsTask().WaitAsync(T.Wait);
 

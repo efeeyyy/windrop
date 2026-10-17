@@ -48,7 +48,7 @@ public sealed record OfferRequest(TransferId Id, string PeerId, string PeerName,
 public sealed record NearbyPeer(string PeerId, string Name, bool IsKnown, bool IsPaired);
 
 /// <summary>Anlaşılır (Türkçe) aktarım hatası; ileti kullanıcıya gösterilebilir.</summary>
-public sealed class TransferException(string message) : InvalidOperationException(message);
+public class TransferException(string message) : InvalidOperationException(message);
 
 public sealed class TransferTimeouts
 {
@@ -105,6 +105,12 @@ public sealed class TransferCoordinatorOptions
     /// <summary>Etkin nokta açıldıktan sonra PC'nin etkin nokta arayüzündeki IP'si. Varsayılan: 192.168.137.1 (ölçüm).</summary>
     public Func<string>? HotspotAddress { get; init; }
 
+    /// <summary>Varsayılan ses çıkışı Bluetooth mu / ses çalıyor mu (<c>btAudio</c>, PROTOCOL §4). null: Bluetooth ses yok sayılır.</summary>
+    public IBluetoothAudioMonitor? BluetoothAudio { get; init; }
+
+    /// <summary>BLE veri yolunun (PROTOCOL §6.4) gönderim hız üst sınırı, bayt/sn; ≤ 0: sınırsız (yalnız test).</summary>
+    public int BleBytesPerSecond { get; init; } = TransferCoordinator.BleDefaultBytesPerSecond;
+
     public Func<long>? FreeSpaceProvider { get; init; }
     public IFileCommitHook? CommitHook { get; init; }
     public TransferTimeouts Timeouts { get; init; } = new();
@@ -115,11 +121,18 @@ public sealed class TransferCoordinatorOptions
 /// PROTOCOL §4/§6/§7 akışı: BLE sinyal oturumlarını (<see cref="HandleSessionAsync"/>) dinler; PC'den gönderme
 /// (offer → accept → addr/hotspot → veri kanalı → DONE) ve PC'ye gelen (offer → onay → accept + addr/hotspot) yollarını yürütür.
 /// Aynı anda birden çok aktarım desteklenir; her biri kendi iptal belirtecine sahiptir.
-/// <para>TODO (henüz yok): aktarma (relay) yolu §6.3 ve küçük dosyalar için BLE yolu §6.4 — doğrudan yol/etkin nokta
-/// başarısız olursa "yol yok" hatası verilir.</para>
+/// <para>§6.4 BLE yolu: doğrudan yol ve etkin nokta mümkün değilse/başarısızsa, toplam ≤ 64 KB ve iki tarafta
+/// <c>btAudio=false</c> ise §5 çerçeveleri BLE oturumundan hız sınırlı gider. TODO (henüz yok): aktarma (relay) yolu §6.3 —
+/// aksi halde "yol yok" hatası verilir.</para>
 /// </summary>
 public sealed class TransferCoordinator : IAsyncDisposable
 {
+    /// <summary>§6.4: BLE veri yolu toplam üst sınırı (64 KB).</summary>
+    public const long BleMaxTotalBytes = 64 * 1024;
+
+    /// <summary>BLE veri hızı üst sınırı (ölçüm: BLE verisi Bluetooth sesini kesiyor; btAudio=false olsa da kibar ol).</summary>
+    public const int BleDefaultBytesPerSecond = 20 * 1024;
+
     private const int PairedOfferRateLimit = 5;     // §5: cihaz başına 5/dk
     private const int UnpairedOfferRateLimit = 3;   // §2b: tanıdık (eşli olmayan) cihazdan 3/dk
     private const int UnknownOfferRateLimit = 3;    // §2b: bilinmeyen (XX) cihazlardan TOPLAM 3/dk (anahtar değiştirerek aşılamaz)
@@ -135,12 +148,34 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private readonly Dictionary<string, Queue<DateTimeOffset>> _offerTimes = [];
     private readonly Queue<DateTimeOffset> _unknownOfferTimes = [];
     private readonly Dictionary<string, DateTimeOffset> _silencedUntil = [];
+    private readonly Dictionary<string, State> _bleActive = [];   // eş başına tek BLE veri aktarımı (§6.4)
     private bool _disposed;
 
     public TransferCoordinator(TransferCoordinatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         _o = options;
+        if (_o.BluetoothAudio is { } monitor) monitor.Changed += OnLocalBtAudioChanged;
+    }
+
+    private bool LocalBtAudio => _o.BluetoothAudio?.Current.BtAudio ?? false;
+
+    /// <summary>Yerel <c>btAudio</c> değişti: tüm eşlere <c>status</c> yolla; ses başladıysa süren BLE aktarımlarını kes.</summary>
+    private void OnLocalBtAudioChanged(BluetoothAudioState state)
+    {
+        PeerSession[] sessions;
+        lock (_lock) sessions = [.. _sessions.Values];
+        foreach (var session in sessions)
+            _ = SendSignalQuietly(session, new StatusMessage(null, state.BtAudio));
+        if (state.BtAudio) FailBleTransfers(null, "Bu bilgisayarda Bluetooth ses başladı; BLE ile aktarım durduruldu.");
+    }
+
+    /// <summary>Süren BLE veri aktarımını (eşe göre veya hepsini) hata ile bitirir.</summary>
+    private void FailBleTransfers(string? peerId, string message)
+    {
+        State[] list;
+        lock (_lock) list = [.. _bleActive.Where(kv => peerId is null || kv.Key == peerId).Select(kv => kv.Value)];
+        foreach (var s in list) s.Fail(message);
     }
 
     /// <summary>Her durum değişiminde (ekleme dahil). Herhangi bir iş parçacığında gelebilir.</summary>
@@ -198,14 +233,16 @@ public sealed class TransferCoordinator : IAsyncDisposable
         try
         {
             await session.Channel.SendSignalAsync(
-                new HelloMessage(Prefix.CurrentVersion, _o.LocalName, ["tcp", "hotspot"], null, false), cts.Token).ConfigureAwait(false);
+                new HelloMessage(Prefix.CurrentVersion, _o.LocalName, ["tcp", "hotspot"], null, LocalBtAudio), cts.Token).ConfigureAwait(false);
             while (true)
             {
                 var msg = await session.Channel.ReceiveAsync(cts.Token).ConfigureAwait(false);
                 if (msg is null) break;
-                if (msg.Frame is not null)
+                if (msg.Frame is { } frame)
                 {
-                    PlatformLog.Write("BLE oturumunda veri çerçevesi geldi (BLE veri yolu henüz yok); oturum kapatılıyor.");
+                    // §9a: düz metnin ilk baytı 1–8 → §5 çerçevesi; yalnız izin verilen BLE aktarımına ait olabilir (§6.4).
+                    if (RouteBleFrame(session, frame)) continue;
+                    PlatformLog.Write("BLE oturumunda beklenmeyen veri çerçevesi geldi; oturum kapatılıyor.");
                     break;
                 }
                 Dispatch(session, msg.Signal!);
@@ -224,6 +261,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                     _sessions.Remove(session.PeerId);
             }
             FailNegotiating(session.PeerId, "Bluetooth bağlantısı koptu.");
+            CompleteBle(session);
             PeersChanged?.Invoke();
         }
     }
@@ -247,6 +285,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             case StatusMessage st:
                 if (st.Wifi is not null) session.Wifi = st.Wifi;
                 session.BtAudio = st.BtAudio;
+                if (st.BtAudio) FailBleTransfers(session.PeerId, "iPhone'da Bluetooth ses başladı; BLE ile aktarım durduruldu.");
                 break;
             case OfferMessage offer:
                 OnOffer(session, offer);
@@ -306,6 +345,97 @@ public sealed class TransferCoordinator : IAsyncDisposable
         }
     }
 
+    // ---------------------------------------------------------------- BLE küçük dosya yolu (§6.4)
+
+    /// <summary>BLE yolu kullanılamıyorsa nedeni (kullanıcıya gösterilir), kullanılabiliyorsa null.</summary>
+    private string? BleIneligibleReason(long total, PeerSession session)
+    {
+        if (total > BleMaxTotalBytes) return $"toplam boyut {BleMaxTotalBytes / 1024} KB'ı aşıyor";
+        if (LocalBtAudio) return "bu bilgisayarda Bluetooth ses çıkışı kullanılıyor";
+        if (session.BtAudio) return "iPhone'da Bluetooth ses çıkışı kullanılıyor";
+        return null;
+    }
+
+    /// <summary>Aktarımı eşin BLE oturumuna bağlar (eş başına tek aktarım); çerçeveler artık bu aktarıma yönlenir.</summary>
+    private bool TryActivateBle(State s, PeerSession session)
+    {
+        lock (_lock)
+        {
+            if (s.Ble is not null) return true;
+            if (_bleActive.ContainsKey(s.PeerId)) return false;
+            s.Ble = new BleDataChannel(session.Channel, _o.BleBytesPerSecond, _o.Time);
+            _bleActive[s.PeerId] = s;
+        }
+        return true;
+    }
+
+    private void ReleaseBle(State s)
+    {
+        lock (_lock)
+        {
+            if (_bleActive.TryGetValue(s.PeerId, out var cur) && ReferenceEquals(cur, s)) _bleActive.Remove(s.PeerId);
+        }
+        s.Ble?.Dispose();
+    }
+
+    /// <summary>BLE oturumu koptu: o oturumdaki BLE aktarımının okuyucusu "bağlantı koptu" alır.</summary>
+    private void CompleteBle(PeerSession session)
+    {
+        State? s;
+        lock (_lock) _bleActive.TryGetValue(session.PeerId, out s);
+        if (s?.Ble is { } ble && ReferenceEquals(ble.Session, session.Channel)) ble.Complete();
+    }
+
+    /// <summary>
+    /// BLE oturumundan gelen §5 çerçevesini sürmekte olan BLE aktarımına verir. false: çerçeve beklenmiyor (oturum düşürülür).
+    /// </summary>
+    private bool RouteBleFrame(PeerSession session, Frame frame)
+    {
+        // §6.4a: yol PC tarafından seçilir; çerçeve ancak PC `bleData` gönderdikten sonra (etkin BLE aktarımı) beklenir.
+        State? s;
+        lock (_lock) _bleActive.TryGetValue(session.PeerId, out s);
+        return s?.Ble is { } ble && ReferenceEquals(ble.Session, session.Channel) && ble.Post(frame);
+    }
+
+    /// <summary>Aktarımı BLE kanalı üstünde yürütür (FileSender/FileReceiver aynı, kanal uyarlayıcı).</summary>
+    private async Task RunBleTransferAsync(State s, CancellationToken ct)
+    {
+        var ble = s.Ble!;
+        // TCP kaydı kapanır: geç gelen bir TCP bağlantısı ikinci bir oturum açmasın.
+        s.Registration?.Dispose();
+        s.Registration = null;
+        PlatformLog.Write($"BLE veri yolu {s.Id}: {s.Total} B, en çok {(_o.BleBytesPerSecond > 0 ? _o.BleBytesPerSecond : 0)} B/sn");
+        // Eş Connect süresi içinde hiç çerçeve göndermezse (bleData sonrası) aktarım düşer.
+        using var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var watchdog = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(_o.Timeouts.Connect, _o.Time, watchdogCts.Token).ConfigureAwait(false);
+                if (!ble.FrameSeen) s.Fail("iPhone Bluetooth üzerinden yanıt vermedi (zaman aşımı). Yol yok.");
+            }
+            catch (OperationCanceledException) { }
+        }, CancellationToken.None);
+        try
+        {
+            await OnDataConnectionAsync(s, ble).ConfigureAwait(false);
+        }
+        finally
+        {
+            watchdogCts.Cancel();
+            await watchdog.ConfigureAwait(false);
+            ReleaseBle(s);
+        }
+        if (s.FailureMessage is { } failure) throw new TransferException(failure);
+        if (s.DataDone.Task.IsCompletedSuccessfully)
+        {
+            FinishFromResult(s, s.DataDone.Task.Result);
+            return;
+        }
+        ct.ThrowIfCancellationRequested();
+        throw new TransferException("Bluetooth üzerinden aktarım kesildi.");
+    }
+
     // ---------------------------------------------------------------- PC'den gönder
 
     /// <summary>
@@ -357,8 +487,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             return;
         }
 
-        await ProvidePathAsync(s, session, ct).ConfigureAwait(false);
-        await WaitForDataAsync(s).ConfigureAwait(false);
+        await RunPathAsync(s, session, ct).ConfigureAwait(false);
     }
 
     // ---------------------------------------------------------------- PC'ye gelen
@@ -513,8 +642,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind);
         Update(s, TransferPhase.Connecting);
         await session.Channel.SendSignalAsync(new AcceptMessage(s.Id), ct).ConfigureAwait(false);
-        await ProvidePathAsync(s, session, ct).ConfigureAwait(false);
-        await WaitForDataAsync(s).ConfigureAwait(false);
+        await RunPathAsync(s, session, ct).ConfigureAwait(false);
     }
 
     /// <summary>Teklifi kabul/ret eder (<see cref="OfferReceived"/> yanıtı).</summary>
@@ -538,9 +666,9 @@ public sealed class TransferCoordinator : IAsyncDisposable
         if (session.Wifi == WifiState.None)
         {
             if (session.Caps.Count > 0 && !session.Caps.Contains("hotspot"))
-                throw new TransferException("iPhone etkin nokta yolunu desteklemiyor ve bir Wi-Fi ağına bağlı değil. Yol yok.");
+                throw new PathUnavailableException("iPhone etkin nokta yolunu desteklemiyor ve bir Wi-Fi ağına bağlı değil. Yol yok.");
             if (_o.Hotspot is null || _o.HotspotConfig is null)
-                throw new TransferException("iPhone bir Wi-Fi ağına bağlı değil ve etkin nokta yolu bu sürümde kullanılamıyor. Yol yok.");
+                throw new PathUnavailableException("iPhone bir Wi-Fi ağına bağlı değil ve etkin nokta yolu bu sürümde kullanılamıyor. Yol yok.");
 
             s.HotspotRequested = true;
             _o.Hotspot.TransferStarted();   // boşta zamanlayıcısı bu aktarım bitene kadar durur
@@ -552,10 +680,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
             }
             catch (HotspotException ex)
             {
-                throw new TransferException("Windows Mobil etkin noktası açılamadı: " + ex.Message);
+                throw new PathUnavailableException("Windows Mobil etkin noktası açılamadı: " + ex.Message);
             }
             if (!started)
-                throw new TransferException(
+                throw new PathUnavailableException(
                     "Windows Mobil etkin noktası zaten sizin tarafınızdan kullanılıyor; WinDrop kendi etkin noktasını açamıyor. " +
                     "Etkin noktayı kapatın ya da iPhone'u bir Wi-Fi ağına bağlayıp yeniden deneyin.");
 
@@ -570,7 +698,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         else
         {
             var ips = (_o.CandidateAddresses ?? DefaultCandidates)();
-            if (ips.Count == 0) throw new TransferException("Bu bilgisayarda kullanılabilir ağ adresi yok (ağa bağlı değil).");
+            if (ips.Count == 0) throw new PathUnavailableException("Bu bilgisayarda kullanılabilir ağ adresi yok (ağa bağlı değil).");
             s.ConnectTimeout = _o.Timeouts.Connect;
             s.Touch(_o.Time);
             var cands = ips.Select(ip => new AddrCandidate(ip, port)).ToArray();
@@ -584,7 +712,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
 
     // ---------------------------------------------------------------- veri kanalı
 
-    private async Task OnDataConnectionAsync(State s, SecureChannel channel)
+    private async Task OnDataConnectionAsync(State s, IFrameChannel channel)
     {
         var gen = Interlocked.Increment(ref s.Generation);
         s.ConnectionActive = true;
@@ -633,6 +761,38 @@ public sealed class TransferCoordinator : IAsyncDisposable
         Raise(s);
     }
 
+    /// <summary>
+    /// Yol sağlama (addr/hotspot) + veri bağlantısı bekleme; doğrudan yol/etkin nokta mümkün değilse veya başarısızsa
+    /// §6.4/§6.4a BLE küçük dosya yoluna düşer (toplam ≤ 64 KB, iki tarafta btAudio=false): PC `bleData` yollar, olmazsa "yol yok" hatası.
+    /// </summary>
+    private async Task RunPathAsync(State s, PeerSession session, CancellationToken ct)
+    {
+        string reason;
+        try
+        {
+            await ProvidePathAsync(s, session, ct).ConfigureAwait(false);
+            await WaitForDataAsync(s).ConfigureAwait(false);   // TCP/etkin nokta ile bitti
+            return;
+        }
+        catch (PathUnavailableException ex)
+        {
+            reason = ex.Message;
+        }
+
+        var why = BleIneligibleReason(s.Total, session);
+        if (why is not null)
+            throw new TransferException($"{reason} BLE (küçük dosya) yolu da kullanılamıyor: {why}.");
+        if (!TryActivateBle(s, session))
+            throw new TransferException($"{reason} BLE yolu bu eşle başka bir aktarım için kullanılıyor.");
+        // Önce kanal etkin (gelen çerçeveler kabul edilir), sonra `bleData`: gönderen taraf MANIFEST ile başlar.
+        await session.Channel.SendSignalAsync(new BleDataMessage(s.Id), ct).ConfigureAwait(false);
+        PlatformLog.Write($"bleData gönderildi {s.Id}");
+        await RunBleTransferAsync(s, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Yol kurulamadı (BLE yoluna düşülebilir); ileti kullanıcıya "yol yok" nedeni olarak gösterilir.</summary>
+    private sealed class PathUnavailableException(string message) : TransferException(message);
+
     private async Task WaitForDataAsync(State s)
     {
         var ct = s.Cts.Token;
@@ -649,16 +809,18 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 return;
             }
             if (s.PathFailed.Task.IsCompleted && !s.ConnectionActive)
-                throw new TransferException(
+                throw new PathUnavailableException(
                     "Doğrudan bağlantı kurulamadı (iPhone bildirdi: " + s.PathFailed.Task.Result + ") ve aktarma yolu henüz yok. Yol yok.");   // TODO §6.3 relay
 
             if (!s.ConnectionActive)
             {
                 var limit = s.EverConnected ? _o.Timeouts.Reconnect : s.ConnectTimeout;
                 if (_o.Time.GetUtcNow() - s.LastActivity > limit)
-                    throw new TransferException(s.EverConnected
-                        ? "Bağlantı koptu ve iPhone yeniden bağlanmadı."
-                        : "iPhone veri bağlantısını kuramadı (zaman aşımı). Aktarma yolu henüz yok. Yol yok.");   // TODO §6.3 relay
+                {
+                    if (!s.EverConnected)
+                        throw new PathUnavailableException("iPhone veri bağlantısını kuramadı (zaman aşımı). Aktarma yolu henüz yok. Yol yok.");   // TODO §6.3 relay
+                    throw new TransferException("Bağlantı koptu ve iPhone yeniden bağlanmadı.");
+                }
             }
         }
     }
@@ -766,6 +928,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 try { _o.RotateHotspotPassphrase?.Invoke(); PlatformLog.Write("Etkin nokta parolası yenilendi (bilinmeyen eş)."); }
                 catch (Exception ex) { PlatformLog.Write($"Etkin nokta parolası yenilenemedi: {ex.Message}"); }
             }
+            ReleaseBle(s);
         }
     }
 
@@ -856,6 +1019,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         {
             if (_disposed) return;
             _disposed = true;
+            if (_o.BluetoothAudio is { } monitor) monitor.Changed -= OnLocalBtAudioChanged;
             list = [.. _states.Values];
         }
         foreach (var s in list.Where(x => !x.IsTerminal))
@@ -902,6 +1066,8 @@ public sealed class TransferCoordinator : IAsyncDisposable
         /// <summary>Teklif/gönderim anında eş eşli veya tanıdık mıydı (onay sonrası "tanıdık" yapılması bunu değiştirmez).</summary>
         public bool KnownAtStart;
         public int Generation;
+        /// <summary>§6.4: bu aktarımın BLE veri kanalı (etkinleştirildiyse).</summary>
+        public volatile BleDataChannel? Ble;
         public TimeSpan ConnectTimeout = TimeSpan.FromSeconds(30);
 
         public volatile bool ConnectionActive;
