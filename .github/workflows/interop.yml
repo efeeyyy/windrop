@@ -1,0 +1,93 @@
+name: Interop
+
+# C# (Windows) <-> Swift (iOS) aktarma (relay) çapraz uyum denemesi: yerel aktarma sunucusu (wrangler dev --local) üstünde.
+# Senaryolar ve araç bağımsız değişkenleri: docs/INTEROP.md, windows/tools/WinDrop.Interop/run-relay-interop.sh
+on:
+  push:
+    paths:
+      - 'relay/**'
+      - 'windows/src/WinDrop.Core/**'
+      - 'windows/tools/**'
+      - 'ios/WinDropKit/**'
+      - '.github/workflows/interop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  relay-interop:
+    name: Aktarma çapraz uyumu (macOS, Swift <-> C#)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Araç zinciri sürümleri
+        run: |
+          sw_vers
+          swift --version
+          dotnet --version
+          node --version
+
+      - name: Aktarma sunucusu bağımlılıkları (npm ci)
+        working-directory: relay
+        run: npm ci
+
+      - name: Yerel aktarma sunucusunu başlat (wrangler dev --local)
+        working-directory: relay
+        env:
+          CI: 'true'
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          nohup npx wrangler dev --local --port 8787 > "$RUNNER_TEMP/wrangler.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/wrangler.pid"
+          for i in $(seq 90); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 http://127.0.0.1:8787/healthz)" = 200 ]; then
+              echo "aktarma sunucusu hazır ($i sn)"; exit 0
+            fi
+            sleep 1
+          done
+          echo "aktarma sunucusu hazır olmadı"; tail -n 60 "$RUNNER_TEMP/wrangler.log"; exit 1
+
+      - name: C# interop aracını derle
+        run: dotnet build windows/tools/WinDrop.Interop -c Release -o "$RUNNER_TEMP/cs-interop" -v q
+
+      - name: Swift interop aracını derle
+        working-directory: ios/WinDropKit
+        run: swift build -c release --product windrop-interop
+
+      - name: Aktarma senaryoları (r1, r2, r3)
+        run: |
+          set -o pipefail
+          export SW="$(cd ios/WinDropKit && swift build -c release --show-bin-path)/windrop-interop"
+          export CS_DLL="$RUNNER_TEMP/cs-interop/WinDrop.Interop.dll"
+          export WORK="$RUNNER_TEMP/interop-work"
+          export RELAY_URL=ws://127.0.0.1:8787
+          bash windows/tools/WinDrop.Interop/run-relay-interop.sh 2>&1 | tee "$RUNNER_TEMP/interop.log"
+
+      - name: Sonuç özeti
+        if: always()
+        run: |
+          grep -E '^RESULT ' "$RUNNER_TEMP/interop.log" || echo "RESULT satırı yok"
+          echo "--- wrangler günlüğü (son satırlar) ---"
+          tail -n 30 "$RUNNER_TEMP/wrangler.log" || true
+
+      - name: Günlükleri yükle
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: interop-logs
+          path: |
+            ${{ runner.temp }}/interop.log
+            ${{ runner.temp }}/wrangler.log
+            ${{ runner.temp }}/interop-work/*.log
+          if-no-files-found: ignore

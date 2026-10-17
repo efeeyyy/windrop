@@ -62,3 +62,36 @@ Küçük test yardımcıları: `Core` projesine `InternalsVisibleTo WinDrop.Plat
 - Her iki taraf aynı makinede, localhost; gecikme/kayıp yok. Swift tarafı Linux (`swift-crypto`, POSIX soket); Apple CryptoKit/Network.framework yolu denenmedi.
 - Swift aracı yalnız bağlanan taraftır; Swift dinleyici/C# bağlanan yönü PROTOCOL gereği yoktur.
 - Windows'ta (yerel) aynı araç yalnız derlendi (`dotnet build`); çapraz çalıştırma WSL içinde yapıldı.
+
+## Aktarma sunucusu (relay) yolu — PROTOCOL §6.3
+Aynı iki araç, doğrudan TCP yerine aktarma odası üzerinden de çalışır. iPhone başlatan (Noise initiator, `role=phone`, ön ek taşıma=3), PC yanıtlayan (`role=pc`).
+Oda kimliği token'dan türetilir (`RelayRoom.ComputeRoomId` / `RelayRoom.roomId`); sunucu yalnız şifreli baytları iletir.
+
+**Ortak bağımsız değişken adları (iki araçta aynı):** `--relay-url`, `--token`, `--transfer-id`, `--pattern ik|xx`, `--my-key <hex32>`, `--peer-pub <hex32>`.
+- `--relay-url`: `wss://host[:port]`; `ws://` yalnız loopback (yerel `wrangler dev`) için kabul edilir.
+- `--token`: 43 karakter base64url (32 bayt) veya 64 onaltılık karakter; iki araçta da aynı ayrıştırma.
+- `--transfer-id`: 22 karakter base64url (16 bayt). Swift aracında eski ad `--prefix-transfer-id` de kabul edilir (`run-interop.sh` kullanır).
+- `--mode`: **araç kendi açısından** veri yönünü seçer. C# `relay-pc`: `receive` (varsayılan) veya `send`; Swift `relay-phone`: `send` veya `receive` (eski `receive-from` de kabul).
+  Beklenen eşleşme: telefon `send` ↔ PC `receive`; PC `send` ↔ telefon `receive`.
+- Alma tarafında `--out DIR --count N --total BYTES` (teklif bilgisi); `--timeout SN` yalnız C#'ta (odada eşi bekleme süresi, varsayılan 60).
+
+```
+# C# (PC, yanıtlayan): odaya girince "RELAY_READY room=<id> ..." yazar
+dotnet WinDrop.Interop.dll relay-pc --relay-url ws://127.0.0.1:8787 --token <43> --my-key <hex32> --peer-pub <telefon pub> \
+    --transfer-id <22> --pattern ik --mode receive --out DIR --count 1 --total BYTES [--timeout 90] [dosyalar...]
+# Swift (iPhone, başlatan)
+windrop-interop relay-phone --relay-url ws://127.0.0.1:8787 --token <43> --my-key <hex32> --peer-pub <PC pub> \
+    --transfer-id <22> --pattern ik --mode send dosya...
+```
+Çıktı satırları `serve`/`send` ile aynıdır (`HANDSHAKE=ok ... sas= hash=`, `FILE ...`, `OUTCOME=`); Swift ayrıca `CONNECT=relay ...`, hata durumunda `RELAY_HTTP_STATUS=<kod>`.
+
+**Betik:** `windows/tools/WinDrop.Interop/run-relay-interop.sh [r1 r2 r3]` (macOS/Linux, bash 3.2 uyumlu; sunucunun `RELAY_URL`'de çalıştığını, `SW` ve `CS_DLL` yollarını bekler):
+| Senaryo | İçerik |
+|---|---|
+| `relay-r1` | IK, Swift phone → C# pc, 5 MB; SHA-256, `OUTCOME`, SAS ve el sıkışma özeti iki tarafta aynı |
+| `relay-r2` | XX, C# pc → Swift phone, 2 MB; aynı denetimler |
+| `relay-r3` | Aynı odaya pc + phone bağlıyken üçüncü bağlantı (her iki rol) HTTP 409 ile reddedilir (curl) |
+
+Her senaryo `RESULT relay-<ad> PASS|FAIL` yazar; biri FAIL ise betik 1 ile çıkar.
+**CI:** `.github/workflows/interop.yml` (macos-latest): `npm ci` + `wrangler dev --local --port 8787` (arka planda, `/healthz` beklenir), .NET 10, `swift build --product windrop-interop`, betik.
+Swift `relay-phone` Linux'ta çalışmaz (swift-corelibs-foundation `URLSessionWebSocketTask` libcurl WebSocket desteği ister; araç bunu `HINT=` satırıyla bildirir), bu yüzden gerçek çapraz deneme macOS'ta yapılır.

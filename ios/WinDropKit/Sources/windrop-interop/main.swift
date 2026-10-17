@@ -16,13 +16,14 @@ import Darwin
 
 // windrop-interop: C# WinDrop.Interop ile gerçek TCP üzerinden çapraz uyum denemesi (docs/INTEROP.md).
 // Swift her zaman bağlanan + Noise başlatan taraftır (iPhone rolü); veri yönü komutla seçilir.
+//   Ortak ad: --transfer-id (eski --prefix-transfer-id de kabul edilir). C# relay-pc ile ortak: --relay-url --token --transfer-id --pattern --my-key --peer-pub.
 //
-//   send         --host H --port P --prefix-transfer-id <b64url> --pattern ik|xx --my-key <hex32> --peer-pub <hex32>
+//   send         --host H --port P --transfer-id <b64url> --pattern ik|xx --my-key <hex32> --peer-pub <hex32>
 //                [--kill-at-bytes N] <dosyalar...>        Swift -> C# (C# alıcı)
-//   receive-from --host H --port P --prefix-transfer-id <b64url> --pattern ik|xx --my-key <hex32> --peer-pub <hex32>
+//   receive-from --host H --port P --transfer-id <b64url> --pattern ik|xx --my-key <hex32> --peer-pub <hex32>
 //                --out DIR --count N --total BYTES         C# -> Swift (Swift alıcı)
-//   relay-phone  --relay-url wss://H[:P] --token <b64url 43> --mode send|receive-from --prefix-transfer-id <b64url>
-//                --pattern ik|xx --my-key <hex32> --peer-pub <hex32> [send: dosyalar... | receive-from: --out DIR --count N --total BYTES]
+//   relay-phone  --relay-url wss://H[:P] --token <b64url 43 | 64 hex> --mode send|receive --transfer-id <b64url>
+//                --pattern ik|xx --my-key <hex32> --peer-pub <hex32> [send: dosyalar... | receive: --out DIR --count N --total BYTES]
 //                PROTOCOL §6.3: aktarma sunucusunda `phone` rolüyle bağlanır (ön ek taşıma=3), sonra send/receive-from gibi çalışır.
 //   pubkey       --my-key <hex32>                          açık anahtarı yazdırır
 //
@@ -153,6 +154,11 @@ struct Options {
         guard let v = values[k] else { fail("--\(k) gerekli") }
         return v
     }
+    /// Ortak ad `k` (C# aracıyla aynı); eski ad `legacy` de kabul edilir.
+    func need(_ k: String, legacy: String) -> String {
+        guard let v = values[k] ?? values[legacy] else { fail("--\(k) gerekli") }
+        return v
+    }
 }
 
 let argv = Array(CommandLine.arguments.dropFirst())
@@ -225,14 +231,19 @@ if command == "signals-verify" {
 }
 
 let isRelay = command == "relay-phone"
-let action = isRelay ? opts.need("mode") : command   // relay-phone: --mode send|receive-from
+// relay-phone: --mode send|receive (veri yönü Swift açısından; eski "receive-from" de kabul edilir).
+let action: String = {
+    guard isRelay else { return command }
+    let m = opts.need("mode")
+    return m == "receive" ? "receive-from" : m
+}()
 let host = isRelay ? "" : opts.need("host")
 func parsePort() -> UInt16 {
     guard let p = UInt16(opts.need("port")) else { fail("--port geçersiz") }
     return p
 }
 let port: UInt16 = isRelay ? 0 : parsePort()
-guard let transferId = TransferId.parse(opts.need("prefix-transfer-id")) else { fail("--prefix-transfer-id 22 karakter base64url olmalı") }
+guard let transferId = TransferId.parse(opts.need("transfer-id", legacy: "prefix-transfer-id")) else { fail("--transfer-id 22 karakter base64url olmalı") }
 let pattern = opts.need("pattern")
 let myKey = loadKey("my-key")
 guard let peerPub = parseHex(opts.need("peer-pub")), peerPub.count == 32 else { fail("--peer-pub 32 bayt onaltılık olmalı") }
