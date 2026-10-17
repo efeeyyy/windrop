@@ -1,6 +1,7 @@
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
+@preconcurrency import WinDropKit
 
 /// Ana ekran (AirDrop gibi): açılışta izin/eşleştirme yok. Büyük "Dosya gönder" -> fotoğraf/dosya seç ->
 /// yakındaki bilgisayarlar sayfası. İzinler (Bluetooth, fotoğraflar, bildirim) yalnız bu akışta, tembel istenir.
