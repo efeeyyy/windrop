@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+
+# iOS / Xcode
+ios/build/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.xcarchive
+.build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# XcodeGen çıktıları (ios/App/project.yml)
+ios/App/Info.plist
+ios/App/WinDropShare-Info.plist
+ios/App/*.xcodeproj/

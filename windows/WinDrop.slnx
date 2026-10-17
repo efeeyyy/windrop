@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WinDrop.App/WinDrop.App.csproj" />
+    <Project Path="src/WinDrop.ApProbe/WinDrop.ApProbe.csproj" />
+    <Project Path="src/WinDrop.BleProbe/WinDrop.BleProbe.csproj" />
+    <Project Path="src/WinDrop.Core/WinDrop.Core.csproj" />
+    <Project Path="src/WinDrop.NetProbe/WinDrop.NetProbe.csproj" />
+    <Project Path="src/WinDrop.Platform/WinDrop.Platform.csproj" />
+    <Project Path="src/WinDrop.PlatformCheck/WinDrop.PlatformCheck.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/WinDrop.Interop/WinDrop.Interop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WinDrop.Core.Tests/WinDrop.Core.Tests.csproj" />
+    <Project Path="tests/WinDrop.Platform.Tests/WinDrop.Platform.Tests.csproj" />
+  </Folder>
+</Solution>

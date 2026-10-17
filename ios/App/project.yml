@@ -1,0 +1,136 @@
+# WinDrop iOS uygulaması — XcodeGen tanımı (docs/APP-IOS.md).
+# Üretim:  xcodegen generate --spec ios/App/project.yml
+#
+# Paket kimliği: WINDROP_BUNDLE_ID değişkeni (varsayılan com.efe.windrop). Komut satırından
+# değiştirmek için:  xcodebuild ... WINDROP_BUNDLE_ID=com.ornek.windrop
+#
+# Etkin nokta (NEHotspotConfiguration) yetkisi YALNIZ ücretli geliştirici hesabıyla vardır.
+# Ücretsiz hesapta varsayılan "Release"/"Debug" yapılandırmaları kullanılır (yetki yok).
+# Ücretli hesapta "Release-Hotspot" yapılandırması WinDrop-Hotspot.entitlements dosyasını
+# bağlar ve HOTSPOT_ENTITLEMENT derleme bayrağını açar.
+# Paylaşım Uzantısı (WinDropShare, iOS paylaşım menüsü): Shared/ klasörü iki hedefe de derlenir; ShareExtension/ yalnız uzantıdır.
+# Kimlik paylaşımı (App Groups / Keychain Sharing) ÜCRETLİ hesapta: iki hedefin SWIFT_ACTIVE_COMPILATION_CONDITIONS'una
+# APP_GROUP ekleyin ve iki hedefe `keychain-access-groups` = $(AppIdentifierPrefix)com.efe.windrop.shared yetkisi verin
+# (Keychain.swift `#if APP_GROUP`). Ücretsiz hesapta APP_GROUP kapalı: uzantı kendi cihaz anahtarını kullanır.
+
+name: WinDrop
+
+options:
+  bundleIdPrefix: com.efe
+  developmentLanguage: tr
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+configs:
+  Debug: debug
+  Release: release
+  Release-Hotspot: release
+
+packages:
+  WinDropKit:
+    path: ../WinDropKit
+
+settings:
+  base:
+    # Swift 6 uyumlu yazıldı; Mac olmadan ilk derlemede dil kipi 5 + tam denetimle (uyarı) başlıyor.
+    # Uyarılar temizlenince SWIFT_VERSION "6.0" yapılacak (TODO).
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    WINDROP_BUNDLE_ID: com.efe.windrop
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  WinDrop:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Sources
+      - path: Shared
+    dependencies:
+      - package: WinDropKit
+      - target: WinDropShare   # PlugIns/WinDropShare.appex olarak gömülür
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: WinDrop
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSBluetoothAlwaysUsageDescription: WinDrop, yakındaki bilgisayarları Bluetooth ile bulmak ve dosya aktarımı için onlara sinyal göndermek üzere Bluetooth kullanır.
+        NSCameraUsageDescription: İsteğe bağlı otomatik kabul eşleştirmesi için bilgisayarınızın ekranındaki QR kodu okumak üzere kamera gerekir.
+        NSLocalNetworkUsageDescription: Aynı ağdaki bilgisayarınıza dosya göndermek veya ondan dosya almak için yerel ağa erişim gerekir.
+        NSPhotoLibraryAddUsageDescription: Bilgisayardan aldığınız fotoğraf ve videoları Fotoğraflar'a kaydetmek için izin gerekir.
+        UIBackgroundModes:
+          - bluetooth-central
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        AppIdentifierPrefix: $(AppIdentifierPrefix)   # Keychain.swift APP_GROUP kipi okur
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(WINDROP_BUNDLE_ID)
+        PRODUCT_NAME: WinDrop
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_ENTITLEMENTS: WinDrop.entitlements
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+      configs:
+        Release-Hotspot:
+          CODE_SIGN_ENTITLEMENTS: WinDrop-Hotspot.entitlements
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) HOTSPOT_ENTITLEMENT"
+
+  WinDropShare:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ShareExtension
+      - path: Shared
+    dependencies:
+      - package: WinDropKit
+    info:
+      path: WinDropShare-Info.plist
+      properties:
+        CFBundleDisplayName: WinDrop
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSBluetoothAlwaysUsageDescription: WinDrop, paylaştığınız dosyaları göndermek için yakındaki bilgisayarları Bluetooth ile bulur.
+        NSLocalNetworkUsageDescription: Aynı ağdaki bilgisayarınıza dosya göndermek için yerel ağa erişim gerekir.
+        AppIdentifierPrefix: $(AppIdentifierPrefix)   # Keychain.swift APP_GROUP kipi okur
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 100
+              NSExtensionActivationSupportsMovieWithMaxCount: 100
+              NSExtensionActivationSupportsFileWithMaxCount: 100
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(WINDROP_BUNDLE_ID).share
+        PRODUCT_NAME: WinDropShare
+        TARGETED_DEVICE_FAMILY: "1,2"
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+schemes:
+  WinDrop:
+    build:
+      targets:
+        WinDrop: all
+    run:
+      config: Debug
+    archive:
+      config: Release

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Çapraz uyum (C# <-> Swift) test aracı: gerçek DataListener + FileReceiver/FileSender. docs/INTEROP.md
+       Platform projesi yalnız Windows'ta derlenir (WinRT); DataListener/Sas/PlatformLog kaynakları buraya bağlanır, böylece
+       araç hem Windows'ta hem Linux/WSL'de (swift-interop denemeleri) çalışır. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>WinDrop.Interop</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WinDrop.Core\WinDrop.Core.csproj" />
+    <Compile Include="..\..\src\WinDrop.Platform\DataListener.cs" Link="Platform\DataListener.cs" />
+    <Compile Include="..\..\src\WinDrop.Platform\PlatformLog.cs" Link="Platform\PlatformLog.cs" />
+    <Compile Include="..\..\src\WinDrop.Platform\Sas.cs" Link="Platform\Sas.cs" />
+  </ItemGroup>
+
+</Project>

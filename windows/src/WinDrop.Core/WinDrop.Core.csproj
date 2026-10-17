@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>WinDrop.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="WinDrop.Core.Tests" />
+    <InternalsVisibleTo Include="WinDrop.Platform.Tests" />   <!-- sas.json vektörü: sabit ephemeral enjeksiyonu -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
+  </ItemGroup>
+
+</Project>

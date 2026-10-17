@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="App.Title" xml:space="preserve"><value>WinDrop</value></data>
+
+  <data name="Main.DropHere" xml:space="preserve"><value>Dosyaları buraya sürükleyip bırakın</value></data>
+  <data name="Main.PickFiles" xml:space="preserve"><value>Dosya seç…</value></data>
+  <data name="Main.StagedFormat" xml:space="preserve"><value>{0} öğe gönderilmeye hazır</value></data>
+  <data name="Main.Send" xml:space="preserve"><value>Gönder</value></data>
+  <data name="Main.ClearStaged" xml:space="preserve"><value>Temizle</value></data>
+  <data name="Main.HintSelectDevice" xml:space="preserve"><value>Göndermek için yakındaki bir cihaz seçin.</value></data>
+  <data name="Main.Devices" xml:space="preserve"><value>Yakındaki cihazlar</value></data>
+  <data name="Main.NoDevices" xml:space="preserve"><value>Yakında cihaz görünmüyor. Her iki cihazda da WinDrop’un ve Bluetooth’un açık olduğundan emin olun (iPhone’da WinDrop ön planda olmalı).</value></data>
+  <data name="Main.Transfers" xml:space="preserve"><value>Aktarımlar</value></data>
+  <data name="Main.NoTransfers" xml:space="preserve"><value>Henüz aktarım yok.</value></data>
+  <data name="Main.AddPhone" xml:space="preserve"><value>iPhone ekle</value></data>
+  <data name="Main.Settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="Main.Cancel" xml:space="preserve"><value>İptal</value></data>
+  <data name="Main.ShowInFolder" xml:space="preserve"><value>Klasörde göster</value></data>
+  <data name="Main.SendError" xml:space="preserve"><value>Gönderilemedi: {0}</value></data>
+
+  <data name="Device.Nearby" xml:space="preserve"><value>Yakında</value></data>
+  <data name="Device.Away" xml:space="preserve"><value>Uzakta</value></data>
+
+  <data name="Transfer.To" xml:space="preserve"><value>{0} cihazına</value></data>
+  <data name="Transfer.From" xml:space="preserve"><value>{0} cihazından</value></data>
+  <data name="Transfer.Detail" xml:space="preserve"><value>{0} dosya · {1}</value></data>
+  <data name="Status.Waiting" xml:space="preserve"><value>Bekleniyor</value></data>
+  <data name="Status.Active" xml:space="preserve"><value>Aktarılıyor</value></data>
+  <data name="Status.Completed" xml:space="preserve"><value>Tamamlandı</value></data>
+  <data name="Status.Failed" xml:space="preserve"><value>Başarısız</value></data>
+  <data name="Status.Cancelled" xml:space="preserve"><value>İptal edildi</value></data>
+  <data name="Status.Rejected" xml:space="preserve"><value>Reddedildi</value></data>
+
+  <data name="Pair.Title" xml:space="preserve"><value>iPhone ekle</value></data>
+  <data name="Pair.Instructions" xml:space="preserve"><value>iPhone’da WinDrop uygulamasıyla okutun.</value></data>
+  <data name="Pair.Waiting" xml:space="preserve"><value>iPhone bekleniyor…</value></data>
+  <data name="Pair.Remaining" xml:space="preserve"><value>Kalan süre: {0}</value></data>
+  <data name="Pair.Expired" xml:space="preserve"><value>Süre doldu.</value></data>
+  <data name="Pair.Restart" xml:space="preserve"><value>Yeniden başlat</value></data>
+  <data name="Pair.Confirm" xml:space="preserve"><value>‘{0}’ eşleşsin mi?</value></data>
+  <data name="Pair.Code" xml:space="preserve"><value>Doğrulama kodu: {0}. iPhone ekranındaki kodla aynı mı? Farklıysa Reddet.</value></data>
+  <data name="Pair.Accept" xml:space="preserve"><value>Eşleştir</value></data>
+  <data name="Pair.Reject" xml:space="preserve"><value>Reddet</value></data>
+  <data name="Pair.Close" xml:space="preserve"><value>Kapat</value></data>
+
+  <data name="Offer.Title" xml:space="preserve"><value>Gelen dosyalar</value></data>
+  <data name="Offer.Text" xml:space="preserve"><value>‘{0}’ size {1} dosya göndermek istiyor ({2}).</value></data>
+  <data name="Offer.Accept" xml:space="preserve"><value>Kabul et</value></data>
+  <data name="Offer.Reject" xml:space="preserve"><value>Reddet</value></data>
+  <data name="Offer.Code" xml:space="preserve"><value>Doğrulama kodu: {0}. İsterseniz gönderenin ekranındaki kodla karşılaştırın; kabul ederseniz bu cihaz hatırlanır.</value></data>
+  <data name="Offer.Unknown" xml:space="preserve"><value>Bu cihaz daha önce tanınmıyor; kabul etmezseniz hiçbir şey kaydedilmez.</value></data>
+  <data name="Relay.Warning" xml:space="preserve"><value>Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir ({0}); uçtan uca şifrelidir.</value></data>
+  <data name="Offer.Timeout" xml:space="preserve"><value>{0} sn içinde yanıt verilmezse reddedilir.</value></data>
+
+  <data name="Settings.Title" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="Settings.DownloadFolder" xml:space="preserve"><value>İndirme klasörü</value></data>
+  <data name="Settings.Browse" xml:space="preserve"><value>Seç…</value></data>
+  <data name="Settings.AutoAccept" xml:space="preserve"><value>Eşli cihazlardan gelenleri otomatik kabul et</value></data>
+  <data name="Settings.AutoAcceptMax" xml:space="preserve"><value>Otomatik kabul üst sınırı (MB)</value></data>
+  <data name="Settings.SendTo" xml:space="preserve"><value>Dosya Gezgini “Gönder” menüsüne ekle</value></data>
+  <data name="Settings.AutoStart" xml:space="preserve"><value>Windows ile başlat</value></data>
+  <data name="Settings.PairedDevices" xml:space="preserve"><value>Eşli cihazlar</value></data>
+  <data name="Settings.NoDevices" xml:space="preserve"><value>Eşli cihaz yok.</value></data>
+  <data name="Settings.Remove" xml:space="preserve"><value>Kaldır</value></data>
+  <data name="Settings.RemoveAll" xml:space="preserve"><value>Tümünü kaldır</value></data>
+  <data name="Settings.RemoveConfirm" xml:space="preserve"><value>‘{0}’ eşleşmesi kaldırılsın mı?</value></data>
+  <data name="Settings.RemoveAllConfirm" xml:space="preserve"><value>Tüm eşleşmeler kaldırılsın mı?</value></data>
+  <data name="Settings.Save" xml:space="preserve"><value>Kaydet</value></data>
+  <data name="Settings.Cancel" xml:space="preserve"><value>Vazgeç</value></data>
+  <data name="Settings.SaveError" xml:space="preserve"><value>Ayarlar uygulanamadı: {0}</value></data>
+
+  <data name="Tray.Open" xml:space="preserve"><value>Aç</value></data>
+  <data name="Tray.Send" xml:space="preserve"><value>Gönder…</value></data>
+  <data name="Tray.Exit" xml:space="preserve"><value>Çıkış</value></data>
+  <data name="Tray.Background" xml:space="preserve"><value>WinDrop arka planda çalışıyor.</value></data>
+
+  <data name="Dialog.PickFiles" xml:space="preserve"><value>Gönderilecek dosyaları seçin</value></data>
+  <data name="Dialog.PickFolder" xml:space="preserve"><value>İndirme klasörünü seçin</value></data>
+</root>

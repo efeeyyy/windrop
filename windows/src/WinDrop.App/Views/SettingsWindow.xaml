@@ -1,0 +1,58 @@
+<Window x:Class="WinDrop.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:infra="clr-namespace:WinDrop.App.Infrastructure"
+        Title="{infra:T Settings.Title}" Width="500" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/Assets/app.ico">
+    <StackPanel Margin="20">
+        <TextBlock Text="{infra:T Settings.DownloadFolder}" FontWeight="SemiBold" />
+        <Grid Margin="0,6,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding DownloadFolder, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Column="1" Content="{infra:T Settings.Browse}" Command="{Binding BrowseFolderCommand}" Margin="8,0,0,0" />
+        </Grid>
+
+        <CheckBox Content="{infra:T Settings.AutoAccept}" IsChecked="{Binding AutoAccept}" />
+        <StackPanel Orientation="Horizontal" Margin="24,8,0,14" IsEnabled="{Binding AutoAccept}">
+            <TextBlock Text="{infra:T Settings.AutoAcceptMax}" VerticalAlignment="Center" />
+            <TextBox Text="{Binding AutoAcceptMaxMb, UpdateSourceTrigger=LostFocus}" Width="90" Margin="8,0,0,0" />
+        </StackPanel>
+
+        <CheckBox Content="{infra:T Settings.SendTo}" IsChecked="{Binding SendToEnabled}" Margin="0,0,0,8" />
+        <CheckBox Content="{infra:T Settings.AutoStart}" IsChecked="{Binding AutoStartEnabled}" Margin="0,0,0,14" />
+
+        <TextBlock Text="{infra:T Settings.PairedDevices}" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <TextBlock Text="{infra:T Settings.NoDevices}" Opacity="0.7"
+                   Visibility="{Binding HasNoDevices, Converter={StaticResource BoolToVis}}" />
+        <StackPanel Visibility="{Binding HasDevices, Converter={StaticResource BoolToVis}}">
+            <ItemsControl ItemsSource="{Binding PairedDevices}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="{infra:T Settings.Remove}"
+                                    Command="{Binding DataContext.RemoveDeviceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="{infra:T Settings.RemoveAll}" Command="{Binding RemoveAllDevicesCommand}" Margin="0,6,0,0" HorizontalAlignment="Left" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding ErrorMessage}" Foreground="OrangeRed" TextWrapping="Wrap" Margin="0,10,0,0" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="{infra:T Settings.Save}" Command="{Binding SaveCommand}" MinWidth="90" Margin="0,0,8,0" IsDefault="True" />
+            <Button Content="{infra:T Settings.Cancel}" Command="{Binding CancelCommand}" MinWidth="90" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>
