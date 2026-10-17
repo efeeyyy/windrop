@@ -1,5 +1,6 @@
 import Foundation
 import UniformTypeIdentifiers
+@preconcurrency import WinDropKit
 
 enum ShareLoadError: Error, LocalizedError {
     case unreadable

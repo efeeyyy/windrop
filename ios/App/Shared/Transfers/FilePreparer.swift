@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
+@preconcurrency import WinDropKit
 
 /// PhotosPicker öğesinden dosya alır; geçici dizine kopyalar (seçici dosyası kapanış dönünce silinir).
 struct PickedFile: Transferable {
