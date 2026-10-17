@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:6.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Swift sürümü
         run: swift --version
       - name: swift test
@@ -24,7 +24,7 @@ jobs:
     name: Uygulama (macOS, imzasız IPA)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Araç zinciri sürümleri
         run: |
@@ -84,7 +84,7 @@ jobs:
           unzip -l "$GITHUB_WORKSPACE/WinDrop-unsigned.ipa" | grep -F "Payload/WinDrop.app/PlugIns/WinDropShare.appex/Info.plist"
 
       - name: IPA yükle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: WinDrop-unsigned-ipa
           path: WinDrop-unsigned.ipa
@@ -92,7 +92,7 @@ jobs:
 
       - name: Derleme günlüğünü yükle
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: xcodebuild-log
           path: ${{ runner.temp }}/xcodebuild.log

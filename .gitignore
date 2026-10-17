@@ -23,3 +23,6 @@ Thumbs.db
 ios/App/Info.plist
 ios/App/WinDropShare-Info.plist
 ios/App/*.xcodeproj/
+
+# Yerel çıktılar
+dist/

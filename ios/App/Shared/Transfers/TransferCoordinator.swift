@@ -138,7 +138,7 @@ final class TransferCoordinator {
         case .relay:
             // TODO(relay): PROTOCOL §6.3 aktarma sunucusu henüz tasarlanmadı.
             break
-        case .hello, .status, .path:
+        case .hello, .status, .path, .pairInfo:
             break
         }
     }

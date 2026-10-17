@@ -72,8 +72,16 @@ struct PairView: View {
             progress("\(name) aranıyor…")
         case .connecting(let name):
             progress("\(name) ile bağlantı kuruluyor…")
-        case .waitingApproval(let name):
-            progress("\(name) bilgisayarında eşleşmeyi onaylayın.")
+        case .waitingApproval(let name, let code):
+            VStack(spacing: 12) {
+                progress("\(name) bilgisayarında eşleşmeyi onaylayın.")
+                Text("Doğrulama kodu").font(.footnote).foregroundStyle(.secondary)
+                Text(code)
+                    .font(.system(size: 40, weight: .semibold, design: .monospaced))
+                    .accessibilityLabel("Doğrulama kodu \(code.map(String.init).joined(separator: " "))")
+                Text("Bilgisayardaki kodla aynıysa onaylayın.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
         case .succeeded(let name):
             VStack(spacing: 12) {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 48)).foregroundStyle(.green)

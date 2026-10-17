@@ -14,6 +14,8 @@ enum ProtocolIds {
     // CBUUID Sendable olmayabilir; statik saklamak yerine her seferinde üretilir.
     static var serviceUUID: CBUUID { CBUUID(string: serviceUUIDString) }
     static var fallbackServiceUUID: CBUUID { CBUUID(string: fallbackServiceUUIDString) }
+    static var c2pUUID: CBUUID { CBUUID(string: c2pUUIDString) }
+    static var p2cUUID: CBUUID { CBUUID(string: p2cUUIDString) }
     /// iOS 32 bit UUID'yi bazen kısa, bazen 128 bit gösterir: ikisi de aranır/eşlenir.
     static var fallbackServiceUUIDShort: CBUUID { CBUUID(string: "6C5A0F3D") }
     /// Servis keşfi: önce ana, yoksa yedek.

@@ -11,7 +11,8 @@ final class PairingController {
         case scanning
         case searching(String)
         case connecting(String)
-        case waitingApproval(String)
+        /// (PC adı, 4 haneli doğrulama kodu; Windows onay ekranındakiyle aynı olmalı)
+        case waitingApproval(String, String)
         case succeeded(String)
         case failed(String)
     }
@@ -90,7 +91,7 @@ final class PairingController {
                 expectedRemoteKey: invite.pcPublicKey)
 
             // PC'de onay: kullanıcı onaylamadan PC bir şey göndermez (PROTOCOL §2.4). Önce `hello`.
-            phase = .waitingApproval(invite.pcName)
+            phase = .waitingApproval(invite.pcName, channel.verificationCode)
             try await channel.sendSignal(.hello(helloInfo().helloMessage))
 
             var credentials: HotspotCredentials?
@@ -129,7 +130,7 @@ final class PairingController {
         } catch {
             if let openedLink, openedLink.isOpen { central.closeLink(openedLink.peripheralID) }
             if Task.isCancelled { return }
-            if case .waitingApproval = phase, !(error is PairingError) {
+            if case .waitingApproval(_, _) = phase, !(error is PairingError) {
                 phase = .failed(PairingError.rejectedByPC.localizedDescription)
             } else if let session = error as? SessionError, session == .peerKeyMismatch {
                 phase = .failed("Karşı cihazın anahtarı QR koduyla uyuşmuyor. Eşleştirme iptal edildi.")
