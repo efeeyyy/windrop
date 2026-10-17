@@ -189,7 +189,7 @@ public final class DirectoryReceiverStorage: ReceiverStorage {
         for n in 2...10_000 {
             let suffix = " (\(n))"
             var stem = name
-            while stem.utf8.count + suffix.utf8.count > FileNameSanitizer.maxLength, !stem.isEmpty { stem.removeLast() }
+            while FileNameSanitizer.diskByteLength(stem) + suffix.utf8.count > FileNameSanitizer.maxLength, !stem.isEmpty { stem.removeLast() }
             let candidate = stem + suffix
             if !exists(candidate) { return candidate }
         }

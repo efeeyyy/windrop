@@ -151,9 +151,9 @@ extension TransferTests {
         let (_, rr) = try await runTransfer(s, items: items, opts: options(id, items: items))
         XCTAssertEqual(rr.outcome, .completed)
         let top = try XCTUnwrap(try visibleNames().first)
-        XCTAssertLessThanOrEqual(top.utf8.count, 255)
+        XCTAssertLessThanOrEqual(top.decomposedStringWithCanonicalMapping.utf8.count, 255)
         let sub = try XCTUnwrap(try visibleNames(top).first)
-        XCTAssertLessThanOrEqual(sub.utf8.count, 255)
+        XCTAssertLessThanOrEqual(sub.decomposedStringWithCanonicalMapping.utf8.count, 255)
         await s.closeAll()
 
         // Çakışmada ek de bayt sınırını aşmaz.
@@ -163,7 +163,7 @@ extension TransferTests {
         XCTAssertEqual(rr2.outcome, .completed)
         let tops = try visibleNames()
         XCTAssertEqual(tops.count, 2)
-        XCTAssertTrue(tops.allSatisfy { $0.utf8.count <= 255 })
+        XCTAssertTrue(tops.allSatisfy { $0.decomposedStringWithCanonicalMapping.utf8.count <= 255 })
         XCTAssertTrue(tops.contains { $0.hasSuffix(" (2)") })
         await s2.closeAll()
     }

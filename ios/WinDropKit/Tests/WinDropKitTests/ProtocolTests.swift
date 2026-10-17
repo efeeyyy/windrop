@@ -321,21 +321,21 @@ final class FileNameSanitizerTests: XCTestCase {
     }
 
     func testLengthLimitIsUtf8Bytes() {
-        // Türkçe: her "ğ" 2 bayt -> 127 karakter (254 bayt); karakter ortasından kesilmez.
+        // Türkçe: "ğ" NFC 2 / NFD 3 bayt; sınır NFD (diskteki) bayta göre -> 83 karakter (249 + 4 = 253); karakter ortasından kesilmez.
         let tr = FileNameSanitizer.sanitize(String(repeating: "ğ", count: 200) + ".pdf")
         XCTAssertLessThanOrEqual(tr.utf8.count, 255)
         XCTAssertTrue(tr.hasSuffix(".pdf"))
-        XCTAssertEqual(tr, String(repeating: "ğ", count: 125) + ".pdf")   // 250 + 4 = 254 bayt
+        XCTAssertEqual(tr, String(repeating: "ğ", count: 83) + ".pdf")
         // Emoji (4 bayt) + uzantı.
         let emoji = FileNameSanitizer.sanitize(String(repeating: "😀", count: 100) + ".png")
         XCTAssertEqual(emoji, String(repeating: "😀", count: 62) + ".png")   // 248 + 4 = 252 bayt
         // 255 bayta tam sığan ad olduğu gibi kalır; 256 bayt kesilir.
         XCTAssertEqual(FileNameSanitizer.sanitize(String(repeating: "a", count: 255)).utf8.count, 255)
-        XCTAssertEqual(FileNameSanitizer.sanitize(String(repeating: "ş", count: 128)).utf8.count, 254)
+        XCTAssertEqual(FileNameSanitizer.sanitize(String(repeating: "ş", count: 128)).utf8.count, 170)   // 85 x 2 (NFD 255)
         XCTAssertEqual(FileNameSanitizer.sanitize(String(repeating: "a", count: 256)).utf8.count, 255)
         // Uzantısız uzun Türkçe ad.
         let noExt = FileNameSanitizer.sanitize(String(repeating: "ç", count: 300))
-        XCTAssertEqual(noExt, String(repeating: "ç", count: 127))
+        XCTAssertEqual(noExt, String(repeating: "ç", count: 85))
         // Bileşik karakter (e + birleştirici) grafem ortasından kesilmez.
         let combining = FileNameSanitizer.sanitize(String(repeating: "e\u{0301}", count: 200))
         XCTAssertEqual(combining.utf8.count % 3, 0)   // yalnız bütün "e + ´" çiftleri

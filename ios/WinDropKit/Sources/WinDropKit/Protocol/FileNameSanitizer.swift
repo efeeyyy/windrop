@@ -108,7 +108,18 @@ public enum FileNameSanitizer {
     }
 
     /// UTF-8 bayt sayısı (eşleşmiş vekil çifti 4 bayt; eşleşmemiş vekil 3, `sanitize` bunları zaten `_` yapar).
+    /// Apple dosya sistemleri adı ayrıştırılmış (NFD) biçimde tutar; bu yüzden ölçü, NFC ve NFD UTF-8
+    /// uzunluğunun büyüğüdür (örn. "ş" NFC 2, NFD 3 bayt).
     private static func utf8Length(_ u: [UInt16]) -> Int {
+        let nfc = rawUtf8Length(u)
+        if nfc == u.count { return nfc }   // salt ASCII: NFD aynı
+        return max(nfc, rawUtf8Length(Array(string(u).decomposedStringWithCanonicalMapping.utf16)))
+    }
+
+    /// Diskteki (NFC/NFD'nin büyüğü) UTF-8 bayt ölçüsü; klasör adı kesimi de bunu kullanır.
+    static func diskByteLength(_ s: String) -> Int { utf8Length(Array(s.utf16)) }
+
+    private static func rawUtf8Length(_ u: [UInt16]) -> Int {
         var total = 0
         var i = 0
         while i < u.count {
