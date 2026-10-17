@@ -35,9 +35,16 @@ Testleri çalıştırma:
 - Test güvenlik duvarı kuralları duruyor → `install\remove-test-rules.ps1`.
 - GitHub: github.com/efeeyyy/windrop (özel). iOS derlemesi her push'ta; IPA artifact "WinDrop-unsigned-ipa".
 
+## 2026-10-18 gece ikinci tur
+- Bluetooth ses algısı (Windows Core Audio, iOS AVAudioSession) + küçük dosya BLE yolu (PC `bleData` ile başlatır, §6.4a).
+- Aktarma sunucusu `relay/` (Cloudflare Worker + DO, 22 test) + iki uygulamada istemci ve veri kotası onayı;
+  C#↔Swift aktarma çapraz testi macOS CI'da yeşil (`.github/workflows/interop.yml`, run 39070933870).
+- Windows kurulum paketi: `build/publish.ps1` → `dist/WinDrop-win-x64.zip`; `install/install.ps1` (yönetici gerekmez).
+- Son sayılar: C# 458 test (Core 306, Platform 152), Swift 95, interop TCP 6/6 + relay 3/3, iOS CI yeşil.
+
 ## Açık işler (öncelik sırası)
 1. Sabah testleri: `docs/MORNING-TESTS.md`.
-2. Aktarma (relay) yolu + "veri kotası" uyarısı akışı; push (ücretli hesap).
-3. Bluetooth ses algısı (`btAudio`), küçük dosyalar için BLE veri yolu, klasör gönderme.
+2. Aktarma sunucusunu Efe'nin Cloudflare hesabına kurmak (`relay/README.md`).
+3. Push bildirimleri (ücretli Apple hesabı); klasör gönderme.
 4. Etkin nokta parolası yenilenirken süren başka etkin nokta aktarımı kesilebilir (bilinen risk).
-5. Windows yükleyici (MSIX/Inno), uygulama simgesi.
+5. Uygulama simgesi/marka; MSIX veya imzalı yükleyici.
