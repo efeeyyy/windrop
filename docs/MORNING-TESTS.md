@@ -49,8 +49,10 @@ ellerini gerektiriyor. Sırayla git; her adımda sonucu (çalıştı / hata mesa
 | 11 | iPad ile 3 ve 5 | Aynı |
 | 12 | AirPods'u çıkar, Wi-Fi'ı kapat, 50 KB'lık dosya gönder | Bluetooth üzerinden (yavaş ama) gider |
 | 13 | (Sunucu kurulduysa) farklı ağlarda gönder | "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir" onayı; sonra aktarım |
+| 14 | PC'den bir klasörü (alt klasörlü, Türkçe adlı) sürükle-bırakla gönder; iPhone'dan Dosyalar'da bir klasör gönder | Klasör yapısı aynen gelir |
 
 ## 4. Bilinen eksikler
-- Push bildirimleri (uygulama zorla kapatılmışken) — ücretli Apple hesabı ister.
+- Push bildirimleri (uygulama zorla kapatılmışken): kodu hazır, ücretli Apple hesabı + APNs anahtarıyla
+  `Release-Push` derlemesi ve sunucu sırları girilince açılır (`relay/README.md`).
 - iOS kodu Mac'te derleniyor ama hiçbir cihazda çalıştırılmadı; Bluetooth ve arka plan davranışları
   ilk kez bu testlerde görülecek.

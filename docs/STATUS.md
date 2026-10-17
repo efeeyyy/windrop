@@ -45,9 +45,17 @@ Testleri çalıştırma:
 - 2026-10-18 gerçek makine: `PlatformCheck hotspot-cycle` geçti — etkin nokta WinDrop SSID'siyle açıldı
   (2,4 GHz), 10 sn sonra kapandı, Efe'nin eski ayarı (SSID/bant/parola) birebir geri yüklendi.
 
+- 2026-10-18 üçüncü tur: klasör gönderme (§5a, iki taraf), push bildirimi (§6.5): sunucu `relay/src/push.ts`
+  (43 test), Windows istemcisi, iOS `Release-Push` yapılandırması (`PUSH_ENABLED`) — CI'da derleniyor, ücretli
+  hesap + APNs anahtarı olmadan kapalı. macOS CI gerçek bir hata yakaladı ve düzeltildi: APFS adları NFD
+  sakladığı için Türkçe uzun adlar 255 baytı aşıyordu.
+- Son sayılar: C# 507 (Core 337, Platform 170), Swift 110, relay 43, interop TCP 6/6 + relay 3/3;
+  iOS CI run 39073625313 yeşil (Release + Release-Push), IPA `dist/WinDrop-unsigned.ipa` (958 KB),
+  Windows `dist/WinDrop-win-x64.zip`.
+
 ## Açık işler (öncelik sırası)
 1. Sabah testleri: `docs/MORNING-TESTS.md`.
 2. Aktarma sunucusunu Efe'nin Cloudflare hesabına kurmak (`relay/README.md`).
-3. Push bildirimleri (ücretli Apple hesabı); klasör gönderme.
+3. Push'u açmak: ücretli Apple hesabı + APNs anahtarı (`relay/README.md`), `Release-Push` ile derleme.
 4. Etkin nokta parolası yenilenirken süren başka etkin nokta aktarımı kesilebilir (bilinen risk).
 5. Uygulama simgesi/marka; MSIX veya imzalı yükleyici.
