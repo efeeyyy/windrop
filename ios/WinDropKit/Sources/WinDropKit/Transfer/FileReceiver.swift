@@ -35,6 +35,10 @@ public final class FileReceiver {
     private var resumeOffsets: [Int: Int64] = [:]
     private var failed: [Int] = []
     private var received: [ReceivedFile] = []
+    /// PROTOCOL §5a: dosya kimliği -> temizlenmiş klasör bileşenleri (en üst klasör çakışması henüz çözülmemiş).
+    private var dirComponents: [Int: [String]] = [:]
+    /// Temizlenmiş en üst klasör adı -> hedef adı (aynı aktarımdaki tüm dosyalar aynı köke).
+    private var topFolders: [String: String] = [:]
 
     public init(channel: SecureChannel, storage: ReceiverStorage, options: ReceiverOptions,
                 frameReader: FrameReader? = nil, progress: ((TransferProgress) -> Void)? = nil) {
@@ -115,6 +119,16 @@ public final class FileReceiver {
                 if file.size < 0 { throw AbortSignal(reason: "negative size for file \(file.id)") }
                 if file.name.utf16.count > options.maxNameLength {
                     throw AbortSignal(reason: "file name longer than \(options.maxNameLength) characters (id \(file.id))")
+                }
+                if let dir = file.dir {
+                    do { dirComponents[file.id] = try FolderPath.sanitizedComponents(dir) }
+                    catch let e as FolderPathError {
+                        switch e {
+                        case .malformed(let m): throw TransferError.protocolViolation("invalid dir for file \(file.id): \(m)")
+                        case .tooDeep, .tooLong: throw AbortSignal(reason: "dir limit exceeded (file \(file.id))")
+                        case .escapesRoot: throw TransferError.protocolViolation("dir escapes root (file \(file.id))")
+                        }
+                    }
                 }
                 let (sum, overflow) = total.addingReportingOverflow(file.size)
                 if overflow { throw AbortSignal(reason: "manifest total overflows") }
@@ -203,7 +217,14 @@ public final class FileReceiver {
 
         let actual = sha256Hex(hasher.finalize())
         if written == file.size && actual == end.sha256 {
-            let path = try partial.commit(fileName: FileNameSanitizer.sanitize(file.name), sha256: actual)
+            let path: String
+            do {
+                path = try partial.commit(directory: try resolvedDirectory(file), fileName: FileNameSanitizer.sanitize(file.name),
+                                          sha256: actual)
+            } catch let e as FolderPathError {
+                try? partial.discard()
+                throw TransferError.protocolViolation("dir rejected for file \(file.id): \(e)")
+            }
             received.append(ReceivedFile(id: file.id, originalName: file.name, storedPath: path))
         } else {
             try partial.discard()   // bütünlük hatası: sil, DONE.failed'e gir
@@ -211,6 +232,19 @@ public final class FileReceiver {
         }
         tracker.report(fileId: file.id, name: file.name, index: index, count: count, fileDone: file.size, fileSize: file.size,
                        done: completedBytes + file.size, total: total, force: true)
+    }
+
+    /// Dosyanın hedef klasör bileşenleri; en üst klasör çakışması bir kez çözülür ve aktarım boyunca (devam dahil) sabit kalır.
+    private func resolvedDirectory(_ file: ManifestFile) throws -> [String] {
+        guard let comps = dirComponents[file.id], let top = comps.first else { return [] }
+        let resolved: String
+        if let known = topFolders[top] {
+            resolved = known
+        } else {
+            resolved = try storage.resolveTopFolder(peerId: options.peerId, transferId: options.transferId, name: top)
+            topFolders[top] = resolved
+        }
+        return [resolved] + comps.dropFirst()
     }
 
     /// Dosya önceki oturumda tamamen alınmıştı: RESUME = boyut. Gönderen FILE_START(boyut) ve FILE_END yollar

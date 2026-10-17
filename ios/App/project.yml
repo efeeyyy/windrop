@@ -8,6 +8,9 @@
 # Ücretsiz hesapta varsayılan "Release"/"Debug" yapılandırmaları kullanılır (yetki yok).
 # Ücretli hesapta "Release-Hotspot" yapılandırması WinDrop-Hotspot.entitlements dosyasını
 # bağlar ve HOTSPOT_ENTITLEMENT derleme bayrağını açar.
+# Push bildirimi (APNs, docs/PROTOCOL.md §6.5) da YALNIZ ücretli hesapla çalışır: "Release-Push" yapılandırması
+# WinDrop-Push.entitlements (aps-environment) dosyasını bağlar ve PUSH_ENABLED derleme bayrağını açar. Ücretsiz hesapta
+# push kodu hiç derlenmez. (Hotspot ve Push'u birlikte istiyorsanız iki yetkiyi tek dosyada birleştirip bayrakları ekleyin.)
 # Paylaşım Uzantısı (WinDropShare, iOS paylaşım menüsü): Shared/ klasörü iki hedefe de derlenir; ShareExtension/ yalnız uzantıdır.
 # Kimlik paylaşımı (App Groups / Keychain Sharing) ÜCRETLİ hesapta: iki hedefin SWIFT_ACTIVE_COMPILATION_CONDITIONS'una
 # APP_GROUP ekleyin ve iki hedefe `keychain-access-groups` = $(AppIdentifierPrefix)com.efe.windrop.shared yetkisi verin
@@ -26,6 +29,7 @@ configs:
   Debug: debug
   Release: release
   Release-Hotspot: release
+  Release-Push: release
 
 packages:
   WinDropKit:
@@ -89,6 +93,9 @@ targets:
         Release-Hotspot:
           CODE_SIGN_ENTITLEMENTS: WinDrop-Hotspot.entitlements
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) HOTSPOT_ENTITLEMENT"
+        Release-Push:
+          CODE_SIGN_ENTITLEMENTS: WinDrop-Push.entitlements
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) PUSH_ENABLED"
 
   WinDropShare:
     type: app-extension

@@ -21,8 +21,10 @@ public struct ManifestFile: Codable, Equatable {
     public var size: Int64
     /// Unix epoch milisaniye.
     public var mtime: Int64
-    public init(id: Int, name: String, size: Int64, mtime: Int64) {
-        self.id = id; self.name = name; self.size = size; self.mtime = mtime
+    /// PROTOCOL §5a: gönderilen kökten göreli klasör yolu (`/` ayırıcı, ≤ 16 seviye, ≤ 1024 karakter); nil ise yazılmaz.
+    public var dir: String?
+    public init(id: Int, name: String, size: Int64, mtime: Int64, dir: String? = nil) {
+        self.id = id; self.name = name; self.size = size; self.mtime = mtime; self.dir = dir
     }
 }
 

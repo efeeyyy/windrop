@@ -82,7 +82,7 @@ final class ShareModel {
         }
         for provider in providers {
             do {
-                files.append(try await ShareItemLoader.loadFile(from: provider))
+                files.append(contentsOf: try await ShareItemLoader.loadFiles(from: provider))
             } catch {
                 skippedCount += 1
             }

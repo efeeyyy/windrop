@@ -199,6 +199,16 @@ final class BleFragmenterTests: XCTestCase {
 }
 
 final class SignalMessageTests: XCTestCase {
+    /// PROTOCOL §6.5; C# ile aynı JSON (anahtar sırası anlamsız).
+    func testPushIdJson() throws {
+        let id = "0123456789abcdef0123456789abcdef"
+        let message = SignalMessage.pushId(PushIdMessage(pushId: id))
+        XCTAssertEqual(String(decoding: try message.encode(), as: UTF8.self), #"{"pushId":"\#(id)","t":"pushId"}"#)
+        XCTAssertEqual(try SignalMessage.decode(Data(#"{"t":"pushId","pushId":"\#(id)"}"#.utf8)), message)
+        XCTAssertNil(message.transferId)
+        XCTAssertThrowsError(try SignalMessage.decode(Data(#"{"t":"pushId"}"#.utf8)))   // zorunlu alan yok
+    }
+
     func testRoundTripAllTypes() throws {
         let id = TransferId.random().description
         let all: [SignalMessage] = [
@@ -214,6 +224,7 @@ final class SignalMessageTests: XCTestCase {
             .path(PathMessage(transferId: id, result: .hotspotFail)),
             .cancel(SignalCancelMessage(transferId: id)),
             .bleData(BleDataMessage(transferId: id)),
+            .pushId(PushIdMessage(pushId: "0123456789abcdef0123456789abcdef")),
         ]
         for m in all {
             let data = try m.encode()

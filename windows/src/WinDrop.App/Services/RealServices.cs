@@ -29,7 +29,7 @@ public sealed class DeviceService : IDeviceService
                 .Select(d =>
                 {
                     var id = DeviceId.ToHex(d.DeviceId);
-                    return new DeviceInfo(id, d.Name, _rt.Coordinator.IsNearby(id));
+                    return new DeviceInfo(id, d.Name, _rt.Coordinator.IsNearby(id), _rt.Coordinator.CanPush(id));
                 })
                 .ToList();
             foreach (var n in _rt.Coordinator.NearbyPeers)
@@ -78,7 +78,7 @@ public sealed class TransferService : ITransferService
         _coord = runtime.Coordinator;
         _coord.TransferUpdated += snap => _ui.Post(_ => Apply(snap), null);
         _coord.OfferReceived += o => _ui.Post(_ =>
-            OfferReceived?.Invoke(this, new IncomingOffer(o.Id.ToString(), o.PeerName, o.FileCount, o.TotalBytes, o.VerificationCode)), null);
+            OfferReceived?.Invoke(this, new IncomingOffer(o.Id.ToString(), o.PeerName, o.FileCount, o.TotalBytes, o.VerificationCode, o.Preview)), null);
         _coord.RelayApprovalRequested += r => _ui.Post(_ =>
             RelayApprovalRequested?.Invoke(this, new RelayApproval(r.Id.ToString(), r.PeerName, r.TotalBytes)), null);
     }
@@ -132,6 +132,7 @@ public sealed class TransferService : ITransferService
         item.Progress = s.Progress;
         item.BytesPerSecond = s.BytesPerSecond;
         item.ErrorMessage = s.Error;
+        item.PushPending = s.Note == TransferNote.PushSent;
         if (s.SavedPath is not null) item.SavedPath = s.SavedPath;
         item.Status = s.Phase switch
         {

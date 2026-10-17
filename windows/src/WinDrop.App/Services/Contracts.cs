@@ -4,7 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace WinDrop.App.Services;
 
 /// <summary>Eşli cihaz. <see cref="Name"/> eşleştirme anındaki addır.</summary>
-public sealed record DeviceInfo(string Id, string Name, bool IsNearby);
+/// <param name="CanPush">PROTOCOL §6.5: yakında değil ama push bildirimiyle uyandırılabilir (pushId kayıtlı + aktarma sunucusu adresi dolu).</param>
+public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false);
 
 /// <summary>Açık eşleştirme oturumu: QR yükü + süre; <see cref="Cancel"/> eşleştirme modunu kapatır.</summary>
 public sealed class PairingSession
@@ -78,11 +79,15 @@ public sealed partial class TransferItem : ObservableObject
 
     /// <summary>Başarısız/iptal/reddedilen aktarımın anlaşılır nedeni (Türkçe).</summary>
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor (PROTOCOL §6.5).</summary>
+    [ObservableProperty] public partial bool PushPending { get; set; }
 }
 
 /// <summary>Eşli cihazdan gelen teklif; gönderen adı eşleştirme kaydından gelir.</summary>
 /// <param name="VerificationCode">Eşleştirmesiz (XX) oturumda 4 haneli doğrulama kodu (PROTOCOL §2b); yoksa null.</param>
-public sealed record IncomingOffer(string OfferId, string SenderName, int FileCount, long TotalBytes, string? VerificationCode = null);
+public sealed record IncomingOffer(string OfferId, string SenderName, int FileCount, long TotalBytes, string? VerificationCode = null,
+    IReadOnlyList<string>? Preview = null);
 
 /// <summary>Aktarma sunucusu (internet/hücresel veri) yolu için kullanıcı onayı (PROTOCOL §6.3).</summary>
 public sealed record RelayApproval(string TransferId, string DeviceName, long TotalBytes);

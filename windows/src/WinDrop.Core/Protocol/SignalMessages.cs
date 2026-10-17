@@ -20,6 +20,7 @@ namespace WinDrop.Core.Protocol;
 [JsonDerivedType(typeof(CancelSignalMessage), "cancel")]
 [JsonDerivedType(typeof(BleDataMessage), "bleData")]
 [JsonDerivedType(typeof(PairInfoMessage), "pairInfo")]
+[JsonDerivedType(typeof(PushIdMessage), "pushId")]
 public abstract record SignalMessage;
 
 /// <summary>hello (iki yön). <c>wifi</c> yalnız iPhone'dan gelir (<see cref="WifiState"/>), PC'de yok olabilir.</summary>
@@ -82,6 +83,27 @@ public sealed record CancelSignalMessage([property: JsonRequired] TransferId Tra
 
 /// <summary>bleData (PC→iPhone, PROTOCOL §6.4a): aktarım BLE oturumu üstünden §5 çerçeveleriyle yapılacak; gönderen taraf MANIFEST ile başlar.</summary>
 public sealed record BleDataMessage([property: JsonRequired] TransferId TransferId) : SignalMessage;
+
+/// <summary>
+/// pushId (iPhone→PC, yalnız tanıdık/eşli cihazın şifreli BLE kanalında, PROTOCOL §6.5): aktarma sunucusundaki push kaydı kimliği.
+/// Biçim (<see cref="PushIds.IsValid"/>) kodlama/çözmede denetlenmez: geçersiz değeri alan taraf mesajı yok sayar, oturumu düşürmez.
+/// </summary>
+public sealed record PushIdMessage([property: JsonRequired] string PushId) : SignalMessage;
+
+/// <summary>§6.5 pushId biçimi.</summary>
+public static class PushIds
+{
+    public const int Length = 32;
+
+    /// <summary>Tam 32 karakter, yalnız 0-9 a-f (sunucudaki <c>/^[0-9a-f]{32}$/</c> ile aynı).</summary>
+    public static bool IsValid(string? pushId)
+    {
+        if (pushId is null || pushId.Length != Length) return false;
+        foreach (var c in pushId)
+            if (!(c is (>= '0' and <= '9') or (>= 'a' and <= 'f'))) return false;
+        return true;
+    }
+}
 
 public static class WifiState
 {

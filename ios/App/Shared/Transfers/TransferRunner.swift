@@ -16,6 +16,18 @@ struct OutgoingFile: Sendable, Identifiable, Hashable {
     var securityScoped: Bool
     /// Geçici kopya (fotoğraf seçici); iş bitince silinir.
     var isTemporary: Bool
+    /// PROTOCOL §5a: gönderilen klasör kökünden göreli klasör yolu (`Klasör/alt`, `/` ayırıcı); tek dosyada nil.
+    var dir: String? = nil
+    /// Klasör seçimi: güvenlik kapsamı bu URL için açıldı (klasörün ilk dosyasında yalnız bir kez set edilir; iş bitince kapatılır).
+    var scopeURL: URL? = nil
+    /// Klasör geçici kopyaysa silinecek kök (Paylaşım uzantısı).
+    var tempRoot: URL? = nil
+
+    /// `offer.preview` / arayüz adı (PROTOCOL §5a): klasör içindeyse en üst klasör adı + sonda "/", değilse dosya adı.
+    var displayName: String {
+        guard let dir, let top = dir.split(separator: "/", maxSplits: 1).first else { return name }
+        return String(top) + "/"
+    }
 }
 
 /// Alınıp diske yazılmış dosya (Kit `ReceivedFile`'ın uygulama karşılığı; ad çakışmasın diye ayrı).
@@ -94,7 +106,7 @@ enum TransferRunner {
     ) async throws -> TransferSummary {
         guard let tid = TransferId(bytes: transferId) else { throw TransferFailure.invalidTransferId }
         let channel = try await openChannel(transport: transport, transferId: tid, crypto: crypto)
-        let items = try files.map { try DiskFileSource.makeItem(id: $0.id, url: $0.url, name: $0.name) }
+        let items = try files.map { try DiskFileSource.makeItem(id: $0.id, url: $0.url, name: $0.name, dir: $0.dir, lazy: $0.dir != nil) }
         let result = try await FileSender(channel: channel, items: items, progress: progress).run()
         return summarize(result)
     }
@@ -117,7 +129,7 @@ enum TransferRunner {
     static func sendOverBle(
         session: BleDataSession, files: [OutgoingFile], progress: @escaping @Sendable (TransferProgress) -> Void
     ) async throws -> TransferSummary {
-        let items = try files.map { try DiskFileSource.makeItem(id: $0.id, url: $0.url, name: $0.name) }
+        let items = try files.map { try DiskFileSource.makeItem(id: $0.id, url: $0.url, name: $0.name, dir: $0.dir, lazy: $0.dir != nil) }
         let sender = FileSender(
             channel: session.channel, items: items, chunkSize: TransferLimits.bleChunkSize,
             bytesPerSecond: TransferLimits.bleBytesPerSecond, frameReader: session.nextFrame,

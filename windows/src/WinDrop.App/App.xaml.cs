@@ -157,6 +157,12 @@ public partial class App : Application, IAppShell
         return dialog.ShowDialog() == true ? dialog.FileNames : [];
     }
 
+    public IReadOnlyList<string> PickFolder()
+    {
+        var dialog = new OpenFolderDialog { Multiselect = true, Title = Strings.Get("Dialog.PickSendFolder") };
+        return dialog.ShowDialog() == true ? dialog.FolderNames : [];
+    }
+
     // ---- Gelen teklif ----
 
     private void OnRelayApprovalRequested(object? sender, RelayApproval approval)

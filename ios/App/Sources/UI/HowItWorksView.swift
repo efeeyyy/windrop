@@ -3,11 +3,10 @@ import SwiftUI
 /// Kullanıcıya yazılı uyarılar (ARCHITECTURE "Uyarılar uygulamada yazılı olacak").
 enum HowItWorksContent {
     /// (1) Uygulama uygulama değiştiricide kapatılırsa PC telefonu göremez.
-    /// `PUSH_ENABLED` (ileride ücretli hesap + APNs): metin değişir. Push kodu bu aşamada yok.
+    /// `PUSH_ENABLED` (ücretli hesap + APNs, PROTOCOL §6.5): metin değişir.
     static var closedAppNote: String {
         #if PUSH_ENABLED
-        // TODO(push): metin push uygulanınca Efe ile kesinleştirilecek.
-        return "Uygulamayı kapatsanız bile bilgisayarınızdan gelen dosyalar bildirim olarak ulaşır; bildirime dokunmanız yeterli."
+        return "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir)."
         #else
         return "Uygulamayı uygulama değiştiricide yukarı kaydırıp kapatırsanız bilgisayarınız telefonunuzu göremez. WinDrop'u bir kez açmanız yeterli."
         #endif

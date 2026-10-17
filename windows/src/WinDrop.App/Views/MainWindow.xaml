@@ -19,8 +19,10 @@
                 DragEnter="OnDragOver" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
             <StackPanel HorizontalAlignment="Center">
                 <TextBlock Text="{infra:T Main.DropHere}" FontSize="16" HorizontalAlignment="Center" />
-                <Button Content="{infra:T Main.PickFiles}" Command="{Binding PickFilesCommand}"
-                        HorizontalAlignment="Center" Margin="0,10,0,0" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <Button Content="{infra:T Main.PickFiles}" Command="{Binding PickFilesCommand}" Margin="0,0,8,0" />
+                    <Button Content="{infra:T Main.PickFolder}" Command="{Binding PickFolderCommand}" />
+                </StackPanel>
                 <StackPanel Visibility="{Binding HasStaged, Converter={StaticResource BoolToVis}}" Margin="0,12,0,0">
                     <TextBlock Text="{Binding StagedText}" HorizontalAlignment="Center" FontWeight="SemiBold" />
                     <TextBlock Text="{infra:T Main.HintSelectDevice}" HorizontalAlignment="Center" Opacity="0.7" Margin="0,4,0,0"
@@ -49,7 +51,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                             <Border Grid.Column="1" CornerRadius="10" Padding="8,2" Margin="12,0,0,0"
-                                    Background="{Binding IsNearby, Converter={StaticResource NearbyBrush}}">
+                                    Background="{Binding IsReachable, Converter={StaticResource NearbyBrush}}">
                                 <TextBlock Text="{Binding BadgeText}" FontSize="12" />
                             </Border>
                         </Grid>

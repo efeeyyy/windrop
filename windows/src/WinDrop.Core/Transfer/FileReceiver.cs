@@ -137,6 +137,7 @@ public sealed class FileReceiver
             if (f.Size < 0) throw new AbortException($"negative size for file {f.Id}");
             if (f.Name.Length > _options.MaxNameLength)
                 throw new AbortException($"file name longer than {_options.MaxNameLength} characters (id {f.Id})");
+            RelativeDirectory.Parse(f.Dir);   // §5a: geçersiz dir → ProtocolException (hiçbir dosya yazılmadan)
             if (long.MaxValue - total < f.Size) throw new AbortException("manifest total overflows");
             total += f.Size;
         }
@@ -228,7 +229,7 @@ public sealed class FileReceiver
             if (written == file.Size && string.Equals(actual, end.Sha256, StringComparison.OrdinalIgnoreCase))
             {
                 var safeName = FileNameSanitizer.Sanitize(file.Name);
-                var path = await partial.CommitAsync(safeName, actual, ct).ConfigureAwait(false);
+                var path = await partial.CommitAsync(safeName, RelativeDirectory.Parse(file.Dir), actual, ct).ConfigureAwait(false);
                 _received.Add(new ReceivedFile(file.Id, file.Name, path));
             }
             else

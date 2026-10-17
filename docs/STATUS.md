@@ -42,6 +42,9 @@ Testleri çalıştırma:
 - Windows kurulum paketi: `build/publish.ps1` → `dist/WinDrop-win-x64.zip`; `install/install.ps1` (yönetici gerekmez).
 - Son sayılar: C# 458 test (Core 306, Platform 152), Swift 95, interop TCP 6/6 + relay 3/3, iOS CI yeşil.
 
+- 2026-10-18 gerçek makine: `PlatformCheck hotspot-cycle` geçti — etkin nokta WinDrop SSID'siyle açıldı
+  (2,4 GHz), 10 sn sonra kapandı, Efe'nin eski ayarı (SSID/bant/parola) birebir geri yüklendi.
+
 ## Açık işler (öncelik sırası)
 1. Sabah testleri: `docs/MORNING-TESTS.md`.
 2. Aktarma sunucusunu Efe'nin Cloudflare hesabına kurmak (`relay/README.md`).

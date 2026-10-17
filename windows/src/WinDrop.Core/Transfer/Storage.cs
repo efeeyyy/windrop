@@ -11,6 +11,8 @@ public interface IFileSource
     long Size { get; }
     /// <summary>Unix epoch milisaniye (PROTOCOL §9a).</summary>
     long MtimeMs { get; }
+    /// <summary>PROTOCOL §5a: seçilen klasörün adı + göreli alt yol ('/' ayırıcı); klasör dışı dosyada null.</summary>
+    string? Dir => null;
     /// <summary>Dosyayı 0. bayttan okumak üzere açar (gönderen, devamda ilk <c>offset</c> baytı yeniden hash'ler).</summary>
     ValueTask<Stream> OpenReadAsync(CancellationToken cancellationToken);
 }
@@ -64,8 +66,9 @@ public interface IPartialFile : IAsyncDisposable
     ValueTask SyncAckAsync(long ackedOffset, CancellationToken cancellationToken);
 
     /// <summary>Doğrulanan dosyayı hedefe taşır (<paramref name="safeName"/> temizlenmiş ad; çakışmada "ad (2).ext"),
-    /// tamamlanma kaydını yazar. Saklanan yolu döndürür.</summary>
-    ValueTask<string> CommitAsync(string safeName, string sha256Hex, CancellationToken cancellationToken);
+    /// tamamlanma kaydını yazar. Saklanan yolu döndürür. <paramref name="safeDir"/> (§5a, <see cref="RelativeDirectory.Parse"/> çıktısı)
+    /// null değilse dosya indirme klasörü altındaki bu alt klasöre gider; en üst klasör çakışmasında "ad (2)" aktarım başına bir kez çözülür.</summary>
+    ValueTask<string> CommitAsync(string safeName, IReadOnlyList<string>? safeDir, string sha256Hex, CancellationToken cancellationToken);
 
     /// <summary>Kısmi dosyayı ve üst verisini siler.</summary>
     ValueTask DeleteAsync(CancellationToken cancellationToken);
@@ -89,12 +92,14 @@ public sealed class FileSystemFileSource : IFileSource
 {
     private readonly string _path;
 
-    public FileSystemFileSource(string path)
+    /// <param name="dir">PROTOCOL §5a göreli klasör yolu (null: klasör dışı dosya).</param>
+    public FileSystemFileSource(string path, string? dir = null)
     {
         var info = new FileInfo(path);
         if (!info.Exists) throw new FileNotFoundException("Gönderilecek dosya yok.", path);
         _path = info.FullName;
         Name = info.Name;
+        Dir = dir;
         Size = info.Length;
         MtimeMs = new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero).ToUnixTimeMilliseconds();
     }
@@ -102,6 +107,7 @@ public sealed class FileSystemFileSource : IFileSource
     public string Name { get; }
     public long Size { get; }
     public long MtimeMs { get; }
+    public string? Dir { get; }
 
     public ValueTask<Stream> OpenReadAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult<Stream>(new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read,
@@ -234,6 +240,60 @@ public sealed class FileSystemPartialStore : IPartialStore
         return removed;
     }
 
+    private static readonly object RootsLock = new();
+
+    /// <summary>
+    /// §5a: <paramref name="safeDir"/> için hedef dizini oluşturur ve döndürür. En üst klasör çakışmasında "ad (2)" yalnız bir kez
+    /// (aktarım başına, <c>roots.json</c> içinde saklanır; devam oturumunda da aynı) çözülür, aynı aktarımın tüm dosyaları aynı köke gider.
+    /// Sonuç, <see cref="FinalDirectory"/> altında kalır (<see cref="Path.GetFullPath(string)"/> ile doğrulanır), aksi halde <see cref="ProtocolException"/>.
+    /// </summary>
+    internal string ResolveTargetDirectory(string transferDir, IReadOnlyList<string> safeDir)
+    {
+        string resolvedTop;
+        lock (RootsLock)
+        {
+            var mapPath = Path.Combine(transferDir, "roots.json");
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(mapPath))
+            {
+                try
+                {
+                    var loaded = JsonSerializer.Deserialize(File.ReadAllBytes(mapPath), PartialJsonContext.Default.DictionaryStringString);
+                    if (loaded is not null) foreach (var kv in loaded) map[kv.Key] = kv.Value;
+                }
+                catch (JsonException) { /* bozuk kayıt: yeniden çözülür */ }
+            }
+            if (!map.TryGetValue(safeDir[0], out resolvedTop!))
+            {
+                resolvedTop = FileNameSanitizer.MakeUnique(safeDir[0], new DirectoryNameExistence(_finalDirectory));
+                Directory.CreateDirectory(Path.Combine(_finalDirectory, resolvedTop));   // başka aktarım aynı adı almasın
+                map[safeDir[0]] = resolvedTop;
+                Directory.CreateDirectory(transferDir);
+                var tmp = mapPath + ".tmp";
+                File.WriteAllBytes(tmp, JsonSerializer.SerializeToUtf8Bytes(map, PartialJsonContext.Default.DictionaryStringString));
+                File.Move(tmp, mapPath, overwrite: true);
+            }
+        }
+
+        var parts = new List<string>(safeDir.Count) { resolvedTop };
+        for (var i = 1; i < safeDir.Count; i++) parts.Add(safeDir[i]);
+        var target = Path.GetFullPath(Path.Combine(_finalDirectory, Path.Combine(parts.ToArray())));
+        var rootPrefix = Path.TrimEndingDirectorySeparator(_finalDirectory) + Path.DirectorySeparatorChar;
+        if (!target.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+            throw new ProtocolException("dir hedef klasörün dışına çıkıyor.");
+        Directory.CreateDirectory(target);
+        return target;
+    }
+
+    internal sealed class DirectoryNameExistence(string directory) : IFileNameExistence
+    {
+        public bool Exists(string fileName)
+        {
+            var p = Path.Combine(directory, fileName);
+            return File.Exists(p) || Directory.Exists(p);
+        }
+    }
+
     internal string FinalDirectory => _finalDirectory;
     internal IFileCommitHook? Hook => _hook;
 
@@ -256,6 +316,7 @@ internal sealed record PartialMeta(long Size, long MtimeMs, long AckedOffset);
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(PartialMeta))]
 [JsonSerializable(typeof(CompletedFile))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 internal sealed partial class PartialJsonContext : JsonSerializerContext;
 
 internal sealed class FileSystemPartialFile : IPartialFile
@@ -332,7 +393,7 @@ internal sealed class FileSystemPartialFile : IPartialFile
         _acked = ackedOffset;
     }
 
-    public async ValueTask<string> CommitAsync(string safeName, string sha256Hex, CancellationToken cancellationToken)
+    public async ValueTask<string> CommitAsync(string safeName, IReadOnlyList<string>? safeDir, string sha256Hex, CancellationToken cancellationToken)
     {
         if (_stream is not null)
         {
@@ -341,11 +402,14 @@ internal sealed class FileSystemPartialFile : IPartialFile
             _stream = null;
         }
         if (_store.Hook is { } before) await before.OnBeforeCommitAsync(_partPath, cancellationToken).ConfigureAwait(false);
-        var existence = new DirectoryExistence(_store.FinalDirectory);
+        var targetDir = safeDir is { Count: > 0 }
+            ? _store.ResolveTargetDirectory(Path.GetDirectoryName(_partPath)!, safeDir)
+            : _store.FinalDirectory;
+        var existence = new FileSystemPartialStore.DirectoryNameExistence(targetDir);
         for (var attempt = 0; attempt < 100; attempt++)
         {
             var name = FileNameSanitizer.MakeUnique(safeName, existence);
-            var dest = Path.Combine(_store.FinalDirectory, name);
+            var dest = Path.Combine(targetDir, name);
             try
             {
                 File.Move(_partPath, dest, overwrite: false);
@@ -400,14 +464,5 @@ internal sealed class FileSystemPartialFile : IPartialFile
         }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
-    }
-
-    private sealed class DirectoryExistence(string directory) : IFileNameExistence
-    {
-        public bool Exists(string fileName)
-        {
-            var p = Path.Combine(directory, fileName);
-            return File.Exists(p) || Directory.Exists(p);
-        }
     }
 }

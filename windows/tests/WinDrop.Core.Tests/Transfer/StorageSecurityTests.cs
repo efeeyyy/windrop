@@ -69,7 +69,7 @@ public sealed class StorageSecurityTests : IDisposable
         await file.AppendAsync(new byte[] { 1, 2, 3 }, default);
         await file.SyncAckAsync(3, default);
 
-        var dest = await file.CommitAsync("a.bin", new string('0', 64), default);
+        var dest = await file.CommitAsync("a.bin", null, new string('0', 64), default);
 
         Assert.Equal(["before", "after"], hook.Events);
         Assert.EndsWith(".part", hook.PartSeenBefore);     // MOTW .part dosyasına, taşımadan önce yazılabilir
@@ -88,7 +88,7 @@ public sealed class StorageSecurityTests : IDisposable
         await using var file = await store.CreateAsync(key, 1, 1, default);
         await file.AppendAsync(new byte[] { 9 }, default);
         await file.SyncAckAsync(1, default);
-        var dest = await file.CommitAsync("b.bin", new string('0', 64), default);
+        var dest = await file.CommitAsync("b.bin", null, new string('0', 64), default);
         Assert.Equal([dest], hook.Paths);
     }
 

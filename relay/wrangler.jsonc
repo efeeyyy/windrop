@@ -9,11 +9,13 @@
   "durable_objects": {
     "bindings": [
       { "name": "ROOM", "class_name": "Room" },
-      { "name": "IP_LIMITER", "class_name": "IpLimiter" }
+      { "name": "IP_LIMITER", "class_name": "IpLimiter" },
+      { "name": "PUSH_REGISTRY", "class_name": "PushRegistry" }
     ]
   },
   // Ücretsiz planda yalnız SQLite tabanlı Durable Object sınıfları çalışır.
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["Room", "IpLimiter"] }
+    { "tag": "v1", "new_sqlite_classes": ["Room", "IpLimiter"] },
+    { "tag": "v2", "new_sqlite_classes": ["PushRegistry"] }
   ]
 }

@@ -67,8 +67,9 @@ public sealed class Rig : IDisposable
 }
 
 /// <summary>Bellek içinde verilen bayt dizisini kaynak olarak sunar (ad serbest: tehlikeli adlar için).</summary>
-public sealed class MemoryFileSource(string name, byte[] data, long mtimeMs = 1_700_000_000_000) : IFileSource
+public sealed class MemoryFileSource(string name, byte[] data, long mtimeMs = 1_700_000_000_000, string? dir = null) : IFileSource
 {
+    public string? Dir { get; } = dir;
     public string Name { get; } = name;
     public long Size => data.Length;
     public long MtimeMs { get; } = mtimeMs;

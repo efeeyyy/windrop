@@ -158,9 +158,10 @@ internal sealed class Harness : IAsyncDisposable
     public FakeBluetoothAudioMonitor BtAudio { get; } = new();
 
     /// <param name="blePace">BLE veri yolu hız sınırı (bayt/sn); testlerde varsayılan sınırsız.</param>
-    public Harness(bool autoAccept = true, bool trustPhone = true, TransferTimeouts? timeouts = null, int blePace = 0)
+    public Harness(bool autoAccept = true, bool trustPhone = true, TransferTimeouts? timeouts = null, int blePace = 0,
+        string relayUrl = "", HttpMessageHandler? pushHandler = null, TimeProvider? time = null)
     {
-        Settings = new AppSettings { DownloadFolder = Path.Combine(Dir.Path, "downloads"), AutoAccept = autoAccept };
+        Settings = new AppSettings { DownloadFolder = Path.Combine(Dir.Path, "downloads"), AutoAccept = autoAccept, RelayUrl = relayUrl };
         var root = Path.Combine(Dir.Path, "pc");
         Identity = new IdentityStore(root);
         Trusted = new TrustedDevices(root);
@@ -186,6 +187,8 @@ internal sealed class Harness : IAsyncDisposable
             BluetoothAudio = BtAudio,
             BleBytesPerSecond = blePace,
             LocalKey = Identity.LoadOrCreate(),
+            PushHandler = pushHandler,
+            Time = time ?? TimeProvider.System,
             Timeouts = timeouts ?? new TransferTimeouts
             {
                 Accept = TimeSpan.FromSeconds(10),

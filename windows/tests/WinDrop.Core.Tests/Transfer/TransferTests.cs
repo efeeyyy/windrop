@@ -591,7 +591,7 @@ public sealed class TransferTests : IDisposable
             Assert.Equal(ackedOffset, inner.AckedOffset);          // kalıcılaştı
             synced.Add(ackedOffset);
         }
-        public ValueTask<string> CommitAsync(string n, string sha, CancellationToken ct) => inner.CommitAsync(n, sha, ct);
+        public ValueTask<string> CommitAsync(string n, IReadOnlyList<string>? dir, string sha, CancellationToken ct) => inner.CommitAsync(n, dir, sha, ct);
         public ValueTask DeleteAsync(CancellationToken ct) => inner.DeleteAsync(ct);
         public ValueTask DisposeAsync() => inner.DisposeAsync();
     }

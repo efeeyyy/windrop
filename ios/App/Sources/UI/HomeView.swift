@@ -9,6 +9,8 @@ struct HomeView: View {
     @State private var showSourceDialog = false
     @State private var showPhotoPicker = false
     @State private var showImporter = false
+    /// Aynı `.fileImporter` hem dosya hem klasör seçer (bir görünümde tek `fileImporter` güvenilir çalışır).
+    @State private var importingFolders = false
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var isLoading = false
     @State private var errorText: String?
@@ -62,16 +64,25 @@ struct HomeView: View {
             .navigationTitle("WinDrop")
             .confirmationDialog("Ne göndermek istersiniz?", isPresented: $showSourceDialog, titleVisibility: .visible) {
                 Button("Fotoğraf veya video") { showPhotoPicker = true }
-                Button("Dosya") { showImporter = true }
+                Button("Dosya") { importingFolders = false; showImporter = true }
+                Button("Klasör") { importingFolders = true; showImporter = true }
                 Button("Vazgeç", role: .cancel) {}
             }
             .photosPicker(
                 isPresented: $showPhotoPicker, selection: $photoItems,
                 matching: .any(of: [.images, .videos]), preferredItemEncoding: .current)
             .onChange(of: photoItems) { _, items in loadPhotos(items) }
-            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+            .fileImporter(
+                isPresented: $showImporter, allowedContentTypes: importingFolders ? [.folder] : [.item],
+                allowsMultipleSelection: true
+            ) { result in
                 switch result {
-                case .success(let urls): present(FilePreparer.outgoing(fromImported: urls))
+                case .success(let urls):
+                    if importingFolders {
+                        loadFolders(urls)
+                    } else {
+                        present(FilePreparer.outgoing(fromImported: urls))
+                    }
                 case .failure(let error): errorText = error.localizedDescription
                 }
             }
@@ -113,9 +124,31 @@ struct HomeView: View {
         }
     }
 
+    /// Klasörler: güvenlik kapsamlı erişim açılır, ağaç arka planda taranır (PROTOCOL §5a).
+    private func loadFolders(_ urls: [URL]) {
+        isLoading = true
+        errorText = nil
+        Task {
+            let result = await Task.detached(priority: .userInitiated) {
+                FilePreparer.outgoing(fromImportedFolders: urls)
+            }.value
+            isLoading = false
+            if let message = result.error {
+                errorText = message
+            } else {
+                present(result.files)
+            }
+        }
+    }
+
     private func present(_ files: [OutgoingFile]) {
         guard !files.isEmpty else {
-            errorText = "Gönderilecek dosya seçilmedi (klasörler gönderilemez)."
+            errorText = "Gönderilecek dosya seçilmedi (boş klasörler ve klasör seçmeden dosya eklenemeyenler gönderilemez)."
+            return
+        }
+        guard files.count <= TransferLimits.maxFiles else {
+            FilePreparer.release(files)
+            errorText = "En çok \(TransferLimits.maxFiles) dosya gönderilebilir."
             return
         }
         errorText = nil

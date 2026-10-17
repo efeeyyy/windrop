@@ -28,6 +28,9 @@ final class AppModel {
     let hub: SignalHub
     let transfers: TransferCoordinator
     let pairing: PairingController
+    #if PUSH_ENABLED
+    let push: PushManager
+    #endif
 
     init() {
         let identity = IdentityStore()
@@ -50,6 +53,14 @@ final class AppModel {
         self.hub = hub
         self.transfers = transfers
         self.pairing = pairing
+        #if PUSH_ENABLED
+        let push = PushManager(notifications: notifications)
+        self.push = push
+        hub.pushIdProvider = { [weak push] in push?.pushId }
+        push.onPushIdChanged = { [weak hub] in hub?.broadcastPushId() }
+        PushAppDelegate.onToken = { [weak push] token in push?.didRegister(deviceToken: token) }
+        PushAppDelegate.onFailure = { [weak push] in push?.didFailToRegister() }
+        #endif
 
         hub.onMessage = { [weak transfers] message, peer in
             transfers?.handle(message, from: peer)
@@ -63,8 +74,12 @@ final class AppModel {
         audio.onChange = { [weak hub] in
             hub?.broadcastStatus()
         }
-        notifications.onOpen = { [weak self] _ in
+        notifications.onOpen = { [weak self] transferId in
             self?.selectedTab = .home
+            #if PUSH_ENABLED
+            // Uzaktan (push) bildirimde `transferId` yoktur: PC'leri tara ve bağlan; PC bekleyen teklifi yeniden yollar (§6.5).
+            if transferId == nil { self?.startScanFromPush() }
+            #endif
         }
         // Arka plan: BLE ile uyanınca IK + hello, bildirim ve ret gönderimi arka plan görevi içinde biter.
         hub.beginBackgroundTask = AppBackgroundTask.starter
@@ -85,7 +100,18 @@ final class AppModel {
         hub.startIfAlreadyAuthorized()
     }
 
+    #if PUSH_ENABLED
+    /// Push bildirimine dokunuldu: uygulama öne geldi; taramayı başlatıp tanıdık PC'lere bağlanır.
+    private func startScanFromPush() {
+        hub.startNearby()
+        hub.central.ensureConnections()
+    }
+    #endif
+
     func didBecomeActive() {
+        #if PUSH_ENABLED
+        push.refresh()   // APNs kaydını tazele (belirteç değişmiş olabilir)
+        #endif
         guard hub.hasStarted else { return }   // hiç Gönder/Almaya hazır ol denmediyse hiçbir şey başlatma
         hub.startNearby()
         hub.central.ensureConnections()

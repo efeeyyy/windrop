@@ -25,12 +25,14 @@ public enum FrameType : byte
 // alt saniye çözünürlüğü korunur), sha256: 64 karakterlik küçük harf onaltılık dize, offset: bayt (long).
 // Alan adları spesifikasyondaki gibi küçük harf/camelCase. Spesifikasyondaki alanlar zorunludur.
 
-/// <summary>MANIFEST.files[] öğesi.</summary>
+/// <summary>MANIFEST.files[] öğesi. <paramref name="Dir"/> (PROTOCOL §5a): isteğe bağlı, gönderilen kökten göreli klasör yolu
+/// ('/' ayırıcı, ilk bileşen seçilen klasörün adı); null ise JSON'a yazılmaz.</summary>
 public sealed record ManifestFile(
     [property: JsonRequired] int Id,
     [property: JsonRequired] string Name,
     [property: JsonRequired] long Size,
-    [property: JsonRequired] long Mtime);
+    [property: JsonRequired] long Mtime,
+    string? Dir = null);
 
 /// <summary>MANIFEST (gönderen, ilk çerçeve; sayfalıysa <c>more=true</c> sayfalar ardışık MANIFEST çerçeveleridir).</summary>
 public sealed record ManifestBody(

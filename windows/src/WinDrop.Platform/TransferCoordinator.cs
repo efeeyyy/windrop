@@ -22,6 +22,14 @@ public enum TransferPhase
     Rejected,
 }
 
+/// <summary>Aktarım durumuna eşlik eden bilgi notu (arayüz metni Strings.resx'te).</summary>
+public enum TransferNote
+{
+    None,
+    /// <summary>PROTOCOL §6.5: telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor.</summary>
+    PushSent,
+}
+
 /// <summary>Aktarımın o anki durumu (değişmez kopya). <see cref="Progress"/> 0..1.</summary>
 public sealed record TransferSnapshot(
     TransferId Id,
@@ -34,7 +42,8 @@ public sealed record TransferSnapshot(
     double Progress,
     double BytesPerSecond,
     string? SavedPath,
-    string? Error)
+    string? Error,
+    TransferNote Note = TransferNote.None)
 {
     public bool IsTerminal => Phase >= TransferPhase.Completed;
 }
@@ -72,6 +81,8 @@ public sealed class TransferTimeouts
     public TimeSpan RelayPeer { get; set; } = TimeSpan.FromSeconds(75);
     /// <summary>Aktarma yolu için PC'deki kullanıcı onayı.</summary>
     public TimeSpan RelayApproval { get; set; } = TimeSpan.FromMinutes(2);
+    /// <summary>PROTOCOL §6.5: push bildirimi gönderildikten sonra telefonun BLE ile bağlanıp <c>hello</c> göndermesi için (5 dk).</summary>
+    public TimeSpan PushWait { get; set; } = TimeSpan.FromMinutes(5);
     /// <summary>Bekleme döngüsü aralığı.</summary>
     public TimeSpan Poll { get; set; } = TimeSpan.FromMilliseconds(250);
 }
@@ -124,6 +135,9 @@ public sealed class TransferCoordinatorOptions
     /// <summary>PC'nin statik Noise anahtarı (aktarma yolunda yanıtlayan olarak el sıkışmak için). null: aktarma yolu kapalı.</summary>
     public NoiseKeyPair? LocalKey { get; init; }
 
+    /// <summary>Push isteği (<see cref="PushNotifier"/>) için HTTP işleyicisi; null: sistem varsayılanı (testte sahte).</summary>
+    public HttpMessageHandler? PushHandler { get; init; }
+
     public Func<long>? FreeSpaceProvider { get; init; }
     public IFileCommitHook? CommitHook { get; init; }
     public TransferTimeouts Timeouts { get; init; } = new();
@@ -164,12 +178,16 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private readonly Queue<DateTimeOffset> _unknownOfferTimes = [];
     private readonly Dictionary<string, DateTimeOffset> _silencedUntil = [];
     private readonly Dictionary<string, State> _bleActive = [];   // eş başına tek BLE veri aktarımı (§6.4)
+    private readonly Dictionary<string, List<State>> _pushWaiters = [];   // §6.5: push gönderilmiş, telefonun hello'sunu bekleyen aktarımlar
+    private readonly PushNotifier _push;
+    private int _pushDisabledLogged;
     private bool _disposed;
 
     public TransferCoordinator(TransferCoordinatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         _o = options;
+        _push = new PushNotifier(options.PushHandler);
         if (_o.BluetoothAudio is { } monitor) monitor.Changed += OnLocalBtAudioChanged;
     }
 
@@ -299,6 +317,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
                     session.HelloReceived = true;
                     PeersChanged?.Invoke();
                 }
+                NotifyPushWaiters(session);
+                break;
+            case PushIdMessage push:
+                OnPushId(session, push);
                 break;
             case StatusMessage st:
                 if (st.Wifi is not null) session.Wifi = st.Wifi;
@@ -361,6 +383,8 @@ public sealed class TransferCoordinator : IAsyncDisposable
         foreach (var s in list)
         {
             // Veri kanalı bağımsızdır (TCP); yalnız pazarlık aşamasındakiler BLE'ye muhtaçtır.
+            // Push bekleyen aktarımın henüz BLE oturumu yoktur: eski oturumun kapanması onu düşürmez (§6.5).
+            if (s.PushWaiting) continue;
             if (s.Phase is TransferPhase.Negotiating or TransferPhase.AwaitingApproval)
                 s.Fail(message);
         }
@@ -468,22 +492,16 @@ public sealed class TransferCoordinator : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(paths);
         PeerSession? session;
         lock (_lock) _sessions.TryGetValue(peerId, out session);
-        if (session is null) throw new TransferException("Cihaz yakında değil (Bluetooth bağlantısı yok).");
-
-        var files = new List<IFileSource>();
-        foreach (var path in paths)
+        if (session is null)
         {
-            if (Directory.Exists(path)) throw new TransferException($"Klasör gönderme henüz desteklenmiyor: {Path.GetFileName(path)}");
-            try { files.Add(new FileSystemFileSource(path)); }
-            catch (FileNotFoundException) { throw new TransferException($"Dosya bulunamadı: {Path.GetFileName(path)}"); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                throw new TransferException($"Dosya okunamadı: {Path.GetFileName(path)}");
-            }
+            // §6.5: yakında değil ama pushId (ve aktarma sunucusu adresi) varsa telefon bildirimle uyandırılır.
+            var device = FindTrustedByPeerId(peerId);
+            if (device?.PushId is not null && !string.IsNullOrWhiteSpace(_o.Settings.RelayUrl))
+                return SendViaPush(device, paths);
+            throw new TransferException("Cihaz yakında değil (Bluetooth bağlantısı yok).");
         }
-        if (files.Count == 0) throw new TransferException("Gönderilecek dosya yok.");
-        if (files.Count > TransferLimits.MaxFiles) throw new TransferException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.");
 
+        var files = CollectFiles(paths);
         var state = new State(TransferId.Create(), TransferRole.Sender, session.PeerId, session.Name,
             (byte[])session.PublicKey.Clone(), files.Count, files.Sum(f => f.Size)) { Files = files, KnownAtStart = IsKnownPeer(session) };
         Register(state);
@@ -491,12 +509,162 @@ public sealed class TransferCoordinator : IAsyncDisposable
         return Snapshot(state);
     }
 
+    private static IReadOnlyList<IFileSource> CollectFiles(IReadOnlyList<string> paths)
+    {
+        IReadOnlyList<IFileSource> files;
+        try { files = FolderScanner.Collect(paths, PlatformLog.Write); }   // §5a: klasörler özyinelemeli açılır
+        catch (FolderScanException ex) { throw new TransferException(ex.Message); }
+        catch (FileNotFoundException ex) { throw new TransferException($"Dosya bulunamadı: {Path.GetFileName(ex.FileName)}"); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new TransferException("Dosya veya klasör okunamadı: " + ex.Message);
+        }
+        if (files.Count == 0) throw new TransferException("Gönderilecek dosya yok.");
+        if (files.Count > TransferLimits.MaxFiles) throw new TransferException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.");
+        return files;
+    }
+
+    // ---------------------------------------------------------------- push bildirimi (§6.5)
+
+    private TrustedDevice? FindTrustedByPeerId(string peerId) =>
+        _o.Trusted.List().FirstOrDefault(d => DeviceId.ToHex(d.DeviceId) == peerId);
+
+    /// <summary>Cihazın bildirimle ulaşılabilir olduğu (pushId kayıtlı ve aktarma sunucusu adresi dolu) mu?</summary>
+    public bool CanPush(string peerId) =>
+        !string.IsNullOrWhiteSpace(_o.Settings.RelayUrl) && FindTrustedByPeerId(peerId)?.PushId is not null;
+
+    /// <summary>
+    /// <c>pushId</c> (iPhone→PC): yalnız eşli/tanıdık (güvenilen listede kayıtlı) cihazdan kabul edilir; geçersiz biçim yok sayılır
+    /// (oturum düşmez). Değer loglanmaz.
+    /// </summary>
+    private void OnPushId(PeerSession session, PushIdMessage m)
+    {
+        if (!session.IsKnown)
+        {
+            PlatformLog.Write("pushId tanıdık olmayan cihazdan geldi, yok sayıldı.");
+            return;
+        }
+        if (!PushIds.IsValid(m.PushId))
+        {
+            PlatformLog.Write("Geçersiz biçimli pushId yok sayıldı.");
+            return;
+        }
+        if (_o.Trusted.SetPushId(session.PublicKey, m.PushId))
+        {
+            PlatformLog.Write("pushId kaydedildi.");
+            PeersChanged?.Invoke();   // arayüzde "bildirimle ulaşılabilir" rozeti
+        }
+        else
+        {
+            PlatformLog.Write("pushId: cihaz güvenilen listede yok, yok sayıldı.");
+        }
+    }
+
+    private TransferSnapshot SendViaPush(TrustedDevice device, IReadOnlyList<string> paths)
+    {
+        var files = CollectFiles(paths);
+        var state = new State(TransferId.Create(), TransferRole.Sender, DeviceId.HexFromPublicKey(device.PublicKey), device.Name,
+            (byte[])device.PublicKey.Clone(), files.Count, files.Sum(f => f.Size)) { Files = files, KnownAtStart = true };
+        Register(state);
+        _ = Task.Run(() => RunGuardedAsync(state, () => RunPushSenderAsync(state, device)));
+        return Snapshot(state);
+    }
+
+    /// <summary>
+    /// §6.5: push gönder → telefonun BLE <c>hello</c>'sunu en çok <see cref="TransferTimeouts.PushWait"/> bekle → bekleyen teklifi
+    /// normal akışla (offer…) yeniden gönder.
+    /// </summary>
+    private async Task RunPushSenderAsync(State s, TrustedDevice device)
+    {
+        var ct = s.Cts.Token;
+        var pushId = device.PushId!;
+        PeerSession? arrived;
+        s.PushWaiting = true;
+        lock (_lock)
+        {
+            if (!_pushWaiters.TryGetValue(s.PeerId, out var list)) _pushWaiters[s.PeerId] = list = [];
+            list.Add(s);
+            // Kayıt ile birlikte kontrol: arada telefon zaten bağlandıysa beklemeye gerek yok.
+            arrived = _sessions.TryGetValue(s.PeerId, out var cur) && cur.HelloReceived ? cur : null;
+        }
+        try
+        {
+            if (arrived is null)
+            {
+                var result = await _push.SendAsync(_o.Settings.RelayUrl, pushId, _o.LocalName, ct).ConfigureAwait(false);
+                if (result.Outcome != PushOutcome.Sent && !s.PhoneArrived.Task.IsCompletedSuccessfully)
+                    throw PushFailure(result, device);
+                PlatformLog.Write($"push gönderildi {s.Id}, telefon bekleniyor.");
+                s.Note = TransferNote.PushSent;
+                Raise(s);
+                try { arrived = await s.PhoneArrived.Task.WaitAsync(_o.Timeouts.PushWait, _o.Time, ct).ConfigureAwait(false); }
+                catch (TimeoutException) { throw new TransferException("Telefon yanıt vermedi."); }
+            }
+        }
+        finally
+        {
+            s.PushWaiting = false;
+            lock (_lock)
+            {
+                if (_pushWaiters.TryGetValue(s.PeerId, out var list) && list.Remove(s) && list.Count == 0)
+                    _pushWaiters.Remove(s.PeerId);
+            }
+        }
+        s.Note = TransferNote.None;
+        s.Touch(_o.Time);
+        PlatformLog.Write($"telefon bağlandı {s.Id}; bekleyen teklif yeniden gönderiliyor.");
+        await RunSenderAsync(s, arrived).ConfigureAwait(false);
+    }
+
+    private TransferException PushFailure(PushResult result, TrustedDevice device)
+    {
+        switch (result.Outcome)
+        {
+            case PushOutcome.Disabled:
+                if (Interlocked.Exchange(ref _pushDisabledLogged, 1) == 0)
+                    PlatformLog.Write("Aktarma sunucusunda push kapalı (501); bildirim gönderilmeyecek.");
+                return new TransferException("Push bu sunucuda kapalı.");
+            case PushOutcome.Unknown:
+                _o.Trusted.ClearPushId(device.PublicKey);   // sunucu kaydı silmiş: telefon yeniden bağlanınca yenisini bildirir
+                PeersChanged?.Invoke();
+                return new TransferException("Telefonun bildirim kaydı sunucuda yok; telefonda uygulamayı açıp Bluetooth ile bağlanmasını bekleyin.");
+            case PushOutcome.RateLimited:
+                return new TransferException("Telefona çok fazla bildirim gönderildi; biraz sonra yeniden deneyin.");
+            case PushOutcome.ServerError:
+                return new TransferException($"Bildirim sunucusu hata verdi (HTTP {result.Status}).");
+            default:
+                return new TransferException("Bildirim sunucusuna ulaşılamadı.");
+        }
+    }
+
+    /// <summary>Telefon BLE ile bağlanıp hello gönderdi: bekleyen aktarımlar devam eder.</summary>
+    private void NotifyPushWaiters(PeerSession session)
+    {
+        State[] waiting;
+        lock (_lock) waiting = _pushWaiters.TryGetValue(session.PeerId, out var list) ? [.. list] : [];
+        foreach (var s in waiting) s.PhoneArrived.TrySetResult(session);
+    }
+
+    /// <summary>offer.preview: klasör içindeki dosyalar yerine en üst klasör adı, sonda "/" ile (§5a); aynı klasör bir kez.</summary>
+    internal static string[] BuildPreview(IReadOnlyList<IFileSource> files)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var preview = new List<string>();
+        foreach (var f in files)
+        {
+            var entry = f.Dir is { Length: > 0 } d ? d.Split(RelativeDirectory.Separator)[0] + "/" : f.Name;
+            if (seen.Add(entry)) preview.Add(entry);
+            if (preview.Count >= SignalMessages.MaxPreview) break;
+        }
+        return preview.ToArray();
+    }
+
     private async Task RunSenderAsync(State s, PeerSession session)
     {
         var ct = s.Cts.Token;
         s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind);
         Update(s, TransferPhase.Negotiating);
-        var preview = s.Files!.Take(SignalMessages.MaxPreview).Select(f => f.Name).ToArray();
+        var preview = BuildPreview(s.Files!);
         await session.Channel.SendSignalAsync(new OfferMessage(s.Id, s.Count, s.Total, preview), ct).ConfigureAwait(false);
 
         bool accepted;
@@ -994,7 +1162,26 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private string? SavedPathOf(State s, TransferResult r)
     {
         if (s.Role != TransferRole.Receiver || r.ReceivedFiles.Count == 0) return null;
-        return r.ReceivedFiles.Count == 1 ? r.ReceivedFiles[0].StoredPath : _o.Settings.DownloadFolder;
+        return SavedRootOf(r.ReceivedFiles, _o.Settings.DownloadFolder);
+    }
+
+    /// <summary>Tek dosya → dosyanın yolu; hepsi indirme klasöründeki tek bir alt klasörün içindeyse (§5a klasör aktarımı) o klasör; aksi halde indirme klasörü.</summary>
+    internal static string SavedRootOf(IReadOnlyList<ReceivedFile> received, string downloadFolder)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(downloadFolder)) + Path.DirectorySeparatorChar;
+        string? top = null;
+        foreach (var f in received)
+        {
+            var full = Path.GetFullPath(f.StoredPath);
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) return downloadFolder;
+            var rel = full[root.Length..];
+            var sep = rel.IndexOf(Path.DirectorySeparatorChar);
+            if (sep < 0) return received.Count == 1 ? f.StoredPath : downloadFolder;
+            var first = rel[..sep];
+            if (top is not null && !string.Equals(top, first, StringComparison.OrdinalIgnoreCase)) return downloadFolder;
+            top = first;
+        }
+        return top is null ? downloadFolder : Path.Combine(root, top);
     }
 
     // ---------------------------------------------------------------- iptal / bekleme
@@ -1155,7 +1342,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         lock (s.Gate)
         {
-            return new TransferSnapshot(s.Id, s.Role, s.PeerId, s.PeerName, s.Count, s.Total, s.Phase, s.Progress, s.Speed, s.SavedPath, s.Error);
+            return new TransferSnapshot(s.Id, s.Role, s.PeerId, s.PeerName, s.Count, s.Total, s.Phase, s.Progress, s.Speed, s.SavedPath, s.Error, s.Note);
         }
     }
 
@@ -1178,6 +1365,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             try { await s.Completion.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); }
             catch (Exception) { }
         }
+        _push.Dispose();
     }
 
     private sealed class SyncProgress(Action<TransferProgress> onReport) : IProgress<TransferProgress>
@@ -1203,7 +1391,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         public TaskCompletionSource<string> PathFailed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource<TransferSnapshot> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public List<IFileSource>? Files;
+        public IReadOnlyList<IFileSource>? Files;
         public IReadOnlyList<string> Preview = [];
         public FileSystemPartialStore? Store;
         public IDisposable? Registration;
@@ -1237,6 +1425,11 @@ public sealed class TransferCoordinator : IAsyncDisposable
             lock (Gate) attempt = _relayAttempt;
             try { attempt?.Cancel(); } catch (ObjectDisposedException) { }
         }
+
+        /// <summary>§6.5: push bildirimi gönderildi/gönderiliyor, telefonun BLE oturumu bekleniyor.</summary>
+        public volatile bool PushWaiting;
+        public TaskCompletionSource<PeerSession> PhoneArrived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public volatile TransferNote Note;
 
         public volatile bool ConnectionActive;
         public volatile bool EverConnected;

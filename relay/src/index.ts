@@ -1,10 +1,19 @@
 // WinDrop aktarma sunucusu (docs/PROTOCOL.md §6.3).
 // Sunucu yalnız şifreli baytları iletir; içerik, roomId ve IP LOGLANMAZ (yalnız toplu sayaçlar).
 import { DurableObject } from "cloudflare:workers";
+import { PushRegistry, handlePush } from "./push";
+
+export { PushRegistry };
 
 export interface Env {
   ROOM: DurableObjectNamespace<Room>;
   IP_LIMITER: DurableObjectNamespace<IpLimiter>;
+  PUSH_REGISTRY: DurableObjectNamespace<PushRegistry>;
+  /** APNs sırları (§6.5); eksikse /v1/push/* 501 döner. `wrangler secret put` ile girilir. */
+  APNS_KEY_P8?: string;
+  APNS_KEY_ID?: string;
+  APNS_TEAM_ID?: string;
+  APNS_TOPIC?: string;
 }
 
 type Role = "pc" | "phone";
@@ -29,6 +38,11 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/healthz") {
       return new Response("ok", { status: 200, headers: { "cache-control": "no-store" } });
+    }
+    if (url.pathname.startsWith("/v1/push/")) {
+      // Push için ayrı IP sayacı (oda açma sayacıyla karışmaz); IP yalnız karma olarak kullanılır.
+      const pushIp = request.headers.get("CF-Connecting-IP") ?? "unknown";
+      return handlePush(request, env, url, await sha256Hex(`WinDrop-ip-push|${pushIp}`));
     }
     const m = ROOM_PATH.exec(url.pathname);
     if (!m) return new Response("not found", { status: 404 });

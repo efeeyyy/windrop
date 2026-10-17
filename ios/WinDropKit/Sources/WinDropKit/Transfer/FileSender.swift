@@ -18,8 +18,10 @@ public struct SendItem {
     /// Unix epoch milisaniye.
     public var mtime: Int64
     public var source: FileSource
-    public init(id: Int, name: String, size: Int64, mtime: Int64, source: FileSource) {
-        self.id = id; self.name = name; self.size = size; self.mtime = mtime; self.source = source
+    /// PROTOCOL §5a: gönderilen kökten göreli klasör yolu (`/` ayırıcı); dosya kökteyse nil.
+    public var dir: String?
+    public init(id: Int, name: String, size: Int64, mtime: Int64, source: FileSource, dir: String? = nil) {
+        self.id = id; self.name = name; self.size = size; self.mtime = mtime; self.source = source; self.dir = dir
     }
 }
 
@@ -85,7 +87,7 @@ public final class FileSender {
     }
 
     private func sendAll(_ inbox: FrameInbox) async throws -> TransferResult {
-        let manifest = items.map { ManifestFile(id: $0.id, name: $0.name, size: $0.size, mtime: $0.mtime) }
+        let manifest = items.map { ManifestFile(id: $0.id, name: $0.name, size: $0.size, mtime: $0.mtime, dir: $0.dir) }
         let pages = try Self.paginate(manifest)
         for (i, page) in pages.enumerated() {
             let body = ManifestBody(files: page, more: i < pages.count - 1 ? true : nil)

@@ -82,11 +82,14 @@ final class TransferCoordinator {
         var numbered = files
         for index in numbered.indices { numbered[index].id = index }
         let total = numbered.reduce(Int64(0)) { $0 + $1.size }
+        // Klasör dosyaları için klasör adı (PROTOCOL §5a: `offer.preview` klasör adlarını gösterebilir); tekrarsız, sıralı.
+        var seen = Set<String>()
+        let labels = numbered.map(\.displayName).filter { seen.insert($0).inserted }
         let transferId = TransferId.random().description
 
         let item = TransferItem(
             id: transferId, direction: .send, pcID: peer.id, pcName: peer.name,
-            fileNames: numbered.map(\.name), fileCount: numbered.count, totalBytes: total, state: .awaitingPeer)
+            fileNames: labels, fileCount: numbered.count, totalBytes: total, state: .awaitingPeer)
         item.outgoing = numbered
         item.code = peer.code
         item.peerIsKnown = peer.isKnown
@@ -95,7 +98,7 @@ final class TransferCoordinator {
 
         let offer = OfferMessage(
             transferId: transferId, count: numbered.count, total: total,
-            preview: Array(numbered.prefix(5).map(\.name)))
+            preview: Array(labels.prefix(5)))
         Task {
             do {
                 try await signals.send(.offer(offer), to: peer.id)
@@ -146,7 +149,7 @@ final class TransferCoordinator {
             }
         case .relay(let relay):
             handleRelay(relay, from: peer)
-        case .hello, .status, .path, .pairInfo:
+        case .hello, .status, .path, .pairInfo, .pushId:
             break
         }
     }
@@ -191,7 +194,10 @@ final class TransferCoordinator {
             Task { try? await signals.send(.reject(ReplyMessage(transferId: tid.description, reason: "rate")), to: peer.id) }
             return
         }
-        let names = offer.preview.prefix(5).map { FileNameSanitizer.sanitize($0) }
+        // Önizlemede sonda "/" klasör demektir (PROTOCOL §5a); ad yine temizlenir, "/" arayüz için korunur.
+        let names = offer.preview.prefix(5).map { entry -> String in
+            entry.hasSuffix("/") ? FileNameSanitizer.sanitize(String(entry.dropLast())) + "/" : FileNameSanitizer.sanitize(entry)
+        }
         // Otomatik kabul yalnız QR ile eşleştirilmiş PC'den ve boyut sınırı içinde (PROTOCOL §5, §7).
         let auto = peer.isKnown && peer.autoAccept && offer.total <= TransferRunner.acceptAutoLimit
         let item = TransferItem(

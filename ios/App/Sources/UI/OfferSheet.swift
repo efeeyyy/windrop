@@ -22,9 +22,14 @@ struct OfferSheet: View {
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(item.fileNames, id: \.self) { name in
-                    Text(name).font(.footnote).lineLimit(1)
+                    // PROTOCOL §5a: sonda "/" olan önizleme girdisi klasördür.
+                    if name.hasSuffix("/") {
+                        Label(String(name.dropLast()), systemImage: "folder").font(.footnote).lineLimit(1)
+                    } else {
+                        Text(name).font(.footnote).lineLimit(1)
+                    }
                 }
-                if item.fileCount > item.fileNames.count {
+                if item.fileCount > item.fileNames.count, !item.fileNames.contains(where: { $0.hasSuffix("/") }) {
                     Text("ve \(item.fileCount - item.fileNames.count) dosya daha…")
                         .font(.footnote).foregroundStyle(.secondary)
                 }

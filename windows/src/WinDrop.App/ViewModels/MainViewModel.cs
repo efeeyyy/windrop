@@ -14,6 +14,7 @@ public interface IAppShell
     void OpenPairing();
     void OpenSettings();
     IReadOnlyList<string> PickFiles();
+    IReadOnlyList<string> PickFolder();
 }
 
 public sealed class DeviceViewModel
@@ -24,7 +25,10 @@ public sealed class DeviceViewModel
     public string Id => Info.Id;
     public string Name => Info.Name;
     public bool IsNearby => Info.IsNearby;
-    public string BadgeText => Strings.Get(Info.IsNearby ? "Device.Nearby" : "Device.Away");
+    public bool CanPush => Info.CanPush;
+    /// <summary>Gönderilebilir: yakında ya da push bildirimiyle ulaşılabilir (§6.5).</summary>
+    public bool IsReachable => Info.IsNearby || Info.CanPush;
+    public string BadgeText => Strings.Get(Info.IsNearby ? "Device.Nearby" : Info.CanPush ? "Device.Push" : "Device.Away");
 }
 
 /// <summary><see cref="TransferItem"/> için görüntü satırı (metinler, düğme durumları).</summary>
@@ -55,7 +59,9 @@ public sealed class TransferRow : ObservableObject
         }
     }
 
-    public string StatusText => Strings.Get("Status." + Item.Status);
+    public string StatusText => Item.PushPending && Item.Status == TransferStatus.Waiting
+        ? Strings.Get("Status.PushSent")
+        : Strings.Get("Status." + Item.Status);
     public double Percent => Item.Progress * 100;
     public bool IsSend => Item.Direction == TransferDirection.Send;
     public bool CanCancel => Item.Status is TransferStatus.Waiting or TransferStatus.Active;
@@ -98,7 +104,7 @@ public sealed partial class MainViewModel : ObservableObject
     public bool HasNoTransfers => Transfers.Count == 0;
     public bool HasStaged => StagedPaths.Count > 0;
     public string StagedText => Strings.Format("Main.StagedFormat", StagedPaths.Count);
-    public bool ShowSelectHint => HasStaged && SelectedDevice is not { IsNearby: true };
+    public bool ShowSelectHint => HasStaged && SelectedDevice is not { IsReachable: true };
 
     partial void OnSelectedDeviceChanged(DeviceViewModel? value)
     {
@@ -112,8 +118,8 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var p in paths)
             if (!string.IsNullOrWhiteSpace(p) && !StagedPaths.Contains(p, StringComparer.OrdinalIgnoreCase))
                 StagedPaths.Add(p);
-        if (SelectedDevice is not { IsNearby: true })
-            SelectedDevice = Devices.FirstOrDefault(d => d.IsNearby) ?? SelectedDevice;
+        if (SelectedDevice is not { IsReachable: true })
+            SelectedDevice = Devices.FirstOrDefault(d => d.IsNearby) ?? Devices.FirstOrDefault(d => d.IsReachable) ?? SelectedDevice;
     }
 
     private void OnStagedChanged()
@@ -143,7 +149,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasNoTransfers));
     }
 
-    private bool CanSend() => HasStaged && SelectedDevice is { IsNearby: true };
+    private bool CanSend() => HasStaged && SelectedDevice is { IsReachable: true };
 
     [RelayCommand(CanExecute = nameof(CanSend), AllowConcurrentExecutions = true)]
     private async Task SendAsync()
@@ -163,6 +169,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     private void PickFiles() => StageFiles(_shell.PickFiles());
+
+    [RelayCommand]
+    private void PickFolder() => StageFiles(_shell.PickFolder());
 
     [RelayCommand]
     private void ClearStaged() => StagedPaths.Clear();

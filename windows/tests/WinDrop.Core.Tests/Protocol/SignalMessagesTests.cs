@@ -27,6 +27,7 @@ public sealed class SignalMessagesTests
         [new PathMessage(Id, PathResult.HotspotOk), "path"],
         [new CancelSignalMessage(Id), "cancel"],
         [new BleDataMessage(Id), "bleData"],
+        [new PushIdMessage("0123456789abcdef0123456789abcdef"), "pushId"],
     ];
 
     [Theory]
@@ -54,6 +55,24 @@ public sealed class SignalMessagesTests
 
         Assert.Contains("\"btAudio\":true", Json(new StatusMessage(null, true)));
         Assert.DoesNotContain("wifi", Json(new StatusMessage(null, true)));   // null yazılmaz
+    }
+
+    [Fact]
+    public void PushId_Json_AndFormatCheck()
+    {
+        const string id = "0123456789abcdef0123456789abcdef";
+        Assert.Equal($$"""{"t":"pushId","pushId":"{{id}}"}""", Json(new PushIdMessage(id)));
+        Assert.Equal(id, ((PushIdMessage)Decode($$"""{"pushId":"{{id}}","t":"pushId"}""")).PushId);
+        Assert.Throws<ProtocolException>(() => Decode("""{"t":"pushId"}"""));     // zorunlu alan yok
+
+        Assert.True(PushIds.IsValid(id));
+        Assert.False(PushIds.IsValid(null));
+        Assert.False(PushIds.IsValid(""));
+        Assert.False(PushIds.IsValid(id[..31]));
+        Assert.False(PushIds.IsValid(id + "0"));
+        Assert.False(PushIds.IsValid(id.ToUpperInvariant()));                       // büyük harf yok
+        Assert.False(PushIds.IsValid("g" + id[1..]));
+        Assert.False(PushIds.IsValid("../" + id[3..]));
     }
 
     [Fact]

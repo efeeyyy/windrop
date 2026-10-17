@@ -4,6 +4,12 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(AppModel.deviceNameKey) private var deviceName = ""
     @AppStorage(RelaySettings.key) private var relayUrl = ""
+    #if PUSH_ENABLED
+    @AppStorage(PushManager.enabledKey) private var pushEnabled = false
+    private var relayConfigured: Bool {
+        !relayUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && RelaySettings.isValid(relayUrl)
+    }
+    #endif
     @State private var removalCandidate: KnownPC?
     @State private var showRemovalDialog = false
     @State private var showPairing = false
@@ -45,6 +51,21 @@ struct SettingsView: View {
                 } footer: {
                     Text("İsteğe bağlı. Bilgisayara ne doğrudan ne etkin noktayla ulaşılamazsa gönderim internet üzerinden bu sunucudan geçer (uçtan uca şifreli; sunucu içeriği göremez). Her seferinde kota uyarısıyla onayınız istenir. Boşsa bu yol kapalıdır.")
                 }
+
+                #if PUSH_ENABLED
+                Section {
+                    Toggle("Uygulama kapalıyken bildirim al", isOn: $pushEnabled)
+                        .disabled(!relayConfigured)
+                    if model.push.registrationFailed {
+                        Text("Bildirim kaydı yapılamadı. İnternet ve aktarma sunucusu adresini kontrol edin; WinDrop'u yeniden açınca tekrar denenir.")
+                            .font(.caption).foregroundStyle(.red)
+                    }
+                } footer: {
+                    Text(relayConfigured
+                         ? "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir). Bildirimde dosya adı olmaz; yalnız tanıdık bilgisayarlar bildirim gönderebilir."
+                         : "Bunun için yukarıda aktarma sunucusu adresi girilmelidir.")
+                }
+                #endif
 
                 Section("Tanıdık bilgisayarlar") {
                     if model.identity.knownPCs.isEmpty {
@@ -100,6 +121,10 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Ayarlar")
+            #if PUSH_ENABLED
+            .onChange(of: pushEnabled) { _, enabled in model.push.apply(enabled: enabled) }
+            .onDisappear { model.push.refresh() }   // sunucu adresi değişmiş olabilir: kaydı tazele
+            #endif
             .sheet(isPresented: $showPairing) {
                 PairView()
             }

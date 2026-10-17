@@ -78,7 +78,7 @@ public sealed class FileSender
         for (var i = 0; i < _files.Count; i++)
         {
             var f = _files[i];
-            var mf = new ManifestFile(i, f.Name, f.Size, f.MtimeMs);
+            var mf = new ManifestFile(i, f.Name, f.Size, f.MtimeMs, f.Dir);
             var size = FrameCodec.MeasureManifestFile(mf) + 1;   // + virgül
             if (page.Count > 0 && pageSize + size > limit)
             {

@@ -178,6 +178,9 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         peer.isKnown = true
         peers[keyID] = peer
         syncWanted()
+        #if PUSH_ENABLED
+        sendPushId(to: keyID)   // yeni tanıdık oldu
+        #endif
     }
 
     func beginBleTransfer(_ keyID: String) -> BleDataSession? {
@@ -203,6 +206,21 @@ final class SignalHub: BleCentralDelegate, SignalSending {
             Task { try? await send(.status(status), to: keyID) }
         }
     }
+
+    #if PUSH_ENABLED
+    /// Push kaydı kimliği (PROTOCOL §6.5); nil = kayıt yok / ayar kapalı. AppModel doldurur.
+    @ObservationIgnored var pushIdProvider: (@MainActor () -> String?)?
+
+    /// `pushId` yalnız tanıdık/eşli PC'ye verilir (tanıdık olmayana asla).
+    func sendPushId(to keyID: String) {
+        guard peers[keyID]?.isKnown == true, let id = pushIdProvider?() else { return }
+        Task { try? await send(.pushId(PushIdMessage(pushId: id)), to: keyID) }
+    }
+
+    func broadcastPushId() {
+        for keyID in channels.keys { sendPushId(to: keyID) }
+    }
+    #endif
 
     // MARK: Tanıdık liste değişimi
 
@@ -304,6 +322,9 @@ final class SignalHub: BleCentralDelegate, SignalSending {
             peers[kid] = peer
             try await send(.hello(helloInfo().helloMessage), to: kid)
             endHandshakeTask()   // el sıkışma + hello bitti; okuma döngüsü arka plan görevi tutmaz
+            #if PUSH_ENABLED
+            sendPushId(to: kid)
+            #endif
 
             while let message = try await channel.receiveMessage() {
                 guard case .signal(let signal) = message else {

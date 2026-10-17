@@ -8,6 +8,7 @@
         Icon="pack://application:,,,/Assets/app.ico">
     <StackPanel Margin="16">
         <TextBlock x:Name="MessageText" TextWrapping="Wrap" FontSize="14" />
+        <TextBlock x:Name="FoldersText" TextWrapping="Wrap" FontSize="12" Opacity="0.8" Margin="0,6,0,0" Visibility="Collapsed" />
         <TextBlock x:Name="CodeText" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed" />
         <TextBlock x:Name="TimeoutText" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">

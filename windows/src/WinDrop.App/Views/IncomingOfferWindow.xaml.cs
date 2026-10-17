@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Threading;
 using WinDrop.App.Infrastructure;
 using WinDrop.App.Services;
+using WinDrop.Core.Protocol;
 
 namespace WinDrop.App.Views;
 
@@ -20,6 +21,13 @@ public partial class IncomingOfferWindow : Window
         InitializeComponent();
         _onResult = onResult;
         MessageText.Text = Strings.Format("Offer.Text", offer.SenderName, offer.FileCount, ByteFormat.Size(offer.TotalBytes));
+        // PROTOCOL §5a: preview girdisi "/" ile bitiyorsa klasör adıdır. Ad karşı cihazdan geldiği için temizlenerek gösterilir.
+        var folders = (offer.Preview ?? []).Where(p => p.EndsWith('/')).Select(p => FileNameSanitizer.Sanitize(p)).ToArray();
+        if (folders.Length > 0)
+        {
+            FoldersText.Text = Strings.Format("Offer.Folders", string.Join(", ", folders));
+            FoldersText.Visibility = Visibility.Visible;
+        }
         if (offer.VerificationCode is { } code)
         {
             CodeText.Text = Strings.Format("Offer.Code", code) + "\n" + Strings.Get("Offer.Unknown");

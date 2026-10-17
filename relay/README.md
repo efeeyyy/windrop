@@ -12,6 +12,8 @@ yoluyla bağlanamazsa, uçtan uca şifreli baytları bu sunucu üzerinden aktar�
   - aynı rolden ikinci veya üçüncü bağlantı → 409; kapanmış oda → 410
   - IP başına dakikada 10'dan fazla yeni oda → 429 (`Retry-After: 60`)
 - Yalnız **ikili** WebSocket mesajları (≤ 65535 B) karşıya sırayla iletilir.
+- `POST /v1/push/register` `{deviceToken, env}` ve `POST /v1/push/<pushId>` `{from}`: APNs push
+  (`docs/PROTOCOL.md` §6.5). Ayrıntı aşağıda "Push bildirimi (APNs)".
 
 | Durum | Sonuç |
 |---|---|
@@ -31,9 +33,9 @@ yükseltmesinden önce HTTP 429 ile reddeder (istemci ayrımı kolay olsun diye)
 ```powershell
 cd relay
 npm install
-npm test                 # isteğe bağlı: 22 test
+npm test                 # isteğe bağlı: 43 test
 npx wrangler login       # tarayıcıda Cloudflare hesabına giriş
-npx wrangler deploy      # Worker + iki Durable Object sınıfını yükler
+npx wrangler deploy      # Worker + üç Durable Object sınıfını yükler
 ```
 
 `deploy` çıktısında `https://windrop-relay.<hesap-alt-alanı>.workers.dev` biçiminde bir adres yazar.
@@ -52,6 +54,43 @@ node scripts/smoke.mjs            # 2 istemci, her yönde 10 MB, SHA-256 doğrul
 
 Yerelde `CF-Connecting-IP` olmadığından tüm bağlantılar tek IP sayılır; `smoke.mjs`'i dakikada
 10'dan fazla çalıştırırsan 429 alırsın (beklenen davranış).
+
+## Push bildirimi (APNs) — isteğe bağlı, ücretli Apple hesabı gerekir
+
+Bu bölüm kurulmadan sunucu normal çalışır; sırlar girilmezse `/v1/push/*` **501** döner.
+**APNs anahtarı için ücretli Apple Developer Program üyeliği gerekir** (ücretsiz hesapta push
+yetkisi ve `.p8` anahtarı yoktur).
+
+Arayüz (yanıtlar): `register` -> 200 `{"pushId":"<32 hex>"}`, geçersiz girdi 400. `/v1/push/<pushId>` ->
+200 (gönderildi), 404 (pushId yok), 410 (APNs belirteci geçersiz saydı; kayıt silindi), 429
+(pushId başına saatte 10 veya IP başına dakikada 10 aşıldı), 502 (APNs/ağ hatası).
+
+1. https://developer.apple.com/account -> *Certificates, Identifiers & Profiles* -> *Keys* -> **+**.
+2. Ad ver, **Apple Push Notifications service (APNs)** kutusunu işaretle, *Continue* -> *Register*.
+3. **Download** ile `AuthKey_<KEYID>.p8` dosyasını indir (yalnız bir kez indirilir; güvenli sakla,
+   depoya koyma). *Key ID* dosya adındaki 10 karakterdir. *Team ID* sayfanın sağ üstünde
+   (*Membership details*) yazar. APNs anahtarı sandbox ve production için ortaktır.
+4. `APNS_TOPIC` iOS uygulamasının *Bundle ID*'sidir (uygulamada Push Notifications yeteneği açık olmalı).
+5. Sırları Worker'a gir (her komut değeri sorar; `.p8` içeriğini `-----BEGIN...` satırlarıyla birlikte yapıştır
+   veya dosyadan yönlendir):
+
+```powershell
+cd relay
+Get-Content AuthKey_XXXXXXXXXX.p8 -Raw | npx wrangler secret put APNS_KEY_P8
+npx wrangler secret put APNS_KEY_ID      # 10 karakter Key ID
+npx wrangler secret put APNS_TEAM_ID     # 10 karakter Team ID
+npx wrangler secret put APNS_TOPIC       # örn. com.example.windrop
+npx wrangler deploy
+```
+
+Yerel deneme için aynı dört değeri `relay/.dev.vars` dosyasına `ANAHTAR=değer` yaz (`.gitignore` ile
+dışlanmış olmalı; `.p8` tek satırda `
+` ile yazılabilir).
+
+Davranış: cihaz belirteci yalnız `PushRegistry` Durable Object'inde (SQLite) durur; belirteç ve
+pushId loglanmaz. Aynı belirteçle yeniden kayıt eski pushId'yi siler. Bildirim metni sabittir
+(`WinDrop` / `<from> dosya göndermek istiyor`); dosya adı ve boyutu sunucuya gitmez. `from` denetim
+karakterlerinden arındırılır ve 40 karakterle kesilir. Sağlayıcı JWT'si (ES256) 50 dk önbelleklenir.
 
 ## IP sınırı yöntemi ve gerekçe
 
@@ -98,7 +137,7 @@ Bu değerler yazım anındaki bilgiden alınmıştır ve **doğrulanmamıştır*
 ## Geliştirme
 
 ```powershell
-npm test          # vitest + @cloudflare/vitest-plugin (eski adıyla vitest-pool-workers), 22 test
+npm test          # vitest + @cloudflare/vitest-plugin (eski adıyla vitest-pool-workers), 43 test
 npm run typecheck
 ```
 

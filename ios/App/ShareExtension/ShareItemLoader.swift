@@ -35,6 +35,36 @@ enum ShareItemLoader {
         return file
     }
 
+    /// Klasör öğesi mi (Dosyalar'dan paylaşılan `public.folder`)?
+    static func isFolder(_ provider: NSItemProvider) -> Bool {
+        provider.hasItemConformingToTypeIdentifier(UTType.folder.identifier)
+    }
+
+    /// Öğeyi gönderilecek dosyalara çevirir: klasör ise (PROTOCOL §5a) içeriği geçici dizine kopyalanıp özyinelemeli taranır
+    /// (her dosya `dir` taşır, sembolik bağlar izlenmez); değilse tek dosya.
+    @MainActor
+    static func loadFiles(from provider: NSItemProvider) async throws -> [OutgoingFile] {
+        guard isFolder(provider) else { return [try await loadFile(from: provider)] }
+        let root = AppPaths.outgoingTempDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        do {
+            let copied = try await copy(ProviderBox(provider: provider), typeID: UTType.folder.identifier, into: root)
+            let entries = try FolderScanner.files(folder: copied)
+            var files: [OutgoingFile] = []
+            for entry in entries {
+                guard var file = FilePreparer.outgoing(url: entry.url, securityScoped: false, isTemporary: true) else { continue }
+                file.dir = entry.dir
+                file.tempRoot = root
+                files.append(file)
+            }
+            guard !files.isEmpty else { throw ShareLoadError.unreadable }
+            return files
+        } catch {
+            try? FileManager.default.removeItem(at: root)
+            throw error
+        }
+    }
+
     /// Geri çağrı arka plan kuyruğunda çalışır; bu yüzden ana aktörden bağımsız bir işlevde kurulur.
     private nonisolated static func copy(_ box: ProviderBox, typeID: String, into dir: URL) async throws -> URL {
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<URL, Error>) in

@@ -105,6 +105,13 @@ public struct BleDataMessage: Codable, Equatable {
     public init(transferId: String) { self.transferId = transferId }
 }
 
+/// `pushId` (iPhone→PC, yalnız tanıdık/eşli PC'nin şifreli BLE kanalında, PROTOCOL §6.5): aktarma sunucusundaki push kaydı kimliği
+/// (32 küçük hex). Biçim kodlama/çözmede denetlenmez; alan zorunludur.
+public struct PushIdMessage: Codable, Equatable {
+    public var pushId: String
+    public init(pushId: String) { self.pushId = pushId }
+}
+
 /// `t` alanına göre ayrışan sinyal mesajı.
 public enum SignalMessage: Equatable {
     case hello(HelloMessage)
@@ -119,6 +126,7 @@ public enum SignalMessage: Equatable {
     case path(PathMessage)
     case cancel(SignalCancelMessage)
     case bleData(BleDataMessage)
+    case pushId(PushIdMessage)
 
     public var type: String {
         switch self {
@@ -134,6 +142,7 @@ public enum SignalMessage: Equatable {
         case .path: return "path"
         case .cancel: return "cancel"
         case .bleData: return "bleData"
+        case .pushId: return "pushId"
         }
     }
 
@@ -154,6 +163,7 @@ public enum SignalMessage: Equatable {
         case .path(let m): body = try enc.encode(m)
         case .cancel(let m): body = try enc.encode(m)
         case .bleData(let m): body = try enc.encode(m)
+        case .pushId(let m): body = try enc.encode(m)
         }
         guard var object = try JSONSerialization.jsonObject(with: body) as? [String: Any] else {
             throw ProtocolError.invalidMessage("gövde nesne değil")
@@ -184,6 +194,7 @@ public enum SignalMessage: Equatable {
             case "path": message = .path(try dec.decode(PathMessage.self, from: data))
             case "cancel": message = .cancel(try dec.decode(SignalCancelMessage.self, from: data))
             case "bleData": message = .bleData(try dec.decode(BleDataMessage.self, from: data))
+            case "pushId": message = .pushId(try dec.decode(PushIdMessage.self, from: data))
             default: throw ProtocolError.invalidMessage("bilinmeyen t: \(t)")
             }
             if let id = message.transferId, TransferId.parse(id) == nil {
@@ -200,7 +211,7 @@ public enum SignalMessage: Equatable {
     /// Mesajdaki `transferId` (hello/status'ta yok).
     public var transferId: String? {
         switch self {
-        case .hello, .status, .pairInfo: return nil
+        case .hello, .status, .pairInfo, .pushId: return nil
         case .offer(let m): return m.transferId
         case .accept(let m), .reject(let m): return m.transferId
         case .addr(let m): return m.transferId

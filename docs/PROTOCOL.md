@@ -162,6 +162,19 @@ Aktarımın sonucu **yalnız veri kanalındaki `DONE`** ile belirlenir (BLE'de `
    Uyarı metni (Efe): "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir." + boyut;
    iki tarafta da gösterilir, gönderen onaylamadan bağlantı kurulmaz.
 
+### 5a. Klasör gönderme (2026-10-18)
+- MANIFEST dosya öğesine isteğe bağlı `dir`: gönderilen kökten göreli klasör yolu, ayırıcı `/`,
+  en çok 16 seviye, toplam ≤ 1024 karakter; boş klasörler için `size=0` ve `name=""` olmayan bir öğe
+  gönderilmez (boş klasör taşınmaz, v1).
+- Alıcı her bileşeni ayrı ayrı §5 ad kurallarıyla temizler; `.`/`..`/boş bileşen → protokol hatası.
+  Hedef: `indirme klasörü / <ilk bileşen (çakışmada "ad (2)")> / ...`; çakışma yalnız en üst klasörde
+  çözülür, alt klasörlerde dosya çakışması §5 kuralıyla.
+- `offer.preview` klasör adlarını gösterebilir; `count` dosya sayısıdır. Windows gönderen klasör girdisini en üst klasör adı +
+  sonda `/` ile yazar (ör. `Proje/`, aynı klasör bir kez); alıcı `/` ile bitenleri klasör olarak gösterir. Bilgi amaçlıdır.
+- Windows uygulama (2026-10-18): gönderen symlink/junction'ı (kök seçim hariç) izlemez, gizli/sistem dosyalarını gönderir, erişilemeyeni
+  atlayıp loglar; iki seçili klasör aynı adı taşırsa ikincisi `ad (2)` olur. Alıcı çözülmüş kök klasör adını aktarım dizininde saklar
+  (devam oturumunda aynı kök). `\`, `.`/`..`, boş bileşen ve `X:` biçimli bileşen → protokol hatası (CANCEL "protocol error").
+
 ### 6.4a BLE veri yolu başlatma (2026-10-17 kesinleşti)
 - Yolu **her zaman PC seçer**. BLE yolu uygunsa (total ≤ 64 KB, iki tarafta btAudio=false, diğer
   yollar yok/başarısız) PC şifreli BLE kanalından `{"t":"bleData","transferId":...}` gönderir.
@@ -169,6 +182,21 @@ Aktarımın sonucu **yalnız veri kanalındaki `DONE`** ile belirlenir (BLE'de `
 - iPhone zamanlayıcıyla kendiliğinden BLE'ye geçmez (yarış olmasın). TCP/etkin nokta denemesi
   başarısız olursa iPhone `path` (`tcp_fail`/`hotspot_fail`) gönderir; PC sonraki yolu seçer.
 - BLE DATA parçası ≤ 2048 B (iOS seçimi), hız ≤ ~20 KB/s.
+
+### 6.5 Push bildirimi (hazırlık; yalnız ücretli Apple hesabıyla açılır — 2026-10-18 tasarım)
+- iOS'ta `PUSH_ENABLED` derleme bayrağı ve ayar; kapalıysa hiçbir push kodu çalışmaz.
+- **Kayıt:** iPhone APNs cihaz belirtecini alınca aktarma sunucusuna `POST /v1/push/register`
+  `{deviceToken, env: "sandbox"|"production"}` gönderir; sunucu rastgele 16 B `pushId` (hex) döndürür,
+  `pushId → deviceToken` saklar. Cihaz belirteci sunucudan başka yere gitmez. Yeniden kayıt eskisini siler.
+- iPhone, **tanıdık/eşli** PC'lere şifreli BLE kanalında `{"t":"pushId","pushId":...}` verir.
+- **Tetik:** PC, iPhone BLE ile yakında değilken ona gönderim başlatılırsa (ve `relayUrl` doluysa)
+  `POST /v1/push/<pushId>` `{from: "<PC adı, ≤ 40 karakter>"}`. Sunucu genel bir bildirim yollar:
+  başlık "WinDrop", gövde "<from> dosya göndermek istiyor" (dosya adı/boyutu yok). pushId başına
+  saatte ≤ 10, IP başına dakikada ≤ 10.
+- Bildirime dokunulunca uygulama öne gelir, PC'leri tarar ve bağlanır; PC bekleyen teklifi yeniden gönderir
+  (en çok 5 dk bekler).
+- Sunucu sırları (Efe girer): `APNS_KEY_P8`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_TOPIC`. Eksikse
+  `/v1/push/*` 501 döner.
 
 ### 6.3 Aktarma sunucusu (2026-10-17 tasarım)
 - **Sunucu:** Cloudflare Worker + Durable Object (`relay/`); ücretsiz katman. Yalnız bayt aktarır;

@@ -38,7 +38,9 @@ final class HookPartial: PartialFile {
     func read(at: Int64, length: Int) throws -> Data { try inner.read(at: at, length: length) }
     func append(_ data: Data) throws { try inner.append(data); if inner.offset >= threshold { hook() } }
     func sync() throws { try inner.sync() }
-    func commit(fileName: String, sha256: String) throws -> String { try inner.commit(fileName: fileName, sha256: sha256) }
+    func commit(directory: [String], fileName: String, sha256: String) throws -> String {
+        try inner.commit(directory: directory, fileName: fileName, sha256: sha256)
+    }
     func discard() throws { try inner.discard() }
 }
 
@@ -49,6 +51,9 @@ final class HookStorage: ReceiverStorage {
     init(_ inner: ReceiverStorage, threshold: Int64, hook: @escaping () -> Void) { self.inner = inner; self.threshold = threshold; self.hook = hook }
     func freeSpaceBytes() throws -> Int64 { try inner.freeSpaceBytes() }
     func completedFile(for key: PartialKey) throws -> CompletedFile? { try inner.completedFile(for: key) }
+    func resolveTopFolder(peerId: String, transferId: TransferId, name: String) throws -> String {
+        try inner.resolveTopFolder(peerId: peerId, transferId: transferId, name: name)
+    }
     func openPartial(for key: PartialKey, size: Int64, mtime: Int64) throws -> PartialFile {
         HookPartial(try inner.openPartial(for: key, size: size, mtime: mtime), threshold: threshold, hook: hook)
     }
@@ -517,6 +522,9 @@ final class TransferTests: XCTestCase {
         init(_ inner: ReceiverStorage, free: Int64) { self.inner = inner; self.free = free }
         func freeSpaceBytes() throws -> Int64 { free }
         func completedFile(for key: PartialKey) throws -> CompletedFile? { try inner.completedFile(for: key) }
+        func resolveTopFolder(peerId: String, transferId: TransferId, name: String) throws -> String {
+            try inner.resolveTopFolder(peerId: peerId, transferId: transferId, name: name)
+        }
         func openPartial(for key: PartialKey, size: Int64, mtime: Int64) throws -> PartialFile {
             try inner.openPartial(for: key, size: size, mtime: mtime)
         }
