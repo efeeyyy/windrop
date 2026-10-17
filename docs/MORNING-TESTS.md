@@ -16,9 +16,7 @@ ellerini gerektiriyor. Sırayla git; her adımda sonucu (çalıştı / hata mesa
    ```
 
 ## 1. iOS uygulamasını yükle
-- GitHub Actions'ın ürettiği `WinDrop-unsigned.ipa`'yı indir (bağlantı STATUS.md'de) →
-  Sideloadly ile ücretsiz Apple hesabınla iPhone'a yükle → Ayarlar > Genel > VPN ve Cihaz Yönetimi'nde
-  geliştiriciye güven. (CI ilk derlemede hata verirse bu adım bekler; STATUS.md'de yazar.)
+- IPA hazır: C:\Users\Efe\Desktop\WinDrop\dist\WinDrop-unsigned.ipa → Sideloadly ile ücretsiz Apple hesabınla iPhone'a (ve iPad'e) yükle → Ayarlar > Genel > VPN ve Cihaz Yönetimi'nde geliştiriciye güven. Yeni sürüm: GitHub Actions > son koşu > "WinDrop-unsigned-ipa".
 
 ## 2. Windows uygulaması
 ```powershell

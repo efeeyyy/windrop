@@ -17,9 +17,9 @@ Son güncelleme: 2026-10-17 (gece çalışması sonu). Yeni oturum bunu + `ARCHI
 | Windows servisleri (BLE GATT, TCP 53600, etkin nokta, kimlik) | `windows/src/WinDrop.Platform` | 116 test geçti |
 | Windows uygulaması (WPF Fluent, tepsi, SendTo) | `windows/src/WinDrop.App` | Derleniyor, açılıyor, BLE reklam + dinleyici logda |
 | Swift çekirdek | `ios/WinDropKit` | 82 test geçti (SwiftBox WSL, swift-crypto) |
-| iOS uygulaması + paylaşım uzantısı | `ios/App` (XcodeGen) | Yalnız `swiftc -parse`; **Mac'te hiç derlenmedi** |
+| iOS uygulaması + paylaşım uzantısı | `ios/App` (XcodeGen) | Mac'te (CI) derleniyor; cihazda denenmedi |
 | C# ↔ Swift çapraz uyum | `windows/tools/WinDrop.Interop`, `docs/INTEROP.md` | 6/6 senaryo PASS (TCP; BLE çapraz değil) |
-| CI | `.github/workflows/ios.yml` | GitHub'a gönderim sonrası sonucu aşağıda |
+| CI | `.github/workflows/ios.yml` | Yeşil (run 39067587278); imzasız IPA dist\WinDrop-unsigned.ipa (823 KB, paylaşım uzantısı dahil) |
 | Ölçüm araçları | `windows/src/WinDrop.{BleProbe,NetProbe,ApProbe,PlatformCheck}` | — |
 
 Testleri çalıştırma:
@@ -33,12 +33,11 @@ Testleri çalıştırma:
   alanına deneme Swift'i kuruldu (`~/.local/share/swiftly`, `~/swift-*`) — kullanılmıyor, silinebilir.
 - Efe'nin Windows Mobil etkin noktası gece açık kaldı (dokunulmadı).
 - Test güvenlik duvarı kuralları duruyor → `install\remove-test-rules.ps1`.
+- GitHub: github.com/efeeyyy/windrop (özel). iOS derlemesi her push'ta; IPA artifact "WinDrop-unsigned-ipa".
 
 ## Açık işler (öncelik sırası)
 1. Sabah testleri: `docs/MORNING-TESTS.md`.
-2. CI'da iOS derleme hataları (ilk Mac derlemesi) → düzelt.
-3. iOS eşleştirme onay ekranında 4 haneli kod (Windows gösteriyor).
-4. Aktarma (relay) yolu + "veri kotası" uyarısı akışı; push (ücretli hesap).
-5. Bluetooth ses algısı (`btAudio`), küçük dosyalar için BLE veri yolu, klasör gönderme.
-6. Etkin nokta parolası yenilenirken süren başka etkin nokta aktarımı kesilebilir (bilinen risk).
-7. Windows yükleyici (MSIX/Inno), uygulama simgesi.
+2. Aktarma (relay) yolu + "veri kotası" uyarısı akışı; push (ücretli hesap).
+3. Bluetooth ses algısı (`btAudio`), küçük dosyalar için BLE veri yolu, klasör gönderme.
+4. Etkin nokta parolası yenilenirken süren başka etkin nokta aktarımı kesilebilir (bilinen risk).
+5. Windows yükleyici (MSIX/Inno), uygulama simgesi.
