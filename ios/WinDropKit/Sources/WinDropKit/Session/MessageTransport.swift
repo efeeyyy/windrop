@@ -79,8 +79,15 @@ public protocol BleLink: AnyObject {
     /// Geçerli ATT MTU (≥ 23). Parça verisi en çok `mtu − 4` bayttır.
     var mtu: Int { get }
     func write(_ payload: Data) async throws
+    /// Karşı tarafın aldığı onaylanan yazma (iPhone: Write With Response). Ön ek bununla gider:
+    /// bağlantının ilk anındaki yanıtsız yazma kaybolabiliyor (2026-10-18 cihaz testi).
+    func writeReliable(_ payload: Data) async throws
     /// Sıradaki yük; bağlantı temiz kapandıysa nil.
     func read() async throws -> Data?
+}
+
+public extension BleLink {
+    func writeReliable(_ payload: Data) async throws { try await write(payload) }
 }
 
 /// BLE taşıması: her Noise mesajı `BleFragmenter` ile parçalanır; sıra no yön başına, mesaj başına artar.
@@ -95,7 +102,7 @@ public final class BleMessageTransport: MessageTransport {
     public var maxMessageSize: Int { BleFragmenter.maxMessageSize }
 
     /// Ön ek ve sürüm yanıtı parçalanmaz: tek yazma.
-    public func sendRaw(_ data: Data) async throws { try await link.write(data) }
+    public func sendRaw(_ data: Data) async throws { try await link.writeReliable(data) }
 
     public func receiveRaw(count: Int) async throws -> Data {
         guard let payload = try await link.read() else { throw SessionError.connectionClosed }

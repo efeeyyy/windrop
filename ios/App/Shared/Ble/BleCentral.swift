@@ -392,6 +392,11 @@ extension BleCentral: @preconcurrency CBPeripheralDelegate {
         links[peripheral.identifier]?.receive(value)
     }
 
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard characteristic.uuid == ProtocolIds.c2pUUID else { return }
+        links[peripheral.identifier]?.didWrite(error: error)
+    }
+
     func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
         links[peripheral.identifier]?.peripheralIsReadyToWrite()
     }

@@ -36,6 +36,7 @@ final class BlePeripheralLink {
     let inbox = AsyncMailbox<Data>()
     private(set) var isOpen = true
     private var readyWaiter: CheckedContinuation<Void, Error>?
+    private var writeWaiter: CheckedContinuation<Void, Error>?
 
     init(peripheral: CBPeripheral, c2p: CBCharacteristic) {
         self.peripheral = peripheral
@@ -60,6 +61,15 @@ final class BlePeripheralLink {
         }
     }
 
+    /// Onaylı yazma (Write With Response): karşı taraf aldığını bildirene kadar bekler.
+    func sendReliable(_ payload: Data) async throws {
+        guard isOpen else { throw BleError.disconnected }
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            writeWaiter = cont
+            peripheral.writeValue(payload, for: c2p, type: .withResponse)
+        }
+    }
+
     private func waitUntilReady() async throws {
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
             readyWaiter = cont
@@ -78,6 +88,12 @@ final class BlePeripheralLink {
         inbox.push(payload)
     }
 
+    func didWrite(error: Error?) {
+        let waiter = writeWaiter
+        writeWaiter = nil
+        if let error { waiter?.resume(throwing: error) } else { waiter?.resume() }
+    }
+
     func close(error: Error = BleError.disconnected) {
         guard isOpen else { return }
         isOpen = false
@@ -85,6 +101,9 @@ final class BlePeripheralLink {
         let waiter = readyWaiter
         readyWaiter = nil
         waiter?.resume(throwing: error)
+        let writer = writeWaiter
+        writeWaiter = nil
+        writer?.resume(throwing: error)
     }
 }
 
@@ -114,6 +133,10 @@ final class BleLinkAdapter: BleLink, @unchecked Sendable {
 
     func write(_ payload: Data) async throws {
         try await link.send([payload])
+    }
+
+    func writeReliable(_ payload: Data) async throws {
+        try await link.sendReliable(payload)
     }
 
     func read() async throws -> Data? {
