@@ -175,11 +175,8 @@ public partial class App : Application, IAppShell
     private void OnOfferReceived(object? sender, IncomingOffer offer)
     {
         AppLog.Write($"gelen teklif: {offer.SenderName}, {offer.FileCount} dosya, {offer.TotalBytes} bayt");
-        if (_settings.AutoAccept && offer.TotalBytes <= _settings.AutoAcceptMaxBytes)
-        {
-            _transfers.RespondToOffer(offer, true);
-            return;
-        }
+        // Otomatik kabul kararı TransferCoordinator'da verilir (yalnız QR ile eşli cihaz, PROTOCOL §7/§2b);
+        // bu olay yalnız kullanıcı onayı gerektiğinde gelir — burada kabul etmek onayı atlardı.
         var window = new IncomingOfferWindow(offer, accept => _transfers.RespondToOffer(offer, accept));
         window.Show();
     }

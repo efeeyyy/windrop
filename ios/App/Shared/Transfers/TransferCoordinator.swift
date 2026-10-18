@@ -42,6 +42,10 @@ final class TransferCoordinator {
     /// Ayardaki aktarma sunucusu adresi (`relayUrl`); boş/okunamıyorsa nil = aktarma yolu kapalı. Uzantı kendi ayarını okur.
     @ObservationIgnored var relayUrl: () -> String? = { RelaySettings.configuredURL() }
     @ObservationIgnored private var offerTimes: [String: [Date]] = [:]
+    @ObservationIgnored private var offerWatchers: [String: Task<Void, Never>] = [:]
+    /// Teklife yanıt bekleme süreleri: ilki oturum tazelemeden önce, ikincisi PC onay penceresi (30 sn) için.
+    static let offerFirstWait: UInt64 = 20_000_000_000
+    static let offerSecondWait: UInt64 = 35_000_000_000
 
     static let infoCardShownKey = "infoCardShown"
 
@@ -107,7 +111,39 @@ final class TransferCoordinator {
                 fail(item, error.localizedDescription)
             }
         }
+        watchOffer(item, offer: offer)
         return item
+    }
+
+    private func isAwaitingReply(_ item: TransferItem) -> Bool {
+        !item.isFinished && item.state == .awaitingPeer && !item.peerAccepted
+    }
+
+    /// `offer` sonrası 20 sn içinde `accept`/`reject` gelmezse oturumu tazeler; oturum yenilendiyse teklifi aynı
+    /// transferId ile bir kez yeniden gönderir (yenilenmediyse ilk teklif PC'de bekliyor olabilir: yeniden gönderilmez).
+    /// Yine yanıt yoksa 35 sn sonra aktarım hatayla biter.
+    private func watchOffer(_ item: TransferItem, offer: OfferMessage) {
+        let pcID = item.pcID
+        let id = item.id
+        offerWatchers[id]?.cancel()
+        offerWatchers[id] = Task { [weak self] in
+            defer { self?.offerWatchers[id] = nil }
+            try? await Task.sleep(nanoseconds: Self.offerFirstWait)
+            guard let self, !Task.isCancelled, self.isAwaitingReply(item) else { return }
+            let renewed = await self.signals.refreshSession(pcID)
+            guard !Task.isCancelled, self.isAwaitingReply(item) else { return }
+            if renewed {
+                do {
+                    try await self.signals.send(.offer(offer), to: pcID)
+                } catch {
+                    self.fail(item, error.localizedDescription)
+                    return
+                }
+            }
+            try? await Task.sleep(nanoseconds: Self.offerSecondWait)
+            guard !Task.isCancelled, self.isAwaitingReply(item) else { return }
+            self.fail(item, "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun.")
+        }
     }
 
     // MARK: Gelen sinyaller

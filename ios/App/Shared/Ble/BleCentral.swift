@@ -94,6 +94,13 @@ final class BleCentral: NSObject {
         }
     }
 
+    /// Oturumu tazeler (teklif zaman aşımı): bağlantı kesilir; tanıdık PC'de 1 sn sonra bekleyen `connect`,
+    /// tanıdık değilse sonraki tarama turu yeniden bağlanır (servis keşfi -> ön ek -> el sıkışma).
+    func resetLink(_ id: UUID) {
+        guard let p = peripherals[id] else { return }
+        resetSession(p)
+    }
+
     func closeLink(_ id: UUID) {
         if let p = peripherals[id], p.state != .disconnected {
             manager?.cancelPeripheralConnection(p)
@@ -364,6 +371,20 @@ extension BleCentral: @preconcurrency CBCentralManagerDelegate {
 // MARK: CBPeripheralDelegate
 
 extension BleCentral: @preconcurrency CBPeripheralDelegate {
+    /// PC'de WinDrop kapanıp açılınca LE bağlantısı açık kalır, yalnız GATT servisi kaybolur: oturum ölüdür, baştan kurulur.
+    func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
+        guard invalidatedServices.contains(where: {
+            $0.uuid == ProtocolIds.serviceUUID || ProtocolIds.isWinDropService($0.uuid)
+        }) else { return }
+        let id = peripheral.identifier
+        settingUp.remove(id)
+        pendingCharacteristics[id] = nil
+        if linkWaiters[id] != nil {
+            failLinkWaiter(id, error: BleError.disconnected, cancelConnection: false)
+        }
+        resetSession(peripheral)
+    }
+
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error {
             abortSetup(peripheral, error: error)

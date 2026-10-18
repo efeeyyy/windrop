@@ -59,6 +59,8 @@ protocol SignalSending: AnyObject {
     /// BLE veri aktarımı başlatır: sonraki çerçeveler `BleDataSession.nextFrame`'e yönlenir. Oturum yoksa nil.
     func beginBleTransfer(_ keyID: String) -> BleDataSession?
     func endBleTransfer(_ keyID: String)
+    /// Ölü olabilecek BLE oturumunu kapatıp yeniden kurar; yeni oturum hazır olursa true (en çok ~15 sn).
+    func refreshSession(_ keyID: String) async -> Bool
 }
 
 enum SignalError: Error, LocalizedError {
@@ -167,6 +169,18 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         try await pc.lock.withLock {
             try await pc.channel.sendSignal(message)
         }
+    }
+
+    func refreshSession(_ keyID: String) async -> Bool {
+        let old = channels[keyID]
+        if let old { central.resetLink(old.link.peripheralID) }
+        let deadline = Date().addingTimeInterval(15)
+        while Date() < deadline {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            if Task.isCancelled { return false }
+            if let current = channels[keyID], current !== old { return true }
+        }
+        return false
     }
 
     func remember(_ keyID: String) {
