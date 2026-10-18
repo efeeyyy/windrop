@@ -6,17 +6,17 @@ enum HowItWorksContent {
     /// `PUSH_ENABLED` (ücretli hesap + APNs, PROTOCOL §6.5): metin değişir.
     static var closedAppNote: String {
         #if PUSH_ENABLED
-        return "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir)."
+        return String(localized: "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir).")
         #else
-        return "Uygulamayı uygulama değiştiricide yukarı kaydırıp kapatırsanız bilgisayarınız telefonunuzu göremez. WinDrop'u bir kez açmanız yeterli."
+        return String(localized: "Uygulamayı uygulama değiştiricide yukarı kaydırıp kapatırsanız bilgisayarınız telefonunuzu göremez. WinDrop'u bir kez açmanız yeterli.")
         #endif
     }
 
     /// (2) Yeni bilgisayarla ilk paylaşım.
-    static let newComputerNote = "Yeni bir bilgisayarla ilk kez paylaşırken WinDrop'u bir kez açın."
+    static var newComputerNote: String { String(localized: "Yeni bir bilgisayarla ilk kez paylaşırken WinDrop'u bir kez açın.") }
 
     /// (3) Bilgisayardan gelen dosyalar.
-    static let incomingNote = "Bilgisayardan gelen dosyalar için bildirime dokunmanız gerekir — AirDrop'taki Kabul gibi."
+    static var incomingNote: String { String(localized: "Bilgisayardan gelen dosyalar için bildirime dokunmanız gerekir — AirDrop'taki Kabul gibi.") }
 
     static var all: [(icon: String, text: String)] {
         [("rectangle.stack.badge.minus", closedAppNote),

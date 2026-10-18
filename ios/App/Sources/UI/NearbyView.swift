@@ -35,7 +35,7 @@ struct NearbyView: View {
                         .padding(10)
                         .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
                     }
-                    Text("\(session.files.count == 1 ? "1 dosya" : "\(session.files.count) dosya") gönderilecek")
+                    Text("\(session.files.count) dosya gönderilecek")
                         .font(.subheadline).foregroundStyle(.secondary)
                     if let warning = bluetoothWarning {
                         Label(warning, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
@@ -83,9 +83,9 @@ struct NearbyView: View {
 
     private var bluetoothWarning: String? {
         switch model.hub.bluetoothState {
-        case .poweredOff: return "Bluetooth kapalı. Bilgisayarı bulmak için açın."
-        case .unauthorized: return "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin."
-        case .unsupported: return "Bu cihaz Bluetooth LE desteklemiyor."
+        case .poweredOff: return String(localized: "Bluetooth kapalı. Bilgisayarı bulmak için açın.")
+        case .unauthorized: return String(localized: "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin.")
+        case .unsupported: return String(localized: "Bu cihaz Bluetooth LE desteklemiyor.")
         default: return nil
         }
     }
@@ -95,7 +95,7 @@ struct NearbyView: View {
             model.selectedTab = .transfers
             dismiss()
         } else {
-            errorText = "\(peer.name) şu an yakında değil. Tekrar deneyin."
+            errorText = String(localized: "\(peer.name) şu an yakında değil. Tekrar deneyin.")
         }
     }
 

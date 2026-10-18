@@ -16,10 +16,10 @@ enum DataClientError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noCandidates: return "Bağlanılacak adres yok."
-        case .invalidEndpoint: return "Geçersiz adres veya port."
-        case .timeout: return "Bağlantı zaman aşımına uğradı."
-        case .allFailed: return "Hiçbir adrese bağlanılamadı."
+        case .noCandidates: return String(localized: "Bağlanılacak adres yok.")
+        case .invalidEndpoint: return String(localized: "Geçersiz adres veya port.")
+        case .timeout: return String(localized: "Bağlantı zaman aşımına uğradı.")
+        case .allFailed: return String(localized: "Hiçbir adrese bağlanılamadı.")
         case .localNetworkDenied: return LocalNetworkPermission.deniedMessage
         }
     }

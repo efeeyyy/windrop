@@ -25,15 +25,15 @@ enum RelaySocketError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .timeout: return "Aktarma sunucusuna bağlanılamadı (zaman aşımı)."
+        case .timeout: return String(localized: "Aktarma sunucusuna bağlanılamadı (zaman aşımı).")
         case .rejected(let status):
             switch status {
-            case 409: return "Aktarma odası dolu veya eş zaten bağlı."
-            case 410: return "Aktarma odası kapandı."
-            case 429: return "Aktarma sunucusu çok fazla istek aldı; biraz sonra deneyin."
-            default: return "Aktarma sunucusu bağlantıyı reddetti (\(status))."
+            case 409: return String(localized: "Aktarma odası dolu veya eş zaten bağlı.")
+            case 410: return String(localized: "Aktarma odası kapandı.")
+            case 429: return String(localized: "Aktarma sunucusu çok fazla istek aldı; biraz sonra deneyin.")
+            default: return String(localized: "Aktarma sunucusu bağlantıyı reddetti (\(status)).")
             }
-        case .failed(let text): return "Aktarma sunucusuna bağlanılamadı: \(text)"
+        case .failed(let text): return String(localized: "Aktarma sunucusuna bağlanılamadı: \(text)")
         }
     }
 }
@@ -175,7 +175,7 @@ final class RelaySocket: NSObject, WebSocketLike, URLSessionWebSocketDelegate, @
             if let http = task.response as? HTTPURLResponse, http.statusCode != 101 {
                 failure = RelaySocketError.rejected(http.statusCode)
             } else {
-                failure = error ?? RelaySocketError.failed("bağlantı kapandı")
+                failure = error ?? RelaySocketError.failed(String(localized: "bağlantı kapandı"))
             }
             openError = failure
         }

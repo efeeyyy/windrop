@@ -78,16 +78,16 @@ struct ShareView: View {
             .font(.subheadline).foregroundStyle(.secondary)
         } else {
             let count = model.totalCount - model.skippedCount
-            Text("\(count == 1 ? "1 dosya" : "\(count) dosya") gönderilecek")
+            Text("\(count) dosya gönderilecek")
                 .font(.subheadline).foregroundStyle(.secondary)
         }
     }
 
     private var bluetoothWarning: String? {
         switch model.hub.bluetoothState {
-        case .poweredOff: return "Bluetooth kapalı. Bilgisayarı bulmak için açın."
-        case .unauthorized: return "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin."
-        case .unsupported: return "Bu cihaz Bluetooth LE desteklemiyor."
+        case .poweredOff: return String(localized: "Bluetooth kapalı. Bilgisayarı bulmak için açın.")
+        case .unauthorized: return String(localized: "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin.")
+        case .unsupported: return String(localized: "Bu cihaz Bluetooth LE desteklemiyor.")
         default: return nil
         }
     }
@@ -146,8 +146,8 @@ private struct SendingView: View {
     }
 
     private var progressText: String {
-        let done = ByteCountFormatter.string(fromByteCount: item.bytesDone, countStyle: .file)
-        let total = ByteCountFormatter.string(fromByteCount: item.totalBytes, countStyle: .file)
+        let done = FileSizeText.string(item.bytesDone)
+        let total = FileSizeText.string(item.totalBytes)
         return "\(done) / \(total)"
     }
 }

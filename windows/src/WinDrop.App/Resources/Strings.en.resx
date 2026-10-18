@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+    <data name="App.Title" xml:space="preserve"><value>WinDrop</value></data>
+  <data name="Main.DropHere" xml:space="preserve"><value>Drag and drop files or folders here</value></data>
+  <data name="Main.PickFiles" xml:space="preserve"><value>Choose files…</value></data>
+  <data name="Main.PickFolder" xml:space="preserve"><value>Choose folder…</value></data>
+  <data name="Main.StagedFormat" xml:space="preserve"><value>{0} item(s) ready to send</value></data>
+  <data name="Main.Send" xml:space="preserve"><value>Send</value></data>
+  <data name="Main.ClearStaged" xml:space="preserve"><value>Clear</value></data>
+  <data name="Main.HintSelectDevice" xml:space="preserve"><value>Select a nearby device to send to.</value></data>
+  <data name="Main.Devices" xml:space="preserve"><value>Nearby devices</value></data>
+  <data name="Main.NoDevices" xml:space="preserve"><value>No devices nearby. Make sure WinDrop and Bluetooth are on for both devices (WinDrop must be in the foreground on the iPhone).</value></data>
+  <data name="Main.Transfers" xml:space="preserve"><value>Transfers</value></data>
+  <data name="Main.NoTransfers" xml:space="preserve"><value>No transfers yet.</value></data>
+  <data name="Main.AddPhone" xml:space="preserve"><value>Pair iPhone (optional)</value></data>
+  <data name="Main.Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Main.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Main.ShowInFolder" xml:space="preserve"><value>Show in folder</value></data>
+  <data name="Main.SendError" xml:space="preserve"><value>Couldn’t send: {0}</value></data>
+  <data name="Device.Nearby" xml:space="preserve"><value>Nearby</value></data>
+  <data name="Device.Away" xml:space="preserve"><value>Away</value></data>
+  <data name="Device.Push" xml:space="preserve"><value>Reachable by notification</value></data>
+  <data name="Transfer.To" xml:space="preserve"><value>To {0}</value></data>
+  <data name="Transfer.From" xml:space="preserve"><value>From {0}</value></data>
+  <data name="Transfer.Detail" xml:space="preserve"><value>{0} file(s) · {1}</value></data>
+  <data name="Status.Waiting" xml:space="preserve"><value>Waiting</value></data>
+  <data name="Status.PushSent" xml:space="preserve"><value>Notification sent to phone — waiting</value></data>
+  <data name="Status.Active" xml:space="preserve"><value>Transferring</value></data>
+  <data name="Status.Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Status.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Status.Cancelled" xml:space="preserve"><value>Canceled</value></data>
+  <data name="Status.Rejected" xml:space="preserve"><value>Declined</value></data>
+  <data name="Pair.Title" xml:space="preserve"><value>Pair iPhone</value></data>
+  <data name="Pair.Instructions" xml:space="preserve"><value>Optional: files from a paired device can be accepted automatically. Scan this code with the WinDrop app on your iPhone.</value></data>
+  <data name="Pair.Waiting" xml:space="preserve"><value>Waiting for iPhone…</value></data>
+  <data name="Pair.Remaining" xml:space="preserve"><value>Time left: {0}</value></data>
+  <data name="Pair.Expired" xml:space="preserve"><value>Time’s up.</value></data>
+  <data name="Pair.AlreadyPaired" xml:space="preserve"><value>“{0}” is already paired.</value></data>
+  <data name="Pair.Restart" xml:space="preserve"><value>Start over</value></data>
+  <data name="Pair.Confirm" xml:space="preserve"><value>Pair “{0}”?</value></data>
+  <data name="Pair.Code" xml:space="preserve"><value>Verification code: {0}. Does it match the code on your iPhone screen? If not, choose Decline.</value></data>
+  <data name="Pair.Accept" xml:space="preserve"><value>Pair</value></data>
+  <data name="Pair.Reject" xml:space="preserve"><value>Decline</value></data>
+  <data name="Pair.Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Offer.Title" xml:space="preserve"><value>Incoming files</value></data>
+  <data name="Offer.Text" xml:space="preserve"><value>“{0}” wants to send you {1} file(s) ({2}).</value></data>
+  <data name="Offer.Folders" xml:space="preserve"><value>Folder: {0}</value></data>
+  <data name="Offer.Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="Offer.Reject" xml:space="preserve"><value>Decline</value></data>
+  <data name="Offer.Code" xml:space="preserve"><value>Verification code: {0}. If you like, compare it with the code on the sender’s screen; if you accept, this device will be remembered.</value></data>
+  <data name="Offer.Unknown" xml:space="preserve"><value>This device isn’t recognized yet; if you decline, nothing is saved.</value></data>
+  <data name="Relay.Title" xml:space="preserve"><value>Transfer over the internet</value></data>
+  <data name="Relay.Intro" xml:space="preserve"><value>Couldn’t connect directly to “{0}”.</value></data>
+  <data name="Relay.Warning" xml:space="preserve"><value>This transfer will use your Wi-Fi or cellular data allowance. ({0}) End-to-end encrypted.</value></data>
+  <data name="Relay.Confirm" xml:space="preserve"><value>Allow</value></data>
+  <data name="Relay.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Offer.Timeout" xml:space="preserve"><value>Declined automatically if there’s no response within {0} s.</value></data>
+  <data name="Settings.Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings.DownloadFolder" xml:space="preserve"><value>Download folder</value></data>
+  <data name="Settings.Browse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Settings.AutoAccept" xml:space="preserve"><value>Automatically accept files from paired devices</value></data>
+  <data name="Settings.AutoAcceptMax" xml:space="preserve"><value>Auto-accept size limit (MB)</value></data>
+  <data name="Settings.SendTo" xml:space="preserve"><value>Add to File Explorer “Send to” menu</value></data>
+  <data name="Settings.AutoStart" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="Settings.PairedDevices" xml:space="preserve"><value>Paired devices</value></data>
+  <data name="Settings.NoDevices" xml:space="preserve"><value>No paired devices.</value></data>
+  <data name="Settings.KindPaired" xml:space="preserve"><value>Paired</value></data>
+  <data name="Settings.KindFamiliar" xml:space="preserve"><value>Known</value></data>
+  <data name="Settings.LastSeen" xml:space="preserve"><value>Last seen: {0}</value></data>
+  <data name="Settings.LastSeenUnknown" xml:space="preserve"><value>Last seen: unknown</value></data>
+  <data name="Settings.Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Settings.RemoveAll" xml:space="preserve"><value>Remove all</value></data>
+  <data name="Settings.RemoveConfirm" xml:space="preserve"><value>Remove the pairing with “{0}”?</value></data>
+  <data name="Settings.RemoveAllConfirm" xml:space="preserve"><value>Remove all pairings?</value></data>
+  <data name="Settings.RelayUrl" xml:space="preserve"><value>Relay server address</value></data>
+  <data name="Settings.RelayHelp" xml:space="preserve"><value>Optional. If a direct connection, hotspot and Bluetooth aren’t possible, files go through this server over the internet (end-to-end encrypted; the server can’t see the contents). The address of your own Cloudflare server, e.g. wss://windrop-relay.youraccount.workers.dev — setup: relay\README.md. If empty, this path is off.</value></data>
+  <data name="Settings.Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Settings.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Settings.SaveError" xml:space="preserve"><value>Couldn’t apply settings: {0}</value></data>
+  <data name="Tray.Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Tray.Send" xml:space="preserve"><value>Send…</value></data>
+  <data name="Tray.Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Tray.Background" xml:space="preserve"><value>WinDrop is running in the background.</value></data>
+  <data name="Dialog.PickFiles" xml:space="preserve"><value>Choose files to send</value></data>
+  <data name="Dialog.PickSendFolder" xml:space="preserve"><value>Choose a folder to send</value></data>
+  <data name="Dialog.PickFolder" xml:space="preserve"><value>Choose the download folder</value></data>
+  <data name="Settings.Language" xml:space="preserve"><value>Language / Dil</value></data>
+  <data name="Settings.LangSystem" xml:space="preserve"><value>System default</value></data>
+  <data name="Settings.LangRestartNote" xml:space="preserve"><value>Uygulamayı yeniden başlatınca uygulanır / Applies after restart</value></data>
+  <data name="Settings.RestartNow" xml:space="preserve"><value>Şimdi yeniden başlat / Restart now</value></data>
+  <data name="Unit.PerSecond" xml:space="preserve"><value>/s</value></data>
+  <data name="Err.BtAudioLocalStopped" xml:space="preserve"><value>Bluetooth audio started on this PC; the Bluetooth transfer was stopped.</value></data>
+  <data name="Err.BtAudioPhoneStopped" xml:space="preserve"><value>Bluetooth audio started on the iPhone; the Bluetooth transfer was stopped.</value></data>
+  <data name="Err.PairingRemoved" xml:space="preserve"><value>The pairing was removed.</value></data>
+  <data name="Err.BleDisconnected" xml:space="preserve"><value>The Bluetooth connection was lost.</value></data>
+  <data name="Err.BleNoResponse" xml:space="preserve"><value>The iPhone didn’t respond over Bluetooth (timed out). No route available.</value></data>
+  <data name="Err.BleTransferCut" xml:space="preserve"><value>The transfer over Bluetooth was interrupted.</value></data>
+  <data name="Err.NotNearby" xml:space="preserve"><value>The device isn’t nearby (no Bluetooth connection).</value></data>
+  <data name="Err.FileNotFound" xml:space="preserve"><value>File not found: {0}</value></data>
+  <data name="Err.FileUnreadable" xml:space="preserve"><value>Couldn’t read the file or folder: {0}</value></data>
+  <data name="Err.NoFilesToSend" xml:space="preserve"><value>There are no files to send.</value></data>
+  <data name="Err.TooManyFiles" xml:space="preserve"><value>You can send at most {0} files.</value></data>
+  <data name="Err.FolderTooDeep" xml:space="preserve"><value>Folders can be at most {0} levels deep: {1}</value></data>
+  <data name="Err.FolderPathTooLong" xml:space="preserve"><value>Folder paths can be at most {0} characters long: {1}</value></data>
+  <data name="Err.PushDisabled" xml:space="preserve"><value>Push notifications are turned off on this server.</value></data>
+  <data name="Err.PushUnknown" xml:space="preserve"><value>The phone’s notification registration isn’t on the server; open the app on the phone and wait for it to connect over Bluetooth.</value></data>
+  <data name="Err.PushRateLimited" xml:space="preserve"><value>Too many notifications were sent to the phone; try again in a little while.</value></data>
+  <data name="Err.PushServerError" xml:space="preserve"><value>The notification server returned an error (HTTP {0}).</value></data>
+  <data name="Err.PushUnreachable" xml:space="preserve"><value>Couldn’t reach the notification server.</value></data>
+  <data name="Err.PhoneNoResponse" xml:space="preserve"><value>The phone didn’t respond.</value></data>
+  <data name="Err.OfferNoResponse" xml:space="preserve"><value>The other device didn’t respond to the offer.</value></data>
+  <data name="Err.RejectedByPeer" xml:space="preserve"><value>The other device declined.</value></data>
+  <data name="Err.RejectedByPeerReason" xml:space="preserve"><value>The other device declined ({0}).</value></data>
+  <data name="Err.NoDiskSpace" xml:space="preserve"><value>There isn’t enough free space on the drive that holds the download folder.</value></data>
+  <data name="Err.PathNoHotspotSupport" xml:space="preserve"><value>The iPhone doesn’t support the hotspot route and isn’t connected to a Wi-Fi network. No route available.</value></data>
+  <data name="Err.PathNoHotspotInVersion" xml:space="preserve"><value>The iPhone isn’t connected to a Wi-Fi network and the hotspot route isn’t available in this version. No route available.</value></data>
+  <data name="Err.HotspotOpenFailed" xml:space="preserve"><value>Couldn’t turn on the Windows Mobile Hotspot:</value></data>
+  <data name="Err.HotspotInUse" xml:space="preserve"><value>You’re already using the Windows Mobile Hotspot yourself, so WinDrop can’t start its own. Turn the hotspot off, or connect the iPhone to a Wi-Fi network and try again.</value></data>
+  <data name="Err.NoNetworkAddress" xml:space="preserve"><value>This PC has no usable network address (not connected to a network).</value></data>
+  <data name="Err.DirectFailedReported" xml:space="preserve"><value>Couldn’t establish a direct connection (iPhone reported: {0}). No route available.</value></data>
+  <data name="Err.PhoneDataTimeout" xml:space="preserve"><value>The iPhone couldn’t set up the data connection (timed out). No route available.</value></data>
+  <data name="Err.ConnectionLostNoReconnect" xml:space="preserve"><value>The connection was lost and the iPhone didn’t reconnect.</value></data>
+  <data name="Err.BleAlsoSize" xml:space="preserve"><value>The Bluetooth (small file) route isn’t available either: the total size exceeds {0} KB.</value></data>
+  <data name="Err.BleAlsoLocalAudio" xml:space="preserve"><value>The Bluetooth (small file) route isn’t available either: Bluetooth audio output is in use on this PC.</value></data>
+  <data name="Err.BleAlsoPhoneAudio" xml:space="preserve"><value>The Bluetooth (small file) route isn’t available either: Bluetooth audio output is in use on the iPhone.</value></data>
+  <data name="Err.BleBusy" xml:space="preserve"><value>The Bluetooth route is in use for another transfer with this device.</value></data>
+  <data name="Err.RelayUrlInvalidHint" xml:space="preserve"><value>The relay server address is invalid (enter it as wss://… in Settings).</value></data>
+  <data name="Err.RelayUrlInvalid" xml:space="preserve"><value>The relay server address is invalid.</value></data>
+  <data name="Err.RelayNotApproved" xml:space="preserve"><value>Sending through the relay server wasn’t approved.</value></data>
+  <data name="Err.RelayDropped" xml:space="preserve"><value>The relay connection was lost.</value></data>
+  <data name="Err.RelayTooManyRooms" xml:space="preserve"><value>The relay server refused because rooms were opened too often (at most 10 per minute). Try again shortly.</value></data>
+  <data name="Err.RelayRoomFull" xml:space="preserve"><value>The relay room is full (that role is already connected).</value></data>
+  <data name="Err.RelayRoomClosed" xml:space="preserve"><value>The relay room has closed.</value></data>
+  <data name="Err.RelayUnreachable" xml:space="preserve"><value>Couldn’t connect to the relay server: {0}</value></data>
+  <data name="Err.RelayRefused" xml:space="preserve"><value>The relay server refused the connection (HTTP {0}).</value></data>
+  <data name="Err.RelayPhoneJoinTimeout" xml:space="preserve"><value>The iPhone didn’t join the relay room in time.</value></data>
+  <data name="Err.RelayPhoneFailed" xml:space="preserve"><value>The iPhone couldn’t connect to the relay server (relay_fail).</value></data>
+  <data name="Err.RelayHandshakeFailed" xml:space="preserve"><value>The relay handshake failed: {0}</value></data>
+  <data name="Err.RelayAlsoFailed" xml:space="preserve"><value>The relay route failed too. No route available.</value></data>
+  <data name="Err.NoPath" xml:space="preserve"><value>No route available.</value></data>
+  <data name="Err.HashMismatch" xml:space="preserve"><value>{0} file(s) couldn’t be verified (SHA-256 mismatch).</value></data>
+  <data name="Err.RemoteCanceled" xml:space="preserve"><value>The other side canceled.</value></data>
+  <data name="Err.TransferCut" xml:space="preserve"><value>The transfer was interrupted.</value></data>
+  <data name="Err.TransferCutWith" xml:space="preserve"><value>The transfer was interrupted: {0}</value></data>
+  <data name="Err.UnexpectedEnd" xml:space="preserve"><value>The transfer ended unexpectedly.</value></data>
+  <data name="Err.TransferFailedWith" xml:space="preserve"><value>The transfer failed: {0}</value></data>
+  <data name="Err.TransferFailedUnexpected" xml:space="preserve"><value>The transfer failed (unexpected error).</value></data>
+  <data name="Err.HotspotRestartFailed" xml:space="preserve"><value>Couldn’t restart the Mobile Hotspot: {0}</value></data>
+  <data name="Err.HotspotInTransition" xml:space="preserve"><value>The Mobile Hotspot is changing state right now; try again in a few seconds.</value></data>
+  <data name="Err.HotspotStartFailed" xml:space="preserve"><value>Couldn’t start the Mobile Hotspot: {0}</value></data>
+  <data name="Err.HotspotNeedNetwork" xml:space="preserve"><value>The Mobile Hotspot needs this PC to be connected to a network (no internet connection profile). Connect to Wi-Fi or Ethernet and try again.</value></data>
+  <data name="Err.HotspotUnavailableHere" xml:space="preserve"><value>The Mobile Hotspot isn’t available on this PC:</value></data>
+  <data name="Err.CapGroupPolicy" xml:space="preserve"><value>turned off by group policy.</value></data>
+  <data name="Err.CapHardware" xml:space="preserve"><value>the hardware doesn’t support it.</value></data>
+  <data name="Err.CapOperator" xml:space="preserve"><value>turned off by the operator.</value></data>
+  <data name="Err.CapSku" xml:space="preserve"><value>this edition of Windows doesn’t support it.</value></data>
+  <data name="Err.CapAppMissing" xml:space="preserve"><value>a required app isn’t installed.</value></data>
+  <data name="Err.CapSystem" xml:space="preserve"><value>the system feature is turned off.</value></data>
+  <data name="Err.HsWifiOff" xml:space="preserve"><value>Wi-Fi is off; turn Wi-Fi on and try again.</value></data>
+  <data name="Err.HsEntitlement" xml:space="preserve"><value>Mobile Hotspot authorization failed.</value></data>
+  <data name="Err.HsOpInProgress" xml:space="preserve"><value>Another hotspot operation is in progress.</value></data>
+  <data name="Err.HsBtOff" xml:space="preserve"><value>Bluetooth is off.</value></data>
+  <data name="Err.HsLimited" xml:space="preserve"><value>Network connectivity is limited; couldn’t turn on the hotspot.</value></data>
+  <data name="Err.HsStartStatus" xml:space="preserve"><value>Couldn’t start the Mobile Hotspot ({0}).</value></data>
+</root>

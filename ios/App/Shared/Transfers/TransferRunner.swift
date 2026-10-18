@@ -73,9 +73,9 @@ enum TransferFailure: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidTransferId: return "Geçersiz aktarım kimliği."
-        case .relayNotConfigured: return "Aktarma sunucusu adresi ayarlı değil (Ayarlar > Aktarma sunucusu)."
-        case .relayInvalidToken: return "Aktarma bilgisi geçersiz."
+        case .invalidTransferId: return String(localized: "Geçersiz aktarım kimliği.")
+        case .relayNotConfigured: return String(localized: "Aktarma sunucusu adresi ayarlı değil (Ayarlar > Aktarma sunucusu).")
+        case .relayInvalidToken: return String(localized: "Aktarma bilgisi geçersiz.")
         case .message(let text): return text
         }
     }

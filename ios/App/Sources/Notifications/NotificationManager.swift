@@ -25,8 +25,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate, Off
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         // Kategori kaydı izin istemi çıkarmaz.
-        let accept = UNNotificationAction(identifier: Self.acceptAction, title: "Kabul", options: [.foreground])
-        let reject = UNNotificationAction(identifier: Self.rejectAction, title: "Reddet", options: [])
+        let accept = UNNotificationAction(identifier: Self.acceptAction, title: String(localized: "Kabul"), options: [.foreground])
+        let reject = UNNotificationAction(identifier: Self.rejectAction, title: String(localized: "Reddet"), options: [])
         let category = UNNotificationCategory(
             identifier: Self.offerCategory, actions: [accept, reject], intentIdentifiers: [], options: [])
         center.setNotificationCategories([category])
@@ -41,7 +41,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate, Off
 
     func postOffer(transferId: String, peerName: String, summary: String) {
         let content = UNMutableNotificationContent()
-        content.title = "\(peerName) dosya göndermek istiyor"
+        content.title = String(localized: "\(peerName) dosya göndermek istiyor")
         content.body = summary
         content.sound = .default
         content.categoryIdentifier = Self.offerCategory

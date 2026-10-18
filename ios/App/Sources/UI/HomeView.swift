@@ -110,9 +110,9 @@ struct HomeView: View {
     private var bluetoothWarning: String? {
         guard model.hub.hasStarted else { return nil }
         switch model.hub.bluetoothState {
-        case .poweredOff: return "Bluetooth kapalı. Bilgisayarınızı bulmak için açın."
-        case .unauthorized: return "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin."
-        case .unsupported: return "Bu cihaz Bluetooth LE desteklemiyor."
+        case .poweredOff: return String(localized: "Bluetooth kapalı. Bilgisayarınızı bulmak için açın.")
+        case .unauthorized: return String(localized: "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin.")
+        case .unsupported: return String(localized: "Bu cihaz Bluetooth LE desteklemiyor.")
         default: return nil
         }
     }
@@ -137,12 +137,12 @@ struct HomeView: View {
 
     private func present(_ files: [OutgoingFile]) {
         guard !files.isEmpty else {
-            errorText = "Gönderilecek dosya seçilmedi."
+            errorText = String(localized: "Gönderilecek dosya seçilmedi.")
             return
         }
         guard files.count <= TransferLimits.maxFiles else {
             FilePreparer.release(files)
-            errorText = "En çok \(TransferLimits.maxFiles) dosya gönderilebilir."
+            errorText = String(localized: "En çok \(Int(TransferLimits.maxFiles)) dosya gönderilebilir.")
             return
         }
         errorText = nil

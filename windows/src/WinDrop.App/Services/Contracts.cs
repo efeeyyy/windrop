@@ -97,7 +97,7 @@ public sealed partial class TransferItem : ObservableObject
     /// <summary>Alınan dosya/klasör yolu (tamamlanınca; "Klasörde göster" için).</summary>
     [ObservableProperty] public partial string? SavedPath { get; set; }
 
-    /// <summary>Başarısız/iptal/reddedilen aktarımın anlaşılır nedeni (Türkçe).</summary>
+    /// <summary>Başarısız/iptal/reddedilen aktarımın anlaşılır nedeni (seçili arayüz dilinde).</summary>
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
 
     /// <summary>Telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor (PROTOCOL §6.5).</summary>

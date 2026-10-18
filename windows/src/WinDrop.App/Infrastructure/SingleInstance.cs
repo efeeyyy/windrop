@@ -32,6 +32,7 @@ public sealed class SingleInstance : IDisposable
     private readonly Mutex _mutex;
     private readonly CancellationTokenSource _cts = new();
     private bool _owned;
+    private bool _disposed;
 
     public static string MutexName { get; } = @"Local\WinDrop.App.SingleInstance." + Suffix;
     public static string PipeName { get; } = "WinDrop.App.Pipe." + Suffix;
@@ -104,6 +105,8 @@ public sealed class SingleInstance : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;   // yeniden başlatmada kilit erken bırakılır; using sonunda ikinci çağrı zararsız olmalı
+        _disposed = true;
         _cts.Cancel();
         if (_owned)
         {

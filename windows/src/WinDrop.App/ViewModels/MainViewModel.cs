@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WinDrop.App.Infrastructure;
 using WinDrop.App.Services;
+using WinDrop.Platform;
 
 namespace WinDrop.App.ViewModels;
 
@@ -180,7 +181,7 @@ public sealed partial class MainViewModel : ObservableObject
         try { await _transfers.SendAsync(device.Id, paths); }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
         {
-            ErrorMessage = Strings.Format("Main.SendError", ex.Message);
+            ErrorMessage = Strings.Format("Main.SendError", ex is TransferException te ? ErrorTexts.Format(te.Error) : ex.Message);
             AppLog.Write($"gönderme hatası: {ex.Message}");
         }
     }

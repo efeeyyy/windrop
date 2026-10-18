@@ -9,7 +9,12 @@ namespace WinDrop.Platform;
 /// <summary>Etkin nokta başlatılamadı/yapılandırılamadı; <see cref="Exception.Message"/> kullanıcıya gösterilebilir (Türkçe).</summary>
 public sealed class HotspotException : Exception
 {
-    public HotspotException(string message, Exception? inner = null) : base(message, inner) { }
+    public HotspotException(string message, Exception? inner = null) : base(message, inner) => Error = UserError.Raw(message);
+
+    public HotspotException(UserError error, Exception? inner = null) : base(error.ToString(), inner) => Error = error;
+
+    /// <summary>Arayüz dilinde gösterilecek yapılandırılmış neden.</summary>
+    public UserError Error { get; }
 }
 
 /// <summary>Etkin nokta ayarı (sistem genelindeki kullanıcı ayarının anlık görüntüsü). Parola yazılmaz.</summary>
@@ -98,14 +103,14 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
                 {
                     try { await StopCoreAsync().ConfigureAwait(false); } catch (Exception) { }
                     if (ex is HotspotException or OperationCanceledException) throw;
-                    throw new HotspotException("Mobil etkin nokta yeniden başlatılamadı: " + ex.Message, ex);
+                    throw new HotspotException(UserError.Of(UserErrorCode.HotspotRestartFailed, ex.Message), ex);
                 }
                 _activeConfig = config;
                 ArmIdleTimer();
                 return true;
             }
             if (state == TetheringOperationalState.InTransition)
-                throw new HotspotException("Mobil etkin nokta şu an değişiyor; birkaç saniye sonra tekrar deneyin.");
+                throw new HotspotException(UserError.Of(UserErrorCode.HotspotInTransition));
 
             var original = Snapshot(mgr.GetCurrentAccessPointConfiguration());
             SaveBackup(original);
@@ -127,7 +132,7 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
                 catch (Exception rex) { throw new AggregateException("Etkin nokta başlatılamadı ve eski ayar geri yüklenemedi (yedek dosyada).", ex, rex); }
                 if (ex is HotspotException) throw;
                 if (ex is OperationCanceledException) throw;
-                throw new HotspotException("Mobil etkin nokta başlatılamadı: " + ex.Message, ex);
+                throw new HotspotException(UserError.Of(UserErrorCode.HotspotStartFailed, ex.Message), ex);
             }
             _activeConfig = config;
             ArmIdleTimer();
@@ -256,12 +261,11 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
                 .FirstOrDefault(p => p.GetNetworkConnectivityLevel() != NetworkConnectivityLevel.None);
         }
         if (profile == null)
-            throw new HotspotException("Mobil etkin nokta için bilgisayarın bir ağa bağlı olması gerekir (internet bağlantı profili yok). " +
-                                       "Wi-Fi veya Ethernet'e bağlanıp tekrar deneyin.");
+            throw new HotspotException(UserError.Of(UserErrorCode.HotspotNeedNetwork));
 
         var cap = NetworkOperatorTetheringManager.GetTetheringCapabilityFromConnectionProfile(profile);
         if (cap != TetheringCapability.Enabled)
-            throw new HotspotException("Mobil etkin nokta bu bilgisayarda kullanılamıyor: " + DescribeCapability(cap));
+            throw new HotspotException(UserError.Of(UserErrorCode.HotspotUnavailableHere).Then(DescribeCapability(cap)));
         return NetworkOperatorTetheringManager.CreateFromConnectionProfile(profile);
     }
 
@@ -289,31 +293,30 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
             await Task.Delay(200).ConfigureAwait(false);
     }
 
-    private static string DescribeFailure(TetheringOperationStatus status, string? extra)
+    private static UserError DescribeFailure(TetheringOperationStatus status, string? extra)
     {
-        string msg = status switch
+        var msg = status switch
         {
-            TetheringOperationStatus.WiFiDeviceOff => "Wi-Fi kapalı; Wi-Fi'ı açıp tekrar deneyin.",
-            TetheringOperationStatus.EntitlementCheckTimeout =>
-                "Mobil etkin nokta yetkilendirmesi başarısız.",
-            TetheringOperationStatus.OperationInProgress => "Başka bir etkin nokta işlemi sürüyor.",
-            TetheringOperationStatus.BluetoothDeviceOff => "Bluetooth kapalı.",
-            TetheringOperationStatus.NetworkLimitedConnectivity => "Ağ bağlantısı sınırlı; etkin nokta açılamadı.",
-            _ => $"Mobil etkin nokta başlatılamadı ({status}).",
+            TetheringOperationStatus.WiFiDeviceOff => UserError.Of(UserErrorCode.HsWifiOff),
+            TetheringOperationStatus.EntitlementCheckTimeout => UserError.Of(UserErrorCode.HsEntitlement),
+            TetheringOperationStatus.OperationInProgress => UserError.Of(UserErrorCode.HsOpInProgress),
+            TetheringOperationStatus.BluetoothDeviceOff => UserError.Of(UserErrorCode.HsBtOff),
+            TetheringOperationStatus.NetworkLimitedConnectivity => UserError.Of(UserErrorCode.HsLimited),
+            _ => UserError.Of(UserErrorCode.HsStartStatus, status.ToString()),
         };
-        return string.IsNullOrWhiteSpace(extra) ? msg : msg + " " + extra;
+        return string.IsNullOrWhiteSpace(extra) ? msg : msg.Then(UserErrorCode.Raw, extra);
     }
 
-    private static string DescribeCapability(TetheringCapability cap) => cap switch
+    private static UserErrorPart DescribeCapability(TetheringCapability cap) => new(cap switch
     {
-        TetheringCapability.DisabledByGroupPolicy => "grup ilkesiyle kapatılmış.",
-        TetheringCapability.DisabledByHardwareLimitation => "donanım desteklemiyor.",
-        TetheringCapability.DisabledByOperator => "operatör tarafından kapatılmış.",
-        TetheringCapability.DisabledBySku => "Windows sürümü desteklemiyor.",
-        TetheringCapability.DisabledByRequiredAppNotInstalled => "gerekli uygulama yüklü değil.",
-        TetheringCapability.DisabledBySystemCapability => "sistem özelliği kapalı.",
-        _ => cap.ToString(),
-    };
+        TetheringCapability.DisabledByGroupPolicy => UserErrorCode.CapGroupPolicy,
+        TetheringCapability.DisabledByHardwareLimitation => UserErrorCode.CapHardware,
+        TetheringCapability.DisabledByOperator => UserErrorCode.CapOperator,
+        TetheringCapability.DisabledBySku => UserErrorCode.CapSku,
+        TetheringCapability.DisabledByRequiredAppNotInstalled => UserErrorCode.CapAppMissing,
+        TetheringCapability.DisabledBySystemCapability => UserErrorCode.CapSystem,
+        _ => UserErrorCode.Raw,
+    }, cap.ToString());
 
     // ---- Yedek (DPAPI) ----
 

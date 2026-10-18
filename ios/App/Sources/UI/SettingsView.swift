@@ -38,6 +38,25 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Button {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Text("Dil / Language")
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app")
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .foregroundStyle(.primary)
+                } footer: {
+                    Text("Uygulama dilini iPhone Ayarlar'ından değiştirin")
+                }
+
+                Section {
                     Picker("Gelen fotoğraf ve videolar", selection: $mediaDestinationRaw) {
                         ForEach(IncomingMediaDestination.allCases) { destination in
                             Text(destination.title).tag(destination.rawValue)
@@ -104,8 +123,8 @@ struct SettingsView: View {
                     }
                 } footer: {
                     Text(relayConfigured
-                         ? "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir). Bildirimde dosya adı olmaz; yalnız tanıdık bilgisayarlar bildirim gönderebilir."
-                         : "Bunun için yukarıda aktarma sunucusu adresi girilmelidir.")
+                         ? String(localized: "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir). Bildirimde dosya adı olmaz; yalnız tanıdık bilgisayarlar bildirim gönderebilir.")
+                         : String(localized: "Bunun için yukarıda aktarma sunucusu adresi girilmelidir."))
                 }
                 #endif
 
@@ -119,15 +138,15 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {
                                     Text(pc.name)
-                                    Text(pc.autoAccept ? "Eşli" : "Tanıdık")
+                                    Text(pc.autoAccept ? String(localized: "Eşli") : String(localized: "Tanıdık"))
                                         .font(.caption2.bold())
                                         .padding(.horizontal, 6).padding(.vertical, 2)
                                         .background(pc.autoAccept ? Color.green.opacity(0.2) : Color.secondary.opacity(0.2), in: Capsule())
                                         .foregroundStyle(pc.autoAccept ? Color.green : Color.secondary)
                                 }
                                 Text(pc.autoAccept
-                                     ? (autoAcceptPaired ? "Otomatik kabul açık" : "Eşli; otomatik kabul kapalı (her seferinde sorulur)")
-                                     : "Her seferinde sorulur")
+                                     ? (autoAcceptPaired ? String(localized: "Otomatik kabul açık") : String(localized: "Eşli; otomatik kabul kapalı (her seferinde sorulur)"))
+                                     : String(localized: "Her seferinde sorulur"))
                                     .font(.caption).foregroundStyle(.secondary)
                                 Text("Kimlik: \(String(pc.id.prefix(8)))")
                                     .font(.caption2).foregroundStyle(.tertiary)
@@ -160,8 +179,8 @@ struct SettingsView: View {
                     Text("Etkin nokta bilgisi")
                 } footer: {
                     Text(HotspotJoiner.automaticJoinAvailable
-                         ? "Bilgisayarın etkin noktasına gerektiğinde otomatik katılınır."
-                         : "Wi-Fi yokken bilgisayar etkin noktasını açar. Bir kereye mahsus Ayarlar > Wi-Fi'den bu ağa katılın; iPhone sonra hatırlar.")
+                         ? String(localized: "Bilgisayarın etkin noktasına gerektiğinde otomatik katılınır.")
+                         : String(localized: "Wi-Fi yokken bilgisayar etkin noktasını açar. Bir kereye mahsus Ayarlar > Wi-Fi'den bu ağa katılın; iPhone sonra hatırlar."))
                 }
 
                 Section {

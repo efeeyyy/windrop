@@ -9,7 +9,9 @@ final class LocalNetworkPermission: @unchecked Sendable {
 
     static let shared = LocalNetworkPermission()
     static let bonjourType = "_windrop._tcp"
-    static let deniedMessage = "WinDrop'un yerel ağ izni kapalı. Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan açın."
+    static var deniedMessage: String {
+        String(localized: "WinDrop'un yerel ağ izni kapalı. Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan açın.")
+    }
     /// kDNSServiceErr_PolicyDenied
     private static let policyDenied: Int32 = -65570
 

@@ -13,7 +13,9 @@ public sealed class AppSettings
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public static string DefaultPath { get; } = Path.Combine(Storage.DefaultRoot, "settings.json");
+    // WINDROP_INSTANCE (yalnız deneme için ayrı örnek) ayrı ayar dosyası kullanır; gerçek ayarlara dokunmaz.
+    public static string DefaultPath { get; } = Path.Combine(Storage.DefaultRoot,
+        Environment.GetEnvironmentVariable("WINDROP_INSTANCE") is { Length: > 0 } instance ? $"settings.{instance}.json" : "settings.json");
 
     public static string DefaultDownloadFolder() =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "WinDrop");
@@ -40,6 +42,9 @@ public sealed class AppSettings
     /// <summary>"Arka planda çalışıyor" bildirimi bir kez gösterildi (bir daha gösterilmez).</summary>
     public bool TrayHintShown { get; set; }
 
+    /// <summary>Arayüz dili: <c>system</c> (varsayılan), <c>tr</c> ya da <c>en</c>. Yeniden başlatınca uygulanır.</summary>
+    public string Language { get; set; } = "system";
+
     public static AppSettings Load(string? path = null)
     {
         path ??= DefaultPath;
@@ -62,6 +67,7 @@ public sealed class AppSettings
     {
         if (string.IsNullOrWhiteSpace(DownloadFolder)) DownloadFolder = DefaultDownloadFolder();
         RelayUrl = (RelayUrl ?? "").Trim();
+        Language = Language?.Trim().ToLowerInvariant() is "tr" or "en" ? Language.Trim().ToLowerInvariant() : "system";
         if (AutoAcceptMaxBytes < 0) AutoAcceptMaxBytes = DefaultAutoAcceptMaxBytes;
         return this;
     }

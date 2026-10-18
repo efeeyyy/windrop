@@ -23,6 +23,9 @@ public partial class App : Application, IAppShell
     private SettingsWindow? _settingsWindow;
     private bool _balloonShown;
 
+    /// <summary>Dil değişikliği için "Şimdi yeniden başlat": çıkıştan sonra <see cref="Program"/> yeni süreci başlatır.</summary>
+    public bool RestartRequested { get; private set; }
+
     public App(AppOptions options, SingleInstance instance)
     {
         _options = options;
@@ -112,6 +115,12 @@ public partial class App : Application, IAppShell
         _mainVm.StageFiles(PickFiles());
     }
 
+    private void RestartApp()
+    {
+        RestartRequested = true;
+        ExitApp();
+    }
+
     private void ExitApp()
     {
         _main.AllowClose = true;
@@ -147,7 +156,7 @@ public partial class App : Application, IAppShell
     {
         if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
         var shell = new ShellIntegration(Environment.ProcessPath ?? throw new InvalidOperationException("Exe yolu yok."));
-        var window = new SettingsWindow(new SettingsViewModel(_settings, shell, _devices));
+        var window = new SettingsWindow(new SettingsViewModel(_settings, shell, _devices, RestartApp));
         if (_main.IsVisible) window.Owner = _main;
         window.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow = window;

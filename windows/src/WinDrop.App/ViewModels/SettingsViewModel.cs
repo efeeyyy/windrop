@@ -9,14 +9,20 @@ using WinDrop.Platform;
 
 namespace WinDrop.App.ViewModels;
 
+/// <summary>Dil seçici öğesi: <paramref name="Code"/> ayara yazılır, <paramref name="Label"/> gösterilir.</summary>
+public sealed record LanguageOption(string Code, string Label);
+
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
     private readonly ShellIntegration _shell;
     private readonly IDeviceService _devices;
+    private readonly Action? _restart;
 
-    public SettingsViewModel(AppSettings settings, ShellIntegration shell, IDeviceService devices)
+    public SettingsViewModel(AppSettings settings, ShellIntegration shell, IDeviceService devices, Action? restart = null)
     {
+        _restart = restart;
+        SelectedLanguage = AppLanguage.Normalize(settings.Language);
         _settings = settings;
         _shell = shell;
         _devices = devices;
@@ -41,6 +47,21 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial bool SendToEnabled { get; set; }
     [ObservableProperty] public partial bool AutoStartEnabled { get; set; }
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Seçilebilir diller; adlar kendi dillerinde (çeviri gerektirmez), "Sistem" hariç.</summary>
+    public IReadOnlyList<LanguageOption> Languages { get; } =
+    [
+        new(AppLanguage.Auto, Strings.Get("Settings.LangSystem")),
+        new(AppLanguage.Turkish, "Türkçe"),
+        new(AppLanguage.English, "English"),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RestartNeeded))]
+    public partial string SelectedLanguage { get; set; }
+
+    /// <summary>Seçilen dil, kayıtlı (çalışan) dilden farklı: yeniden başlatınca uygulanır.</summary>
+    public bool RestartNeeded => SelectedLanguage != AppLanguage.Normalize(_settings.Language);
 
     public ObservableCollection<DeviceInfo> PairedDevices { get; } = [];
     public bool HasNoDevices => PairedDevices.Count == 0;
@@ -82,6 +103,19 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void Save()
     {
+        if (TryApply()) CloseRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Ayarları kaydedip dili uygulamak için uygulamayı yeniden başlatır.</summary>
+    [RelayCommand]
+    private void RestartNow()
+    {
+        if (TryApply()) _restart?.Invoke();
+    }
+
+    private bool TryApply()
+    {
+        _settings.Language = SelectedLanguage;
         _settings.DownloadFolder = string.IsNullOrWhiteSpace(DownloadFolder) ? AppSettings.DefaultDownloadFolder() : DownloadFolder;
         _settings.AutoAccept = AutoAccept;
         _settings.AutoAcceptMaxBytes = Math.Max(1, AutoAcceptMaxMb) * 1024 * 1024;
@@ -98,9 +132,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             AppLog.Write($"ayarlar uygulanamadı: {ex.Message}");
             ErrorMessage = Strings.Format("Settings.SaveError", ex.Message);
-            return;
+            return false;
         }
-        CloseRequested?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     [RelayCommand]

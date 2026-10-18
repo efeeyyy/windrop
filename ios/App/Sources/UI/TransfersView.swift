@@ -42,7 +42,7 @@ private struct TransferRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.title).font(.headline).lineLimit(2)
                     Text(item.statusText).font(.subheadline).foregroundStyle(.secondary)
-                    Text(ByteCountFormatter.string(fromByteCount: item.totalBytes, countStyle: .file))
+                    Text(FileSizeText.string(item.totalBytes))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

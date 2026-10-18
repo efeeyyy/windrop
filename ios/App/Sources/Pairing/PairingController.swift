@@ -157,9 +157,9 @@ final class PairingController {
             if case .waitingApproval(_, _) = phase, !(error is PairingError) {
                 phase = .failed(PairingError.rejectedByPC.localizedDescription)
             } else if let session = error as? SessionError, session == .peerKeyMismatch {
-                phase = .failed("Karşı cihazın anahtarı QR koduyla uyuşmuyor. Eşleştirme iptal edildi.")
+                phase = .failed(String(localized: "Karşı cihazın anahtarı QR koduyla uyuşmuyor. Eşleştirme iptal edildi."))
             } else if let session = error as? SessionError, case .versionMismatch = session {
-                phase = .failed("Bilgisayardaki WinDrop sürümü uyumsuz. Güncelleme gerekli.")
+                phase = .failed(String(localized: "Bilgisayardaki WinDrop sürümü uyumsuz. Güncelleme gerekli."))
             } else {
                 phase = .failed(error.localizedDescription)
             }

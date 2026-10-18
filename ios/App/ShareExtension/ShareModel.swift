@@ -80,7 +80,7 @@ final class ShareModel {
         hub.startNearby()
         LocalNetworkPermission.shared.trigger()
         guard !providers.isEmpty else {
-            phase = .failed("Paylaşılacak dosya bulunamadı.")
+            phase = .failed(String(localized: "Paylaşılacak dosya bulunamadı."))
             return
         }
         for provider in providers {
@@ -94,7 +94,7 @@ final class ShareModel {
         providers = []
         for index in files.indices { files[index].id = index }
         if files.isEmpty {
-            phase = .failed("Dosyalar okunamadı.")
+            phase = .failed(String(localized: "Dosyalar okunamadı."))
         } else {
             phase = .choosing
         }
@@ -103,7 +103,7 @@ final class ShareModel {
     func send(to peer: NearbyPeer) {
         guard phase == .choosing else { return }
         guard let newItem = transfers.startSending(files: files, to: peer) else {
-            errorText = "\(peer.name) şu an yakında değil. Tekrar deneyin."
+            errorText = String(localized: "\(peer.name) şu an yakında değil. Tekrar deneyin.")
             return
         }
         errorText = nil

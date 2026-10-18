@@ -13,15 +13,15 @@ enum BleError: Error, LocalizedError {
         switch self {
         case .unavailable(let state):
             switch state {
-            case .poweredOff: return "Bluetooth kapalı."
-            case .unauthorized: return "WinDrop'un Bluetooth izni yok."
-            case .unsupported: return "Bu cihaz Bluetooth LE desteklemiyor."
-            default: return "Bluetooth hazır değil."
+            case .poweredOff: return String(localized: "Bluetooth kapalı.")
+            case .unauthorized: return String(localized: "WinDrop'un Bluetooth izni yok.")
+            case .unsupported: return String(localized: "Bu cihaz Bluetooth LE desteklemiyor.")
+            default: return String(localized: "Bluetooth hazır değil.")
             }
-        case .timeout: return "Bilgisayar bulunamadı veya yanıt vermedi."
-        case .disconnected: return "Bluetooth bağlantısı koptu."
-        case .serviceNotFound: return "Bilgisayarda WinDrop servisi bulunamadı."
-        case .alreadyScanning: return "Başka bir tarama sürüyor."
+        case .timeout: return String(localized: "Bilgisayar bulunamadı veya yanıt vermedi.")
+        case .disconnected: return String(localized: "Bluetooth bağlantısı koptu.")
+        case .serviceNotFound: return String(localized: "Bilgisayarda WinDrop servisi bulunamadı.")
+        case .alreadyScanning: return String(localized: "Başka bir tarama sürüyor.")
         }
     }
 }

@@ -26,6 +26,14 @@
         <TextBox Text="{Binding RelayUrl, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,4" />
         <TextBlock Text="{infra:T Settings.RelayHelp}" TextWrapping="Wrap" Opacity="0.7" FontSize="12" Margin="0,0,0,14" />
 
+        <TextBlock Text="{infra:T Settings.Language}" FontWeight="SemiBold" />
+        <ComboBox ItemsSource="{Binding Languages}" DisplayMemberPath="Label" SelectedValuePath="Code"
+                  SelectedValue="{Binding SelectedLanguage}" Margin="0,6,0,4" HorizontalAlignment="Left" MinWidth="200" />
+        <StackPanel Margin="0,0,0,14" Visibility="{Binding RestartNeeded, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{infra:T Settings.LangRestartNote}" TextWrapping="Wrap" Opacity="0.7" FontSize="12" />
+            <Button Content="{infra:T Settings.RestartNow}" Command="{Binding RestartNowCommand}" Margin="0,6,0,0" HorizontalAlignment="Left" />
+        </StackPanel>
+
         <CheckBox Content="{infra:T Settings.SendTo}" IsChecked="{Binding SendToEnabled}" Margin="0,0,0,8" />
         <CheckBox Content="{infra:T Settings.AutoStart}" IsChecked="{Binding AutoStartEnabled}" Margin="0,0,0,14" />
 

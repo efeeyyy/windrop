@@ -71,7 +71,7 @@ enum FilePreparer {
                 if scoped { files[before].scopeURL = url }
             } else if scoped {
                 url.stopAccessingSecurityScopedResource()
-                if errors.isEmpty { errors.append("\"\(url.lastPathComponent)\" klasöründe gönderilecek dosya yok.") }
+                if errors.isEmpty { errors.append(String(localized: "\"\(url.lastPathComponent)\" klasöründe gönderilecek dosya yok.")) }
             }
         }
         if !errors.isEmpty {
@@ -84,10 +84,10 @@ enum FilePreparer {
     private static func describe(_ error: Error, folder: String) -> String {
         guard let scan = error as? FolderScanError else { return error.localizedDescription }
         switch scan {
-        case .notADirectory: return "\"\(folder)\" bir klasör değil."
-        case .tooDeep: return "\"\(folder)\" klasörü en çok \(FolderPath.maxDepth) seviye derinlikte olabilir."
-        case .pathTooLong: return "\"\(folder)\" içindeki klasör yolu çok uzun."
-        case .tooManyFiles: return "En çok \(TransferLimits.maxFiles) dosya gönderilebilir."
+        case .notADirectory: return String(localized: "\"\(folder)\" bir klasör değil.")
+        case .tooDeep: return String(localized: "\"\(folder)\" klasörü en çok \(Int(FolderPath.maxDepth)) seviye derinlikte olabilir.")
+        case .pathTooLong: return String(localized: "\"\(folder)\" içindeki klasör yolu çok uzun.")
+        case .tooManyFiles: return String(localized: "En çok \(Int(TransferLimits.maxFiles)) dosya gönderilebilir.")
         }
     }
 

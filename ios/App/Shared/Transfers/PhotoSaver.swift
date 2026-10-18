@@ -9,8 +9,8 @@ enum PhotoSaveError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .denied: return "Fotoğraflar'a ekleme izni verilmedi. Ayarlar'dan izin verin."
-        case .nothingToSave: return "Kaydedilecek fotoğraf veya video yok."
+        case .denied: return String(localized: "Fotoğraflar'a ekleme izni verilmedi. Ayarlar'dan izin verin.")
+        case .nothingToSave: return String(localized: "Kaydedilecek fotoğraf veya video yok.")
         }
     }
 }
@@ -23,7 +23,7 @@ enum IncomingMediaDestination: String, CaseIterable, Identifiable {
     static let key = "incomingMediaDestination"
 
     var id: String { rawValue }
-    var title: String { self == .photos ? "Fotoğraflar" : "Dosyalar" }
+    var title: String { self == .photos ? String(localized: "Fotoğraflar") : String(localized: "Dosyalar") }
 
     /// Kayıtlı seçim; yoksa/okunamıyorsa varsayılan: Fotoğraflar.
     static var current: IncomingMediaDestination {

@@ -6,7 +6,7 @@ enum KeychainError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .status(let s): return "Anahtar zinciri hatası (\(s))."
+        case .status(let s): return String(localized: "Anahtar zinciri hatası (\(Int(s))).")
         }
     }
 }

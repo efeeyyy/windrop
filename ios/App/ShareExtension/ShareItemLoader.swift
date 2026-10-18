@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 enum ShareLoadError: Error, LocalizedError {
     case unreadable
 
-    var errorDescription: String? { "Dosya okunamadı." }
+    var errorDescription: String? { String(localized: "Dosya okunamadı.") }
 }
 
 /// `NSItemProvider`'ı eşzamanlılık sınırından geçirmek için (yalnız `loadFileRepresentation` çağrılır).

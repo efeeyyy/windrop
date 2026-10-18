@@ -39,8 +39,8 @@ struct PairView: View {
             VStack(spacing: 12) {
                 Image(systemName: "camera.fill").font(.largeTitle)
                 Text(problem == .denied
-                     ? "Kamera izni verilmedi. QR kodu okumak için Ayarlar'dan kamera iznini açın."
-                     : "Kamera kullanılamıyor.")
+                     ? String(localized: "Kamera izni verilmedi. QR kodu okumak için Ayarlar'dan kamera iznini açın.")
+                     : String(localized: "Kamera kullanılamıyor."))
                     .multilineTextAlignment(.center)
                 if problem == .denied {
                     Button("Ayarlar'ı aç") {
@@ -104,7 +104,7 @@ struct PairView: View {
         }
     }
 
-    private func progress(_ text: String) -> some View {
+    private func progress(_ text: LocalizedStringKey) -> some View {
         VStack(spacing: 12) {
             ProgressView()
             Text(text).multilineTextAlignment(.center)

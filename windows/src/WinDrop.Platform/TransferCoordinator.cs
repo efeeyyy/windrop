@@ -44,7 +44,8 @@ public sealed record TransferSnapshot(
     string? SavedPath,
     string? Error,
     TransferNote Note = TransferNote.None,
-    string? FirstFilePath = null)
+    string? FirstFilePath = null,
+    UserError? ErrorInfo = null)
 {
     public bool IsTerminal => Phase >= TransferPhase.Completed;
 }
@@ -63,8 +64,11 @@ public sealed record RelayApprovalRequest(TransferId Id, string PeerId, string P
 /// <summary>PC'nin BLE'de gördüğü yakındaki iPhone (iPhone'un kurduğu bağlantı + hello).</summary>
 public sealed record NearbyPeer(string PeerId, string Name, bool IsKnown, bool IsPaired, string? BleId = null);
 
-/// <summary>Anlaşılır (Türkçe) aktarım hatası; ileti kullanıcıya gösterilebilir.</summary>
-public class TransferException(string message) : InvalidOperationException(message);
+/// <summary>Anlaşılır aktarım hatası; <see cref="Error"/> arayüz dilinde gösterilir, <see cref="Exception.Message"/> Türkçe özettir.</summary>
+public class TransferException(UserError error) : InvalidOperationException(error.ToString())
+{
+    public UserError Error { get; } = error;
+}
 
 public sealed class TransferTimeouts
 {
@@ -208,11 +212,11 @@ public sealed class TransferCoordinator : IAsyncDisposable
         lock (_lock) sessions = [.. _sessions.Values];
         foreach (var session in sessions)
             _ = SendSignalQuietly(session, new StatusMessage(null, state.BtAudio));
-        if (state.BtAudio) FailBleTransfers(null, "Bu bilgisayarda Bluetooth ses başladı; BLE ile aktarım durduruldu.");
+        if (state.BtAudio) FailBleTransfers(null, UserError.Of(UserErrorCode.BtAudioLocalStopped));
     }
 
     /// <summary>Süren BLE veri aktarımını (eşe göre veya hepsini) hata ile bitirir.</summary>
-    private void FailBleTransfers(string? peerId, string message)
+    private void FailBleTransfers(string? peerId, UserError message)
     {
         State[] list;
         lock (_lock) list = [.. _bleActive.Where(kv => peerId is null || kv.Key == peerId).Select(kv => kv.Value)];
@@ -268,7 +272,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         s.IsPaired = false;
         s.Faulted = true;   // PROTOCOL §3a: oturum biterken iPhone'a WDR gider; sonraki bağlantı XX + onayla gelir
         s.Close();
-        FailNegotiating(peerId, "Eşleştirme kaldırıldı.");
+        FailNegotiating(peerId, UserError.Of(UserErrorCode.PairingRemoved));
         PeersChanged?.Invoke();
     }
 
@@ -347,7 +351,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 if (_sessions.TryGetValue(session.PeerId, out var cur) && ReferenceEquals(cur, session))
                     _sessions.Remove(session.PeerId);
             }
-            FailNegotiating(session.PeerId, "Bluetooth bağlantısı koptu.");
+            FailNegotiating(session.PeerId, UserError.Of(UserErrorCode.BleDisconnected));
             CompleteBle(session);
             PeersChanged?.Invoke();
         }
@@ -386,7 +390,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             case StatusMessage st:
                 if (st.Wifi is not null) { session.Wifi = st.Wifi; OnPeerWifiChanged(session); }
                 session.BtAudio = st.BtAudio;
-                if (st.BtAudio) FailBleTransfers(session.PeerId, "iPhone'da Bluetooth ses başladı; BLE ile aktarım durduruldu.");
+                if (st.BtAudio) FailBleTransfers(session.PeerId, UserError.Of(UserErrorCode.BtAudioPhoneStopped));
                 break;
             case OfferMessage offer:
                 OnOffer(session, offer);
@@ -437,7 +441,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             s.ReportRelayFail();
     }
 
-    private void FailNegotiating(string peerId, string message)
+    private void FailNegotiating(string peerId, UserError message)
     {
         State[] list;
         lock (_lock) list = [.. _states.Values.Where(s => s.PeerId == peerId)];
@@ -454,11 +458,11 @@ public sealed class TransferCoordinator : IAsyncDisposable
     // ---------------------------------------------------------------- BLE küçük dosya yolu (§6.4)
 
     /// <summary>BLE yolu kullanılamıyorsa nedeni (kullanıcıya gösterilir), kullanılabiliyorsa null.</summary>
-    private string? BleIneligibleReason(long total, PeerSession session)
+    private UserErrorPart? BleIneligibleReason(long total, PeerSession session)
     {
-        if (total > BleMaxTotalBytes) return $"toplam boyut {BleMaxTotalBytes / 1024} KB'ı aşıyor";
-        if (LocalBtAudio) return "bu bilgisayarda Bluetooth ses çıkışı kullanılıyor";
-        if (session.BtAudio) return "iPhone'da Bluetooth ses çıkışı kullanılıyor";
+        if (total > BleMaxTotalBytes) return new(UserErrorCode.BleAlsoSize, (BleMaxTotalBytes / 1024).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (LocalBtAudio) return new(UserErrorCode.BleAlsoLocalAudio);
+        if (session.BtAudio) return new(UserErrorCode.BleAlsoPhoneAudio);
         return null;
     }
 
@@ -518,7 +522,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             try
             {
                 await Task.Delay(_o.Timeouts.Connect, _o.Time, watchdogCts.Token).ConfigureAwait(false);
-                if (!ble.FrameSeen) s.Fail("iPhone Bluetooth üzerinden yanıt vermedi (zaman aşımı). Yol yok.");
+                if (!ble.FrameSeen) s.Fail(UserError.Of(UserErrorCode.BleNoResponse));
             }
             catch (OperationCanceledException) { }
         }, CancellationToken.None);
@@ -539,7 +543,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             return;
         }
         ct.ThrowIfCancellationRequested();
-        throw new TransferException("Bluetooth üzerinden aktarım kesildi.");
+        throw new TransferException(UserError.Of(UserErrorCode.BleTransferCut));
     }
 
     // ---------------------------------------------------------------- PC'den gönder
@@ -559,7 +563,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             var device = FindTrustedByPeerId(peerId);
             if (device?.PushId is not null && !string.IsNullOrWhiteSpace(_o.Settings.RelayUrl))
                 return SendViaPush(device, paths);
-            throw new TransferException("Cihaz yakında değil (Bluetooth bağlantısı yok).");
+            throw new TransferException(UserError.Of(UserErrorCode.NotNearby));
         }
 
         var files = CollectFiles(paths);
@@ -574,16 +578,26 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         IReadOnlyList<IFileSource> files;
         try { files = FolderScanner.Collect(paths, PlatformLog.Write); }   // §5a: klasörler özyinelemeli açılır
-        catch (FolderScanException ex) { throw new TransferException(ex.Message); }
-        catch (FileNotFoundException ex) { throw new TransferException($"Dosya bulunamadı: {Path.GetFileName(ex.FileName)}"); }
+        catch (FolderScanException ex) { throw new TransferException(FolderScanErrorOf(ex)); }
+        catch (FileNotFoundException ex) { throw new TransferException(UserError.Of(UserErrorCode.FileNotFound, Path.GetFileName(ex.FileName))); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new TransferException("Dosya veya klasör okunamadı: " + ex.Message);
+            throw new TransferException(UserError.Of(UserErrorCode.FileUnreadable, ex.Message));
         }
-        if (files.Count == 0) throw new TransferException("Gönderilecek dosya yok.");
-        if (files.Count > TransferLimits.MaxFiles) throw new TransferException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.");
+        if (files.Count == 0) throw new TransferException(UserError.Of(UserErrorCode.NoFilesToSend));
+        if (files.Count > TransferLimits.MaxFiles) throw new TransferException(UserError.Of(UserErrorCode.TooManyFiles, Num(TransferLimits.MaxFiles)));
         return files;
     }
+
+    private static string Num(long n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private static UserError FolderScanErrorOf(FolderScanException ex) => ex.Kind switch
+    {
+        FolderScanError.TooManyFiles => UserError.Of(UserErrorCode.TooManyFiles, Num(ex.Limit)),
+        FolderScanError.TooDeep => UserError.Of(UserErrorCode.FolderTooDeep, Num(ex.Limit), ex.Component),
+        FolderScanError.PathTooLong => UserError.Of(UserErrorCode.FolderPathTooLong, Num(ex.Limit), ex.Component),
+        _ => UserError.Raw(ex.Message),
+    };
 
     // ---------------------------------------------------------------- push bildirimi (§6.5)
 
@@ -659,7 +673,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 s.Note = TransferNote.PushSent;
                 Raise(s);
                 try { arrived = await s.PhoneArrived.Task.WaitAsync(_o.Timeouts.PushWait, _o.Time, ct).ConfigureAwait(false); }
-                catch (TimeoutException) { throw new TransferException("Telefon yanıt vermedi."); }
+                catch (TimeoutException) { throw new TransferException(UserError.Of(UserErrorCode.PhoneNoResponse)); }
             }
         }
         finally
@@ -684,17 +698,17 @@ public sealed class TransferCoordinator : IAsyncDisposable
             case PushOutcome.Disabled:
                 if (Interlocked.Exchange(ref _pushDisabledLogged, 1) == 0)
                     PlatformLog.Write("Aktarma sunucusunda push kapalı (501); bildirim gönderilmeyecek.");
-                return new TransferException("Push bu sunucuda kapalı.");
+                return new TransferException(UserError.Of(UserErrorCode.PushDisabled));
             case PushOutcome.Unknown:
                 _o.Trusted.ClearPushId(device.PublicKey);   // sunucu kaydı silmiş: telefon yeniden bağlanınca yenisini bildirir
                 PeersChanged?.Invoke();
-                return new TransferException("Telefonun bildirim kaydı sunucuda yok; telefonda uygulamayı açıp Bluetooth ile bağlanmasını bekleyin.");
+                return new TransferException(UserError.Of(UserErrorCode.PushUnknown));
             case PushOutcome.RateLimited:
-                return new TransferException("Telefona çok fazla bildirim gönderildi; biraz sonra yeniden deneyin.");
+                return new TransferException(UserError.Of(UserErrorCode.PushRateLimited));
             case PushOutcome.ServerError:
-                return new TransferException($"Bildirim sunucusu hata verdi (HTTP {result.Status}).");
+                return new TransferException(UserError.Of(UserErrorCode.PushServerError, Num(result.Status ?? 0)));
             default:
-                return new TransferException("Bildirim sunucusuna ulaşılamadı.");
+                return new TransferException(UserError.Of(UserErrorCode.PushUnreachable));
         }
     }
 
@@ -730,10 +744,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
 
         bool accepted;
         try { accepted = await s.Decision.Task.WaitAsync(_o.Timeouts.Accept, ct).ConfigureAwait(false); }
-        catch (TimeoutException) { throw new TransferException("Karşı cihaz teklife yanıt vermedi."); }
+        catch (TimeoutException) { throw new TransferException(UserError.Of(UserErrorCode.OfferNoResponse)); }
         if (!accepted)
         {
-            Finish(s, TransferPhase.Rejected, s.RejectReason is { Length: > 0 } r ? $"Karşı cihaz reddetti ({r})." : "Karşı cihaz reddetti.");
+            Finish(s, TransferPhase.Rejected, s.RejectReason is { Length: > 0 } r ? UserError.Of(UserErrorCode.RejectedByPeerReason, r) : UserError.Of(UserErrorCode.RejectedByPeer));
             return;
         }
 
@@ -886,7 +900,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         if (store.GetFreeSpaceBytes() - TransferLimits.DefaultSpaceMarginBytes < s.Total)   // §5: kabulden önce
         {
             await SendSignalQuietly(session, new RejectMessage(s.Id, "no_space")).ConfigureAwait(false);
-            throw new TransferException("İndirme klasörünün bulunduğu sürücüde yeterli boş alan yok.");
+            throw new TransferException(UserError.Of(UserErrorCode.NoDiskSpace));
         }
 
         s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => s.DualPath);
@@ -916,9 +930,9 @@ public sealed class TransferCoordinator : IAsyncDisposable
         if (session.Wifi == WifiState.None)
         {
             if (session.Caps.Count > 0 && !session.Caps.Contains("hotspot"))
-                throw new PathUnavailableException("iPhone etkin nokta yolunu desteklemiyor ve bir Wi-Fi ağına bağlı değil. Yol yok.");
+                throw new PathUnavailableException(UserError.Of(UserErrorCode.PathNoHotspotSupport));
             if (_o.Hotspot is null || _o.HotspotConfig is null)
-                throw new PathUnavailableException("iPhone bir Wi-Fi ağına bağlı değil ve etkin nokta yolu bu sürümde kullanılamıyor. Yol yok.");
+                throw new PathUnavailableException(UserError.Of(UserErrorCode.PathNoHotspotInVersion));
             await SendHotspotPathAsync(s, session, port, ct).ConfigureAwait(false);
             // Etkin nokta açılırken iPhone bir Wi-Fi'a bağlandıysa ek yol olarak addr da gider (§6 yol değişimi).
             if (session.Wifi == WifiState.Connected) await TrySendExtraAddrAsync(s, session, ct).ConfigureAwait(false);
@@ -942,12 +956,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
         }
         catch (HotspotException ex)
         {
-            throw new PathUnavailableException("Windows Mobil etkin noktası açılamadı: " + ex.Message);
+            throw new PathUnavailableException(UserError.Of(UserErrorCode.HotspotOpenFailed).Then(ex.Error.Parts));
         }
         if (!started)
-            throw new PathUnavailableException(
-                "Windows Mobil etkin noktası zaten sizin tarafınızdan kullanılıyor; WinDrop kendi etkin noktasını açamıyor. " +
-                "Etkin noktayı kapatın ya da iPhone'u bir Wi-Fi ağına bağlayıp yeniden deneyin.");
+            throw new PathUnavailableException(UserError.Of(UserErrorCode.HotspotInUse));
 
         var ip = _o.HotspotAddress?.Invoke() ?? "192.168.137.1";
         s.ConnectTimeout = _o.Timeouts.HotspotConnect;
@@ -964,7 +976,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         if (ips.Count == 0)
         {
             if (extra) return;
-            throw new PathUnavailableException("Bu bilgisayarda kullanılabilir ağ adresi yok (ağa bağlı değil).");
+            throw new PathUnavailableException(UserError.Of(UserErrorCode.NoNetworkAddress));
         }
         if (Interlocked.Exchange(ref s.AddrClaimed, 1) != 0) return;
         if (!extra) s.ConnectTimeout = _o.Timeouts.Connect;
@@ -1087,7 +1099,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     /// </summary>
     private async Task RunPathAsync(State s, PeerSession session, CancellationToken ct)
     {
-        string reason;
+        UserError reason;
         try
         {
             await ProvidePathAsync(s, session, ct).ConfigureAwait(false);
@@ -1096,7 +1108,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         }
         catch (PathUnavailableException ex)
         {
-            reason = ex.Message;
+            reason = ex.Error;
         }
 
         // §6: doğrudan yol → etkin nokta → BLE (küçük dosya) → aktarma sunucusu.
@@ -1113,9 +1125,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             }
         }
 
-        var bleNote = why is not null
-            ? $"{reason} BLE (küçük dosya) yolu da kullanılamıyor: {why}."
-            : $"{reason} BLE yolu bu eşle başka bir aktarım için kullanılıyor.";
+        var bleNote = why is { } w ? reason.Then(w) : reason.Then(UserErrorCode.BleBusy);
         if (string.IsNullOrWhiteSpace(_o.Settings.RelayUrl) || _o.LocalKey is null)
             throw new TransferException(bleNote);   // aktarma kapalı (RelayUrl boş): "yol yok"
         await RunRelayAsync(s, session, bleNote, ct).ConfigureAwait(false);
@@ -1135,10 +1145,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
     /// §6.3: kullanıcı onayı → token + <c>relay</c> → odaya bağlan, yanıtlayan olarak el sıkış → §5 çerçeveleri.
     /// iPhone kopar/oda kapanırsa yeni token ile en çok <b>1</b> yeniden deneme (RESUME ile kaldığı yerden).
     /// </summary>
-    private async Task RunRelayAsync(State s, PeerSession session, string whyNoOtherPath, CancellationToken ct)
+    private async Task RunRelayAsync(State s, PeerSession session, UserError whyNoOtherPath, CancellationToken ct)
     {
         if (RelayRoom.BuildRoomUri(_o.Settings.RelayUrl, new string('0', RelayRoom.RoomIdLength), "pc") is null)
-            throw new TransferException($"{whyNoOtherPath} Aktarma sunucusu adresi geçersiz (Ayarlar'da wss://… biçiminde girin).");
+            throw new TransferException(whyNoOtherPath.Then(UserErrorCode.RelayUrlInvalidHint));
 
         // PC her iki rolde de kendi kullanıcısına sorar; onaylanmadan aktarma sunucusuna hiç bağlanılmaz.
         s.Touch(_o.Time);
@@ -1151,7 +1161,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         {
             PlatformLog.Write($"aktarma yolu onaylanmadı {s.Id}");
             await SendSignalQuietly(session, new CancelSignalMessage(s.Id)).ConfigureAwait(false);
-            Finish(s, TransferPhase.Canceled, "Aktarma sunucusu üzerinden gönderim onaylanmadı.");
+            Finish(s, TransferPhase.Canceled, UserError.Of(UserErrorCode.RelayNotApproved));
             return;
         }
 
@@ -1159,37 +1169,46 @@ public sealed class TransferCoordinator : IAsyncDisposable
         s.Registration?.Dispose();
         s.Registration = null;
 
-        var lastFailure = "";
+        var lastFailure = UserError.Raw("");
         for (var attempt = 0; attempt < 2; attempt++)
         {
             ct.ThrowIfCancellationRequested();
             try
             {
                 if (await TryRelayAttemptAsync(s, session, ct).ConfigureAwait(false)) return;
-                lastFailure = "Aktarma bağlantısı koptu.";
+                lastFailure = UserError.Of(UserErrorCode.RelayDropped);
             }
             catch (RelayConnectException ex)
             {
-                if (ex.Status == System.Net.HttpStatusCode.TooManyRequests) throw new TransferException($"{ex.Message} Yol yok.");
-                lastFailure = ex.Message;
+                if (ex.Status == System.Net.HttpStatusCode.TooManyRequests) throw new TransferException(RelayConnectError(ex).Then(UserErrorCode.NoPath));
+                lastFailure = RelayConnectError(ex);
             }
-            catch (TimeoutException ex)
+            catch (TimeoutException)
             {
-                lastFailure = ex.Message;
+                lastFailure = UserError.Of(UserErrorCode.RelayPhoneJoinTimeout);
             }
             catch (RelayFailedException)
             {
-                lastFailure = "iPhone aktarma sunucusuna bağlanamadı (relay_fail).";
+                lastFailure = UserError.Of(UserErrorCode.RelayPhoneFailed);
             }
             catch (Exception ex) when (ex is IOException or ProtocolException or NoiseException or ObjectDisposedException or PeerNotTrustedException)
             {
-                lastFailure = "Aktarma el sıkışması başarısız: " + ex.Message;
+                lastFailure = UserError.Of(UserErrorCode.RelayHandshakeFailed, ex.Message);
             }
             PlatformLog.Write($"aktarma denemesi {attempt + 1}/2 başarısız {s.Id}: {lastFailure}");
             s.Touch(_o.Time);
         }
-        throw new TransferException($"{lastFailure} {whyNoOtherPath} Aktarma yolu da başarısız. Yol yok.");
+        throw new TransferException(UserError.Join(lastFailure, whyNoOtherPath).Then(UserErrorCode.RelayAlsoFailed));
     }
+
+    private static UserError RelayConnectError(RelayConnectException ex) => ex.Status switch
+    {
+        System.Net.HttpStatusCode.TooManyRequests => UserError.Of(UserErrorCode.RelayTooManyRooms),
+        System.Net.HttpStatusCode.Conflict => UserError.Of(UserErrorCode.RelayRoomFull),
+        System.Net.HttpStatusCode.Gone => UserError.Of(UserErrorCode.RelayRoomClosed),
+        0 => UserError.Of(UserErrorCode.RelayUnreachable, ex.InnerException?.InnerException?.Message ?? ex.InnerException?.Message ?? ex.Message),
+        _ => UserError.Of(UserErrorCode.RelayRefused, Num((int)ex.Status)),
+    };
 
     /// <summary>iPhone <c>relay_fail</c> bildirdi (oda denemesi iptal).</summary>
     private sealed class RelayFailedException : Exception;
@@ -1199,7 +1218,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         var token = RelayRoom.NewToken();
         var uri = RelayRoom.BuildRoomUri(_o.Settings.RelayUrl, RelayRoom.ComputeRoomId(token), "pc")
-            ?? throw new TransferException("Aktarma sunucusu adresi geçersiz.");
+            ?? throw new TransferException(UserError.Of(UserErrorCode.RelayUrlInvalid));
 
         using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         s.BeginRelayAttempt(attemptCts);
@@ -1237,7 +1256,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     }
 
     /// <summary>Yol kurulamadı (BLE yoluna düşülebilir); ileti kullanıcıya "yol yok" nedeni olarak gösterilir.</summary>
-    private sealed class PathUnavailableException(string message) : TransferException(message);
+    private sealed class PathUnavailableException(UserError error) : TransferException(error);
 
     private async Task WaitForDataAsync(State s)
     {
@@ -1255,8 +1274,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 return;
             }
             if (s.PathFailed.Task.IsCompleted && !s.ConnectionActive)
-                throw new PathUnavailableException(
-                    "Doğrudan bağlantı kurulamadı (iPhone bildirdi: " + s.PathFailed.Task.Result + "). Yol yok.");
+                throw new PathUnavailableException(UserError.Of(UserErrorCode.DirectFailedReported, s.PathFailed.Task.Result?.ToString()));
 
             if (!s.ConnectionActive)
             {
@@ -1264,8 +1282,8 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 if (_o.Time.GetUtcNow() - s.LastActivity > limit)
                 {
                     if (!s.EverConnected)
-                        throw new PathUnavailableException("iPhone veri bağlantısını kuramadı (zaman aşımı). Yol yok.");
-                    throw new TransferException("Bağlantı koptu ve iPhone yeniden bağlanmadı.");
+                        throw new PathUnavailableException(UserError.Of(UserErrorCode.PhoneDataTimeout));
+                    throw new TransferException(UserError.Of(UserErrorCode.ConnectionLostNoReconnect));
                 }
             }
         }
@@ -1280,13 +1298,13 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 Finish(s, TransferPhase.Completed, null, SavedPathOf(s, r));
                 break;
             case TransferOutcome.CompletedWithFailures:
-                Finish(s, TransferPhase.Failed, $"{r.FailedFileIds.Count} dosya doğrulanamadı (SHA-256 uyuşmadı).", SavedPathOf(s, r));
+                Finish(s, TransferPhase.Failed, UserError.Of(UserErrorCode.HashMismatch, Num(r.FailedFileIds.Count)), SavedPathOf(s, r));
                 break;
             case TransferOutcome.Canceled:
-                Finish(s, TransferPhase.Canceled, r.CanceledByRemote || s.RemoteCanceled ? "Karşı taraf iptal etti." : null);
+                Finish(s, TransferPhase.Canceled, r.CanceledByRemote || s.RemoteCanceled ? UserError.Of(UserErrorCode.RemoteCanceled) : null);
                 break;
             default:
-                Finish(s, TransferPhase.Failed, r.Error is { Length: > 0 } e ? $"Aktarım kesildi: {e}" : "Aktarım kesildi.");
+                Finish(s, TransferPhase.Failed, r.Error is { Length: > 0 } e ? UserError.Of(UserErrorCode.TransferCutWith, e) : UserError.Of(UserErrorCode.TransferCut));
                 break;
         }
     }
@@ -1359,30 +1377,30 @@ public sealed class TransferCoordinator : IAsyncDisposable
         try
         {
             await body().ConfigureAwait(false);
-            if (!s.IsTerminal) Finish(s, TransferPhase.Failed, "Aktarım beklenmedik şekilde sona erdi.");
+            if (!s.IsTerminal) Finish(s, TransferPhase.Failed, UserError.Of(UserErrorCode.UnexpectedEnd));
         }
         catch (OperationCanceledException)
         {
             if (s.FailureMessage is { } msg) Finish(s, TransferPhase.Failed, msg);
-            else Finish(s, TransferPhase.Canceled, s.RemoteCanceled ? "Karşı taraf iptal etti." : null);
+            else Finish(s, TransferPhase.Canceled, s.RemoteCanceled ? UserError.Of(UserErrorCode.RemoteCanceled) : null);
         }
         catch (TransferException ex)
         {
             PlatformLog.Write($"aktarım hatası {s.Id}: {ex.Message}");
-            Finish(s, TransferPhase.Failed, ex.Message);
+            Finish(s, TransferPhase.Failed, ex.Error);
             await NotifyPeerCanceledAsync(s).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or ProtocolException or NoiseException or ObjectDisposedException
                                        or InvalidOperationException or UnauthorizedAccessException)
         {
             PlatformLog.Write($"aktarım hatası {s.Id}: {ex.GetType().Name}: {ex.Message}");
-            Finish(s, TransferPhase.Failed, "Aktarım başarısız: " + ex.Message);
+            Finish(s, TransferPhase.Failed, UserError.Of(UserErrorCode.TransferFailedWith, ex.Message));
             await NotifyPeerCanceledAsync(s).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             PlatformLog.Write($"aktarım beklenmeyen hata {s.Id}: {ex}");
-            Finish(s, TransferPhase.Failed, "Aktarım başarısız (beklenmeyen hata).");
+            Finish(s, TransferPhase.Failed, UserError.Of(UserErrorCode.TransferFailedUnexpected));
         }
         finally
         {
@@ -1446,7 +1464,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         Raise(s);
     }
 
-    private void Finish(State s, TransferPhase phase, string? error, string? savedPath = null)
+    private void Finish(State s, TransferPhase phase, UserError? error, string? savedPath = null)
     {
         lock (s.Gate)
         {
@@ -1474,7 +1492,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         lock (s.Gate)
         {
-            return new TransferSnapshot(s.Id, s.Role, s.PeerId, s.PeerName, s.Count, s.Total, s.Phase, s.Progress, s.Speed, s.SavedPath, s.Error, s.Note, s.FirstFilePath);
+            return new TransferSnapshot(s.Id, s.Role, s.PeerId, s.PeerName, s.Count, s.Total, s.Phase, s.Progress, s.Speed, s.SavedPath, s.Error?.ToString(), s.Note, s.FirstFilePath, s.Error);
         }
     }
 
@@ -1570,7 +1588,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         public volatile bool ConnectionActive;
         public volatile bool EverConnected;
         public volatile bool RemoteCanceled;
-        public volatile string? FailureMessage;
+        public volatile UserError? FailureMessage;
 
         private DateTimeOffset _lastActivity = DateTimeOffset.MinValue;
 
@@ -1579,7 +1597,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         public double Speed;
         public string? SavedPath;
         public string? FirstFilePath;
-        public string? Error;
+        public UserError? Error;
 
         public bool IsTerminal
         {
@@ -1596,7 +1614,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             lock (Gate) _lastActivity = time.GetUtcNow();
         }
 
-        public void Fail(string message)
+        public void Fail(UserError message)
         {
             FailureMessage ??= message;
             try { Cts.Cancel(); } catch (ObjectDisposedException) { }

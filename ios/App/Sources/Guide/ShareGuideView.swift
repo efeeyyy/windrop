@@ -21,38 +21,41 @@ private struct GuideStep: Identifiable {
     let mockDescription: String
 }
 
-private let guideSteps: [GuideStep] = [
-    GuideStep(
-        id: 0, mock: .photoGrid,
-        title: "Öğeyi seçin, Paylaş'a dokunun",
-        text: "Fotoğraflar'da (veya herhangi bir uygulamada) bir öğe seçin, sonra Paylaş (Share) simgesine dokunun. Paylaşım sayfası açılır.",
-        mockDescription: "Çizim: bir öğe seçili, alt çubukta vurgulanmış Paylaş simgesi."),
-    GuideStep(
-        id: 1, mock: .shareSheetMore,
-        title: "Uygulama satırını sona kaydırın",
-        text: "Paylaşım sayfasında alttaki uygulama simgeleri satırını sağa doğru sona kadar kaydırın ve Diğer (More) ••• simgesine dokunun.",
-        mockDescription: "Çizim: paylaşım sayfası; uygulama satırının sonunda vurgulanmış Diğer üç nokta simgesi."),
-    GuideStep(
-        id: 2, mock: .appsList,
-        title: "WinDrop'un yanındaki + işaretine dokunun",
-        text: "Uygulamalar (Apps) listesinde sağ üstte Düzenle (Edit) varsa dokunun. Öneriler (Suggestions) bölümünde WinDrop'un solundaki yeşil + düğmesine dokunun.",
-        mockDescription: "Çizim: Favoriler ve Öneriler listesi; Öneriler'deki WinDrop satırında vurgulanmış yeşil artı düğmesi."),
-    GuideStep(
-        id: 3, mock: .favorites,
-        title: "AirDrop'un altına yerleşir",
-        text: "WinDrop, Favoriler (Favourites) bölümüne AirDrop'un hemen altına eklenir. İsterseniz sağdaki ≡ tutamacıyla yukarı sürükleyin. Sonra sağ üstteki mavi ✓ (Bitti / Done) düğmesine dokunun.",
-        mockDescription: "Çizim: WinDrop, Favoriler'de AirDrop'un altında; sağ üstte vurgulanmış mavi onay düğmesi."),
-    GuideStep(
-        id: 4, mock: .shareSheetReady,
-        title: "Artık AirDrop gibi",
-        text: "Her paylaşımda WinDrop ilk sıralarda olur: dokunun, yakındaki bilgisayar belirir, bilgisayara dokunun. Bilgisayarda Kabul'a basılınca dosya gider.",
-        mockDescription: "Çizim: uygulama satırında WinDrop ikinci sırada; altında yakındaki bilgisayarın vurgulanmış kutusu."),
-    GuideStep(
-        id: 5, mock: .windows,
-        title: "Bilgisayardan göndermek",
-        text: "Windows'ta dosyaya sağ tıklayıp Gönder > WinDrop'u seçin ya da dosyayı WinDrop penceresine sürükleyip bırakın. Telefonda WinDrop açık (veya arka planda) olmalı.\n\n\(HowItWorksContent.closedAppNote)",
-        mockDescription: "Çizim: Windows penceresi; dosyanın sağ tık menüsünde Gönder altında vurgulanmış WinDrop; altında sürükle-bırak alanı."),
-]
+private var guideSteps: [GuideStep] {
+    [
+        GuideStep(
+            id: 0, mock: .photoGrid,
+            title: String(localized: "Öğeyi seçin, Paylaş'a dokunun"),
+            text: String(localized: "Fotoğraflar'da (veya herhangi bir uygulamada) bir öğe seçin, sonra Paylaş (Share) simgesine dokunun. Paylaşım sayfası açılır."),
+            mockDescription: String(localized: "Çizim: bir öğe seçili, alt çubukta vurgulanmış Paylaş simgesi.")),
+        GuideStep(
+            id: 1, mock: .shareSheetMore,
+            title: String(localized: "Uygulama satırını sona kaydırın"),
+            text: String(localized: "Paylaşım sayfasında alttaki uygulama simgeleri satırını sağa doğru sona kadar kaydırın ve Diğer (More) ••• simgesine dokunun."),
+            mockDescription: String(localized: "Çizim: paylaşım sayfası; uygulama satırının sonunda vurgulanmış Diğer üç nokta simgesi.")),
+        GuideStep(
+            id: 2, mock: .appsList,
+            title: String(localized: "WinDrop'un yanındaki + işaretine dokunun"),
+            text: String(localized: "Uygulamalar (Apps) listesinde sağ üstte Düzenle (Edit) varsa dokunun. Öneriler (Suggestions) bölümünde WinDrop'un solundaki yeşil + düğmesine dokunun."),
+            mockDescription: String(localized: "Çizim: Favoriler ve Öneriler listesi; Öneriler'deki WinDrop satırında vurgulanmış yeşil artı düğmesi.")),
+        GuideStep(
+            id: 3, mock: .favorites,
+            title: String(localized: "AirDrop'un altına yerleşir"),
+            text: String(localized: "WinDrop, Favoriler (Favourites) bölümüne AirDrop'un hemen altına eklenir. İsterseniz sağdaki ≡ tutamacıyla yukarı sürükleyin. Sonra sağ üstteki mavi ✓ (Bitti / Done) düğmesine dokunun."),
+            mockDescription: String(localized: "Çizim: WinDrop, Favoriler'de AirDrop'un altında; sağ üstte vurgulanmış mavi onay düğmesi.")),
+        GuideStep(
+            id: 4, mock: .shareSheetReady,
+            title: String(localized: "Artık AirDrop gibi"),
+            text: String(localized: "Her paylaşımda WinDrop ilk sıralarda olur: dokunun, yakındaki bilgisayar belirir, bilgisayara dokunun. Bilgisayarda Kabul'a basılınca dosya gider."),
+            mockDescription: String(localized: "Çizim: uygulama satırında WinDrop ikinci sırada; altında yakındaki bilgisayarın vurgulanmış kutusu.")),
+        GuideStep(
+            id: 5, mock: .windows,
+            title: String(localized: "Bilgisayardan göndermek"),
+            text: String(localized: "Windows'ta dosyaya sağ tıklayıp Gönder > WinDrop'u seçin ya da dosyayı WinDrop penceresine sürükleyip bırakın. Telefonda WinDrop açık (veya arka planda) olmalı.")
+                + "\n\n" + HowItWorksContent.closedAppNote,
+            mockDescription: String(localized: "Çizim: Windows penceresi; dosyanın sağ tık menüsünde Gönder altında vurgulanmış WinDrop; altında sürükle-bırak alanı.")),
+    ]
+}
 
 // MARK: - Ekran
 
@@ -84,7 +87,7 @@ struct ShareGuideView: View {
                     withAnimation { index += 1 }
                 }
             } label: {
-                Text(isLast ? "Bitti" : "İleri").frame(maxWidth: .infinity)
+                Text(isLast ? LocalizedStringKey("Bitti") : LocalizedStringKey("İleri")).frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -282,7 +285,7 @@ private struct WinDropGlyph: View {
 
 private struct AppTile: View {
     enum Kind { case plain, windrop, more }
-    let label: String
+    let label: LocalizedStringKey
     var kind: Kind = .plain
     var highlighted = false
 
@@ -315,7 +318,7 @@ private struct AppTile: View {
 
 private struct MiniRow: View {
     enum Leading { case none, plus, minus }
-    let label: String
+    let label: LocalizedStringKey
     var leading: Leading = .none
     var isWinDrop = false
     var handle = false
@@ -352,7 +355,7 @@ private struct MiniRow: View {
 }
 
 private struct MiniGroup<Content: View>: View {
-    let header: String
+    let header: LocalizedStringKey
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -607,7 +610,7 @@ private struct WindowsMock: View {
                 VStack(alignment: .leading, spacing: 0) {
                     menuRow("Aç")
                     menuRow("Kopyala")
-                    menuRow("Gönder", chevron: true, selected: true)
+                    menuRow("Gönder (menü)", chevron: true, selected: true)
                 }
                 .frame(width: 96)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 6))
@@ -639,7 +642,7 @@ private struct WindowsMock: View {
         .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
     }
 
-    private func menuRow(_ text: String, chevron: Bool = false, selected: Bool = false) -> some View {
+    private func menuRow(_ text: LocalizedStringKey, chevron: Bool = false, selected: Bool = false) -> some View {
         HStack {
             Text(text).font(.system(size: 10))
             Spacer(minLength: 0)

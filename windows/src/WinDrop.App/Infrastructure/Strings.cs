@@ -5,7 +5,7 @@ using System.Windows.Markup;
 
 namespace WinDrop.App.Infrastructure;
 
-/// <summary>Türkçe metinler: <c>Resources\Strings.resx</c>.</summary>
+/// <summary>Arayüz metinleri: <c>Resources\Strings.resx</c> (Türkçe, nötr) ve <c>Strings.en.resx</c> (İngilizce).</summary>
 public static class Strings
 {
     private static readonly ResourceManager Manager =

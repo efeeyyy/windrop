@@ -12,13 +12,13 @@ struct OfferSheet: View {
                 .font(.system(size: 54))
                 .foregroundStyle(.tint)
             Text(item.pcName).font(.title2.bold())
-            Text(item.peerIsKnown ? "Tanıdık cihaz" : "Yeni cihaz")
+            Text(item.peerIsKnown ? String(localized: "Tanıdık cihaz") : String(localized: "Yeni cihaz"))
                 .font(.caption.bold())
                 .padding(.horizontal, 10).padding(.vertical, 3)
                 .background((item.peerIsKnown ? Color.green : Color.orange).opacity(0.18), in: Capsule())
-            Text("\(item.fileCount == 1 ? "1 dosya" : "\(item.fileCount) dosya") göndermek istiyor")
+            Text("\(item.fileCount) dosya göndermek istiyor")
                 .font(.headline)
-            Text(ByteCountFormatter.string(fromByteCount: item.totalBytes, countStyle: .file))
+            Text(FileSizeText.string(item.totalBytes))
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(item.fileNames, id: \.self) { name in

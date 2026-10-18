@@ -40,11 +40,11 @@ final class TransferItem: Identifiable {
 
         var text: String {
             switch self {
-            case .photos: return "Fotoğraflar'a kaydedildi"
-            case .files: return "Dosyalar › WinDrop'a kaydedildi"
-            case .photosAndFiles: return "Medya Fotoğraflar'a, diğerleri Dosyalar › WinDrop'a kaydedildi"
-            case .photosDenied: return "Fotoğraflar izni yok — Dosyalar'a kaydedildi"
-            case .photosFailed: return "Fotoğraflar'a kaydedilemedi — Dosyalar'a kaydedildi"
+            case .photos: return String(localized: "Fotoğraflar'a kaydedildi")
+            case .files: return String(localized: "Dosyalar › WinDrop'a kaydedildi")
+            case .photosAndFiles: return String(localized: "Medya Fotoğraflar'a, diğerleri Dosyalar › WinDrop'a kaydedildi")
+            case .photosDenied: return String(localized: "Fotoğraflar izni yok — Dosyalar'a kaydedildi")
+            case .photosFailed: return String(localized: "Fotoğraflar'a kaydedilemedi — Dosyalar'a kaydedildi")
             }
         }
 
@@ -53,12 +53,12 @@ final class TransferItem: Identifiable {
     }
 
     /// PROTOCOL §6.3 / ARCHITECTURE: aktarma yolu seçilirse gösterilecek uyarı.
-    static let relayWarning = "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir."
+    static var relayWarning: String { String(localized: "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir.") }
 
     /// Uyarının tam metni: boyut ve uçtan uca şifreleme bilgisi dahil (iki tarafta da aynı).
     var relayWarningText: String {
-        let size = ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .file)
-        return "\(TransferItem.relayWarning) (\(size)) Uçtan uca şifreli."
+        let size = FileSizeText.string(totalBytes)
+        return String(localized: "\(TransferItem.relayWarning) (\(size)) Uçtan uca şifreli.")
     }
 
     let id: String
@@ -104,7 +104,7 @@ final class TransferItem: Identifiable {
     var wifiOffNotice = false
 
     /// Wi-Fi kapalıyken etkin nokta yolu seçildiğinde gösterilen yönerge (iOS uygulamaların Wi-Fi'ı açmasına izin vermez).
-    static let wifiOffNoticeText = "Wi-Fi'ı açın — WinDrop gerisini halleder. (Denetim Merkezi'nden açabilirsiniz.)"
+    static var wifiOffNoticeText: String { String(localized: "Wi-Fi'ı açın — WinDrop gerisini halleder. (Denetim Merkezi'nden açabilirsiniz.)") }
 
     /// Veri yolu denemeleri: doğrudan (`addr`) ve etkin nokta (`hotspot`) yarışabilir; ilk başarılı bağlantı kazanır.
     enum PathKind: Hashable { case direct, hotspot }
@@ -169,23 +169,23 @@ final class TransferItem: Identifiable {
 
     var title: String {
         if fileCount == 1, let first = fileNames.first { return first }
-        return "\(fileCount) dosya"
+        return String(localized: "\(fileCount) dosya")
     }
 
     var statusText: String {
-        let who = direction == .send ? "\(pcName) bilgisayarına" : "\(pcName) bilgisayarından"
         switch state {
-        case .awaitingUser: return "\(who) gelen dosya: onayınız bekleniyor"
-        case .awaitingPeer: return direction == .send ? "\(pcName) yanıtı bekleniyor…" : "Bağlantı hazırlanıyor…"
-        case .connecting: return "Bağlanılıyor…"
-        case .joiningHotspot: return "Bilgisayarın etkin noktasına katılınıyor…"
-        case .needsManualHotspot: return "Etkin noktaya elle katılmanız gerekiyor"
+        case .awaitingUser: return String(localized: "\(pcName) bilgisayarından gelen dosya: onayınız bekleniyor")
+        case .awaitingPeer:
+            return direction == .send ? String(localized: "\(pcName) yanıtı bekleniyor…") : String(localized: "Bağlantı hazırlanıyor…")
+        case .connecting: return String(localized: "Bağlanılıyor…")
+        case .joiningHotspot: return String(localized: "Bilgisayarın etkin noktasına katılınıyor…")
+        case .needsManualHotspot: return String(localized: "Etkin noktaya elle katılmanız gerekiyor")
         case .awaitingRelayConsent: return relayWarningText
-        case .transferring: return direction == .send ? "Gönderiliyor…" : "Alınıyor…"
-        case .done: return direction == .send ? "Gönderildi" : "Alındı"
-        case .failed: return errorMessage ?? "Başarısız"
-        case .rejected: return "Reddedildi"
-        case .cancelled: return "İptal edildi"
+        case .transferring: return direction == .send ? String(localized: "Gönderiliyor…") : String(localized: "Alınıyor…")
+        case .done: return direction == .send ? String(localized: "Gönderildi") : String(localized: "Alındı")
+        case .failed: return errorMessage ?? String(localized: "Başarısız")
+        case .rejected: return String(localized: "Reddedildi")
+        case .cancelled: return String(localized: "İptal edildi")
         }
     }
 

@@ -3,7 +3,16 @@ using WinDrop.Core.Protocol;
 namespace WinDrop.Core.Transfer;
 
 /// <summary>Gönderilecek klasör taranırken anlaşılır (kullanıcıya gösterilebilir) hata: sınır aşımı, okunamayan yol.</summary>
-public sealed class FolderScanException(string message) : Exception(message);
+public enum FolderScanError { Other, TooManyFiles, TooDeep, PathTooLong }
+
+/// <param name="Kind">Arayüzün kendi dilinde metin üretebilmesi için hata türü.</param>
+public sealed class FolderScanException(string message, FolderScanError kind = FolderScanError.Other, int limit = 0, string? component = null)
+    : Exception(message)
+{
+    public FolderScanError Kind { get; } = kind;
+    public int Limit { get; } = limit;
+    public string? Component { get; } = component;
+}
 
 /// <summary>
 /// PROTOCOL §5a gönderen: verilen yollar arasındaki klasörleri özyinelemeli tarar. Symlink/junction (reparse point) izlenmez
@@ -39,7 +48,7 @@ public static class FolderScanner
                 result.Add(new FileSystemFileSource(path));
             }
             if (result.Count > TransferLimits.MaxFiles)
-                throw new FolderScanException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.");
+                throw new FolderScanException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.", FolderScanError.TooManyFiles, TransferLimits.MaxFiles);
         }
         return result;
     }
@@ -47,9 +56,11 @@ public static class FolderScanner
     private static void Walk(DirectoryInfo dir, List<string> components, List<IFileSource> result, Action<string>? log)
     {
         if (!RelativeDirectory.TryJoin(components, out var dirString))
-            throw new FolderScanException(components.Count > RelativeDirectory.MaxDepth
-                ? $"Klasör en çok {RelativeDirectory.MaxDepth} seviye derinlikte olabilir: {components[0]}"
-                : $"Klasör yolu en çok {RelativeDirectory.MaxLength} karakter olabilir: {components[0]}");
+            throw components.Count > RelativeDirectory.MaxDepth
+                ? new FolderScanException($"Klasör en çok {RelativeDirectory.MaxDepth} seviye derinlikte olabilir: {components[0]}",
+                    FolderScanError.TooDeep, RelativeDirectory.MaxDepth, components[0])
+                : new FolderScanException($"Klasör yolu en çok {RelativeDirectory.MaxLength} karakter olabilir: {components[0]}",
+                    FolderScanError.PathTooLong, RelativeDirectory.MaxLength, components[0]);
 
         List<FileSystemInfo> entries;
         try
@@ -88,7 +99,7 @@ public static class FolderScanner
                 }
             }
             if (result.Count > TransferLimits.MaxFiles)
-                throw new FolderScanException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.");
+                throw new FolderScanException($"En çok {TransferLimits.MaxFiles} dosya gönderilebilir.", FolderScanError.TooManyFiles, TransferLimits.MaxFiles);
         }
     }
 

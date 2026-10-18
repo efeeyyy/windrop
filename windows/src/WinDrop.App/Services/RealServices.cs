@@ -142,7 +142,7 @@ public sealed class TransferService : ITransferService
         }
         item.Progress = s.Progress;
         item.BytesPerSecond = s.BytesPerSecond;
-        item.ErrorMessage = s.Error;
+        item.ErrorMessage = s.ErrorInfo is { } info ? ErrorTexts.Format(info) : s.Error;
         item.PushPending = s.Note == TransferNote.PushSent;
         if (s.SavedPath is not null) item.SavedPath = s.SavedPath;
         if (s.FirstFilePath is not null) item.PreviewPath = s.FirstFilePath;

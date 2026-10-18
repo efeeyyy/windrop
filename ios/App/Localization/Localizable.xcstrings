@@ -1,0 +1,4087 @@
+{
+  "sourceLanguage" : "tr",
+  "strings" : {
+    "\"%@\" bir klasör değil." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" isn't a folder."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" bir klasör değil."
+          }
+        }
+      }
+    },
+    "\"%@\" içindeki klasör yolu çok uzun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A folder path inside \"%@\" is too long."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" içindeki klasör yolu çok uzun."
+          }
+        }
+      }
+    },
+    "\"%@\" klasörü en çok %lld seviye derinlikte olabilir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The folder \"%@\" can be at most %lld levels deep."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" klasörü en çok %lld seviye derinlikte olabilir."
+          }
+        }
+      }
+    },
+    "\"%@\" klasöründe gönderilecek dosya yok." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no files to send in \"%@\"."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" klasöründe gönderilecek dosya yok."
+          }
+        }
+      }
+    },
+    "%@ %@ bilgisayarına gönderildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$@ sent to %1$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ bilgisayarına gönderildi"
+          }
+        }
+      }
+    },
+    "%@ (%@) Uçtan uca şifreli." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (%2$@) End-to-end encrypted."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (%@) Uçtan uca şifreli."
+          }
+        }
+      }
+    },
+    "%@ aranıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching for %@…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ aranıyor…"
+          }
+        }
+      }
+    },
+    "%@ bilgisayarında eşleşmeyi onaylayın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve the pairing on %@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bilgisayarında eşleşmeyi onaylayın."
+          }
+        }
+      }
+    },
+    "%@ bilgisayarından gelen dosya: onayınız bekleniyor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incoming file from %@: waiting for your approval"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bilgisayarından gelen dosya: onayınız bekleniyor"
+          }
+        }
+      }
+    },
+    "%@ bu iPhone'dan silinir. Bir sonraki gönderimde yeniden onay gerekir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will be removed from this iPhone. You'll need to approve it again the next time you send."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu iPhone'dan silinir. Bir sonraki gönderimde yeniden onay gerekir."
+          }
+        }
+      }
+    },
+    "%@ dosya göndermek istiyor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wants to send you files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dosya göndermek istiyor"
+          }
+        }
+      }
+    },
+    "%@ ile bağlantı kuruluyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to %@…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ile bağlantı kuruluyor…"
+          }
+        }
+      }
+    },
+    "%@ ile eşleşti." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paired with %@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ile eşleşti."
+          }
+        }
+      }
+    },
+    "%@ yakında" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is nearby"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ yakında"
+          }
+        }
+      }
+    },
+    "%@ yanıtı bekleniyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to respond…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ yanıtı bekleniyor…"
+          }
+        }
+      }
+    },
+    "%@ şu an yakında değil. Tekrar deneyin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ isn't nearby right now. Try again."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ şu an yakında değil. Tekrar deneyin."
+          }
+        }
+      }
+    },
+    "%@'dan %@ alındı — %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Received %2$@ from %1$@ — %3$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'dan %@ alındı — %@"
+          }
+        }
+      }
+    },
+    "%lld dosya" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dosya"
+          }
+        }
+      }
+    },
+    "%lld dosya aktarılamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file couldn't be transferred."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files couldn't be transferred."
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dosya aktarılamadı."
+          }
+        }
+      }
+    },
+    "%lld dosya gönderilecek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file to send"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files to send"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dosya gönderilecek"
+          }
+        }
+      }
+    },
+    "%lld dosya göndermek istiyor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Wants to send %lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Wants to send %lld files"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dosya göndermek istiyor"
+          }
+        }
+      }
+    },
+    "%lld fotoğraf" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld fotoğraf"
+          }
+        }
+      }
+    },
+    "%lld fotoğraf/video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo/video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos/videos"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld fotoğraf/video"
+          }
+        }
+      }
+    },
+    "%lld klasör öğesi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folder item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld folder items"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld klasör öğesi"
+          }
+        }
+      }
+    },
+    "%lld video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld videos"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld video"
+          }
+        }
+      }
+    },
+    "%lld öğe Fotoğraflar'a kaydedildi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item saved to Photos."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items saved to Photos."
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld öğe Fotoğraflar'a kaydedildi."
+          }
+        }
+      }
+    },
+    "1 öğe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 item"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 öğe"
+          }
+        }
+      }
+    },
+    "1 öğe seçildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 item selected"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 öğe seçildi"
+          }
+        }
+      }
+    },
+    "AirDrop'un altına yerleşir" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It settles in below AirDrop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AirDrop'un altına yerleşir"
+          }
+        }
+      }
+    },
+    "Aktarma bilgisi geçersiz." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay information is invalid."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma bilgisi geçersiz."
+          }
+        }
+      }
+    },
+    "Aktarma odası dolu veya eş zaten bağlı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay room is full or the peer is already connected."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma odası dolu veya eş zaten bağlı."
+          }
+        }
+      }
+    },
+    "Aktarma odası kapandı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay room has closed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma odası kapandı."
+          }
+        }
+      }
+    },
+    "Aktarma sunucusu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relay Server"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma sunucusu"
+          }
+        }
+      }
+    },
+    "Aktarma sunucusu adresi ayarlı değil (Ayarlar > Aktarma sunucusu)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay server address isn't set (Settings > Relay Server)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma sunucusu adresi ayarlı değil (Ayarlar > Aktarma sunucusu)."
+          }
+        }
+      }
+    },
+    "Aktarma sunucusu bağlantıyı reddetti (%lld)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay server refused the connection (%lld)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma sunucusu bağlantıyı reddetti (%lld)."
+          }
+        }
+      }
+    },
+    "Aktarma sunucusu çok fazla istek aldı; biraz sonra deneyin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay server received too many requests. Try again in a moment."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma sunucusu çok fazla istek aldı; biraz sonra deneyin."
+          }
+        }
+      }
+    },
+    "Aktarma sunucusuna bağlanılamadı (zaman aşımı)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't connect to the relay server (timed out)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma sunucusuna bağlanılamadı (zaman aşımı)."
+          }
+        }
+      }
+    },
+    "Aktarma sunucusuna bağlanılamadı: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't connect to the relay server: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma sunucusuna bağlanılamadı: %@"
+          }
+        }
+      }
+    },
+    "Aktarım yok" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Transfers"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarım yok"
+          }
+        }
+      }
+    },
+    "Aktarımlar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transfers"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarımlar"
+          }
+        }
+      }
+    },
+    "Alınan dosyalar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Received Files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alınan dosyalar"
+          }
+        }
+      }
+    },
+    "Alındı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Received"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alındı"
+          }
+        }
+      }
+    },
+    "Alınıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Receiving…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alınıyor…"
+          }
+        }
+      }
+    },
+    "Ana ekran" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ana ekran"
+          }
+        }
+      }
+    },
+    "Anahtar zinciri hatası (%lld)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keychain error (%lld)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anahtar zinciri hatası (%lld)."
+          }
+        }
+      }
+    },
+    "Artık AirDrop gibi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now it works like AirDrop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artık AirDrop gibi"
+          }
+        }
+      }
+    },
+    "Ayarlar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayarlar"
+          }
+        }
+      }
+    },
+    "Ayarlar > Wi-Fi'dan \"%@\" ağına katılın (parola: %@); sonra buraya dönün." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Settings > Wi-Fi, join \"%1$@\" (password: %2$@), then come back here."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayarlar > Wi-Fi'dan \"%@\" ağına katılın (parola: %@); sonra buraya dönün."
+          }
+        }
+      }
+    },
+    "Ayarlar'ı aç" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayarlar'ı aç"
+          }
+        }
+      }
+    },
+    "Aç" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aç"
+          }
+        }
+      }
+    },
+    "Açık" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Açık"
+          }
+        }
+      }
+    },
+    "Ağ adı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network Name"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ağ adı"
+          }
+        }
+      }
+    },
+    "Ağ adını kopyala" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Network Name"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ağ adını kopyala"
+          }
+        }
+      }
+    },
+    "Bağlantı hazırlanıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing connection…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantı hazırlanıyor…"
+          }
+        }
+      }
+    },
+    "Bağlantı kapandı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection closed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantı kapandı."
+          }
+        }
+      }
+    },
+    "Bağlantı zaman aşımına uğradı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection timed out."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantı zaman aşımına uğradı."
+          }
+        }
+      }
+    },
+    "Bağlanılacak adres yok." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There's no address to connect to."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlanılacak adres yok."
+          }
+        }
+      }
+    },
+    "Bağlanılıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlanılıyor…"
+          }
+        }
+      }
+    },
+    "Başarısız" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başarısız"
+          }
+        }
+      }
+    },
+    "Başka bir tarama sürüyor." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another scan is already in progress."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başka bir tarama sürüyor."
+          }
+        }
+      }
+    },
+    "Bildirim kaydı yapılamadı. İnternet ve aktarma sunucusu adresini kontrol edin; WinDrop'u yeniden açınca tekrar denenir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't register for notifications. Check your internet connection and the relay server address. WinDrop will try again when you reopen it."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildirim kaydı yapılamadı. İnternet ve aktarma sunucusu adresini kontrol edin; WinDrop'u yeniden açınca tekrar denenir."
+          }
+        }
+      }
+    },
+    "Bilgisayar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar"
+          }
+        }
+      }
+    },
+    "Bilgisayar bulunamadı veya yanıt vermedi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer wasn't found or didn't respond."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar bulunamadı veya yanıt vermedi."
+          }
+        }
+      }
+    },
+    "Bilgisayar bulunamadı — bilgisayarda WinDrop'un açık ve QR ekranının görünür olduğundan emin olun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computer not found. Make sure WinDrop is open and the QR screen is visible on the computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar bulunamadı — bilgisayarda WinDrop'un açık ve QR ekranının görünür olduğundan emin olun."
+          }
+        }
+      }
+    },
+    "Bilgisayar eşleşmeyi onaylamadı veya bağlantıyı kesti." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer didn't approve the pairing or disconnected."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar eşleşmeyi onaylamadı veya bağlantıyı kesti."
+          }
+        }
+      }
+    },
+    "Bilgisayar listeden kaldırılsın mı?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove this computer from the list?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar listeden kaldırılsın mı?"
+          }
+        }
+      }
+    },
+    "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer didn't respond. Make sure WinDrop is open on the computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun."
+          }
+        }
+      }
+    },
+    "Bilgisayar şu an yakında değil (Bluetooth bağlantısı yok)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer isn't nearby right now (no Bluetooth connection)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar şu an yakında değil (Bluetooth bağlantısı yok)."
+          }
+        }
+      }
+    },
+    "Bilgisayara göndermek için WinDrop'u açıp Dosya gönder'e dokunmanız yeterli; cihazlar kendiliğinden belirir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To send to a computer, just open WinDrop and tap Send Files. Devices appear on their own."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayara göndermek için WinDrop'u açıp Dosya gönder'e dokunmanız yeterli; cihazlar kendiliğinden belirir."
+          }
+        }
+      }
+    },
+    "Bilgisayarda '%@' olarak görünüyorsunuz — Ayarlar'dan adınızı değiştirin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your computer sees you as '%@'. Change your name in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarda '%@' olarak görünüyorsunuz — Ayarlar'dan adınızı değiştirin."
+          }
+        }
+      }
+    },
+    "Bilgisayarda WinDrop servisi bulunamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The WinDrop service wasn't found on the computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarda WinDrop servisi bulunamadı."
+          }
+        }
+      }
+    },
+    "Bilgisayarda WinDrop'un açık ve Bluetooth'un açık olduğundan emin olun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make sure WinDrop and Bluetooth are turned on on the computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarda WinDrop'un açık ve Bluetooth'un açık olduğundan emin olun."
+          }
+        }
+      }
+    },
+    "Bilgisayarda bu ad görünür. Apple, uygulamaların iPhone'unuza verdiğiniz adı okumasına izin vermez; bu yüzden adı buraya yazın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This name appears on your computer. Apple doesn't let apps read the name you gave your iPhone, so enter it here."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarda bu ad görünür. Apple, uygulamaların iPhone'unuza verdiğiniz adı okumasına izin vermez; bu yüzden adı buraya yazın."
+          }
+        }
+      }
+    },
+    "Bilgisayarda onaylayın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve on the computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarda onaylayın."
+          }
+        }
+      }
+    },
+    "Bilgisayardaki WinDrop sürümü uyumsuz. Güncelleme gerekli." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The WinDrop version on the computer is incompatible. An update is required."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardaki WinDrop sürümü uyumsuz. Güncelleme gerekli."
+          }
+        }
+      }
+    },
+    "Bilgisayardaki kodla aynıysa onaylayın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If it matches the code on your computer, approve it."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardaki kodla aynıysa onaylayın."
+          }
+        }
+      }
+    },
+    "Bilgisayardakiyle aynı olmalı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Must match the code on your computer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardakiyle aynı olmalı"
+          }
+        }
+      }
+    },
+    "Bilgisayardan gelen dosyalar için bildirime dokunmanız gerekir — AirDrop'taki Kabul gibi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To receive files from your computer, tap the notification, just like Accept in AirDrop."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardan gelen dosyalar için bildirime dokunmanız gerekir — AirDrop'taki Kabul gibi."
+          }
+        }
+      }
+    },
+    "Bilgisayardan gelen tekil fotoğraf ve videolar seçtiğiniz yere kaydedilir. Fotoğraflar seçiliyse galeride en son eklenen olarak görünür; izin ilk alımda sorulur. Diğer dosyalar ve klasörler Dosyalar > WinDrop'ta kalır." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Individual photos and videos from your computer are saved where you choose. If Photos is selected, they appear as the most recently added items; permission is requested the first time. Other files and folders stay in Files > WinDrop."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardan gelen tekil fotoğraf ve videolar seçtiğiniz yere kaydedilir. Fotoğraflar seçiliyse galeride en son eklenen olarak görünür; izin ilk alımda sorulur. Diğer dosyalar ve klasörler Dosyalar > WinDrop'ta kalır."
+          }
+        }
+      }
+    },
+    "Bilgisayardan göndermek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send from your computer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardan göndermek"
+          }
+        }
+      }
+    },
+    "Bilgisayardan yanıt gelmedi (zaman aşımı)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No response from the computer (timed out)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayardan yanıt gelmedi (zaman aşımı)."
+          }
+        }
+      }
+    },
+    "Bilgisayarlar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computers"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarlar"
+          }
+        }
+      }
+    },
+    "Bilgisayarın etkin noktasına bir kez katılın: Ayarlar > Wi-Fi'den aşağıdaki ağı seçin. iPhone ağı hatırlar; sonraki seferlerde otomatik katılır." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join your computer's hotspot once: choose the network below in Settings > Wi-Fi. Your iPhone remembers it and joins automatically next time."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarın etkin noktasına bir kez katılın: Ayarlar > Wi-Fi'den aşağıdaki ağı seçin. iPhone ağı hatırlar; sonraki seferlerde otomatik katılır."
+          }
+        }
+      }
+    },
+    "Bilgisayarın etkin noktasına gerektiğinde otomatik katılınır." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop joins your computer's hotspot automatically when needed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarın etkin noktasına gerektiğinde otomatik katılınır."
+          }
+        }
+      }
+    },
+    "Bilgisayarın etkin noktasına katılınıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joining your computer's hotspot…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarın etkin noktasına katılınıyor…"
+          }
+        }
+      }
+    },
+    "Bilmeniz gerekenler" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good to Know"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilmeniz gerekenler"
+          }
+        }
+      }
+    },
+    "Bir kereye mahsus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One-Time Setup"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir kereye mahsus"
+          }
+        }
+      }
+    },
+    "Bitti" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitti"
+          }
+        }
+      }
+    },
+    "Bluetooth bağlantısı koptu." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Bluetooth connection was lost."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth bağlantısı koptu."
+          }
+        }
+      }
+    },
+    "Bluetooth hazır değil." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth isn't ready."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth hazır değil."
+          }
+        }
+      }
+    },
+    "Bluetooth izni vermek için dokunun" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to Allow Bluetooth"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth izni vermek için dokunun"
+          }
+        }
+      }
+    },
+    "Bluetooth kapalı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth is off."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth kapalı."
+          }
+        }
+      }
+    },
+    "Bluetooth kapalı. Bilgisayarı bulmak için açın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth is off. Turn it on to find your computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth kapalı. Bilgisayarı bulmak için açın."
+          }
+        }
+      }
+    },
+    "Bluetooth kapalı. Bilgisayarınızı bulmak için açın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth is off. Turn it on to find your computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth kapalı. Bilgisayarınızı bulmak için açın."
+          }
+        }
+      }
+    },
+    "Bu bilgisayarla zaten eşlisiniz" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already paired with this computer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu bilgisayarla zaten eşlisiniz"
+          }
+        }
+      }
+    },
+    "Bu bir WinDrop eşleştirme kodu değil." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This isn't a WinDrop pairing code."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu bir WinDrop eşleştirme kodu değil."
+          }
+        }
+      }
+    },
+    "Bu cihaz Bluetooth LE desteklemiyor." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device doesn't support Bluetooth LE."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihaz Bluetooth LE desteklemiyor."
+          }
+        }
+      }
+    },
+    "Bu cihazın adı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device Name"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihazın adı"
+          }
+        }
+      }
+    },
+    "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This transfer will use your Wi-Fi or cellular data."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir."
+          }
+        }
+      }
+    },
+    "Bunun için yukarıda aktarma sunucusu adresi girilmelidir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This requires a relay server address above."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bunun için yukarıda aktarma sunucusu adresi girilmelidir."
+          }
+        }
+      }
+    },
+    "Devam et" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam et"
+          }
+        }
+      }
+    },
+    "Dil / Language" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dil / Language"
+          }
+        }
+      }
+    },
+    "Diğer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diğer"
+          }
+        }
+      }
+    },
+    "Dosya" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosya"
+          }
+        }
+      }
+    },
+    "Dosya gönder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send Files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosya gönder"
+          }
+        }
+      }
+    },
+    "Dosya okunamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read the file."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosya okunamadı."
+          }
+        }
+      }
+    },
+    "Dosyalar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosyalar"
+          }
+        }
+      }
+    },
+    "Dosyalar okunamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read the files."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosyalar okunamadı."
+          }
+        }
+      }
+    },
+    "Dosyalar › WinDrop'a kaydedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Files › WinDrop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosyalar › WinDrop'a kaydedildi"
+          }
+        }
+      }
+    },
+    "Dosyalar'a kaydedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosyalar'a kaydedildi"
+          }
+        }
+      }
+    },
+    "Doğrulama kodu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification Code"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama kodu"
+          }
+        }
+      }
+    },
+    "Doğrulama kodu %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification code %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama kodu %@"
+          }
+        }
+      }
+    },
+    "Doğrulama kodu: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification code: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama kodu: %@"
+          }
+        }
+      }
+    },
+    "Düzenle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Düzenle"
+          }
+        }
+      }
+    },
+    "En çok %lld dosya gönderilebilir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can send up to %lld files at a time."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En çok %lld dosya gönderilebilir."
+          }
+        }
+      }
+    },
+    "Etkin nokta bilgisi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hotspot Info"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin nokta bilgisi"
+          }
+        }
+      }
+    },
+    "Etkin noktaya elle katılmanız gerekiyor" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You need to join the hotspot manually"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin noktaya elle katılmanız gerekiyor"
+          }
+        }
+      }
+    },
+    "Eşleşme kaydedilemedi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save the pairing."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleşme kaydedilemedi."
+          }
+        }
+      }
+    },
+    "Eşleştir" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pair"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleştir"
+          }
+        }
+      }
+    },
+    "Eşleştirme kodu sürümü (%lld) desteklenmiyor. Uygulamayı güncelleyin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing code version (%lld) isn't supported. Update the app."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleştirme kodu sürümü (%lld) desteklenmiyor. Uygulamayı güncelleyin."
+          }
+        }
+      }
+    },
+    "Eşleştirme tamamlanmadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pairing wasn't completed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleştirme tamamlanmadı."
+          }
+        }
+      }
+    },
+    "Eşli" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paired"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşli"
+          }
+        }
+      }
+    },
+    "Eşli bilgisayarlardan gelenleri otomatik kabul et" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-Accept from Paired Computers"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşli bilgisayarlardan gelenleri otomatik kabul et"
+          }
+        }
+      }
+    },
+    "Eşli; otomatik kabul kapalı (her seferinde sorulur)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paired; auto-accept off (asks every time)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşli; otomatik kabul kapalı (her seferinde sorulur)"
+          }
+        }
+      }
+    },
+    "FAVORİLER" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FAVORITES"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FAVORİLER"
+          }
+        }
+      }
+    },
+    "Fotoğraf veya video" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo or Video"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraf veya video"
+          }
+        }
+      }
+    },
+    "Fotoğraflar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar"
+          }
+        }
+      }
+    },
+    "Fotoğraflar izni yok — Dosyalar'a kaydedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Photos access — saved to Files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar izni yok — Dosyalar'a kaydedildi"
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a ekleme izni verilmedi. Ayarlar'dan izin verin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permission to add to Photos wasn't granted. Allow it in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar'a ekleme izni verilmedi. Ayarlar'dan izin verin."
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a kaydedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Photos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar'a kaydedildi"
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a kaydedilemedi — Dosyalar'a kaydedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save to Photos — saved to Files"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar'a kaydedilemedi — Dosyalar'a kaydedildi"
+          }
+        }
+      }
+    },
+    "Fotoğraflar'a kaydet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save to Photos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar'a kaydet"
+          }
+        }
+      }
+    },
+    "Fotoğraflar'da (veya herhangi bir uygulamada) bir öğe seçin, sonra Paylaş (Share) simgesine dokunun. Paylaşım sayfası açılır." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an item in Photos (or any app), then tap the Share icon. The share sheet opens."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraflar'da (veya herhangi bir uygulamada) bir öğe seçin, sonra Paylaş (Share) simgesine dokunun. Paylaşım sayfası açılır."
+          }
+        }
+      }
+    },
+    "Gelen fotoğraf ve videolar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incoming Photos and Videos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gelen fotoğraf ve videolar"
+          }
+        }
+      }
+    },
+    "Geçersiz adres veya port." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid address or port."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçersiz adres veya port."
+          }
+        }
+      }
+    },
+    "Geçersiz adres. wss://alan-adi biçiminde yazın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid address. Use the format wss://domain-name."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçersiz adres. wss://alan-adi biçiminde yazın."
+          }
+        }
+      }
+    },
+    "Geçersiz aktarım kimliği." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid transfer ID."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçersiz aktarım kimliği."
+          }
+        }
+      }
+    },
+    "Gönder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gönder"
+          }
+        }
+      }
+    },
+    "Gönder (menü)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send to"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gönder"
+          }
+        }
+      }
+    },
+    "Gönderdiğiniz ve aldığınız dosyalar burada görünür." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files you send and receive appear here."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gönderdiğiniz ve aldığınız dosyalar burada görünür."
+          }
+        }
+      }
+    },
+    "Gönderildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gönderildi"
+          }
+        }
+      }
+    },
+    "Gönderilecek dosya seçilmedi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No files were selected to send."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gönderilecek dosya seçilmedi."
+          }
+        }
+      }
+    },
+    "Gönderiliyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sending…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gönderiliyor…"
+          }
+        }
+      }
+    },
+    "Görünüm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Görünüm"
+          }
+        }
+      }
+    },
+    "Hakkında" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hakkında"
+          }
+        }
+      }
+    },
+    "Hazırlanıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hazırlanıyor…"
+          }
+        }
+      }
+    },
+    "Hazırlanıyor… %lld/%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing… %lld/%lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hazırlanıyor… %lld/%lld"
+          }
+        }
+      }
+    },
+    "Henüz yok. QR ile eşleştirdiğiniz veya bir bilgisayara gönderip ondan dosya kabul ettiğiniz bilgisayarlar burada görünür." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None yet. Computers you pair with a QR code, or send to and accept files from, appear here."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Henüz yok. QR ile eşleştirdiğiniz veya bir bilgisayara gönderip ondan dosya kabul ettiğiniz bilgisayarlar burada görünür."
+          }
+        }
+      }
+    },
+    "Her iki cihazda da WinDrop'un açık olduğundan ve Bluetooth'un açık olduğundan emin olun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make sure WinDrop and Bluetooth are turned on on both devices."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her iki cihazda da WinDrop'un açık olduğundan ve Bluetooth'un açık olduğundan emin olun."
+          }
+        }
+      }
+    },
+    "Her paylaşımda WinDrop ilk sıralarda olur: dokunun, yakındaki bilgisayar belirir, bilgisayara dokunun. Bilgisayarda Kabul'a basılınca dosya gider." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop shows up near the top every time you share: tap it, a nearby computer appears, then tap the computer. Once you click Accept on the computer, the file is sent."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her paylaşımda WinDrop ilk sıralarda olur: dokunun, yakındaki bilgisayar belirir, bilgisayara dokunun. Bilgisayarda Kabul'a basılınca dosya gider."
+          }
+        }
+      }
+    },
+    "Her seferinde sorulur" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asks every time"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her seferinde sorulur"
+          }
+        }
+      }
+    },
+    "Hiçbir adrese bağlanılamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't connect to any address."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiçbir adrese bağlanılamadı."
+          }
+        }
+      }
+    },
+    "Kabul" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kabul"
+          }
+        }
+      }
+    },
+    "Kabul et" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kabul et"
+          }
+        }
+      }
+    },
+    "Kaldır" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaldır"
+          }
+        }
+      }
+    },
+    "Kamera izni verilmedi. QR kodu okumak için Ayarlar'dan kamera iznini açın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera access isn't allowed. To scan the QR code, turn on camera access in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera izni verilmedi. QR kodu okumak için Ayarlar'dan kamera iznini açın."
+          }
+        }
+      }
+    },
+    "Kamera kullanılamıyor." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera unavailable."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera kullanılamıyor."
+          }
+        }
+      }
+    },
+    "Kapat" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapat"
+          }
+        }
+      }
+    },
+    "Kartı kapat" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss card"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartı kapat"
+          }
+        }
+      }
+    },
+    "Karşı cihazın anahtarı QR koduyla uyuşmuyor. Eşleştirme iptal edildi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The other device's key doesn't match the QR code. Pairing canceled."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karşı cihazın anahtarı QR koduyla uyuşmuyor. Eşleştirme iptal edildi."
+          }
+        }
+      }
+    },
+    "Kaydedilecek fotoğraf veya video yok." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no photos or videos to save."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilecek fotoğraf veya video yok."
+          }
+        }
+      }
+    },
+    "Kimlik: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kimlik: %@"
+          }
+        }
+      }
+    },
+    "Kişi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contact"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kişi"
+          }
+        }
+      }
+    },
+    "Klasör" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folder"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klasör"
+          }
+        }
+      }
+    },
+    "Kopyala" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopyala"
+          }
+        }
+      }
+    },
+    "Koyu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koyu"
+          }
+        }
+      }
+    },
+    "Kısa görsel rehberi açar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens a short visual guide"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kısa görsel rehberi açar"
+          }
+        }
+      }
+    },
+    "Masaüstü" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desktop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masaüstü"
+          }
+        }
+      }
+    },
+    "Medya Fotoğraflar'a, diğerleri Dosyalar › WinDrop'a kaydedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media saved to Photos, others to Files › WinDrop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medya Fotoğraflar'a, diğerleri Dosyalar › WinDrop'a kaydedildi"
+          }
+        }
+      }
+    },
+    "Mesajlar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messages"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mesajlar"
+          }
+        }
+      }
+    },
+    "Nasıl çalışır" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How It Works"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nasıl çalışır"
+          }
+        }
+      }
+    },
+    "Ne göndermek istersiniz?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What do you want to send?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne göndermek istersiniz?"
+          }
+        }
+      }
+    },
+    "Otomatik kabul açık" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-accept on"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otomatik kabul açık"
+          }
+        }
+      }
+    },
+    "Otomatik kabul için eşleştir" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pair for Auto-Accept"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otomatik kabul için eşleştir"
+          }
+        }
+      }
+    },
+    "Otomatik kabul üst sınırı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-Accept Limit"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otomatik kabul üst sınırı"
+          }
+        }
+      }
+    },
+    "Parolayı kopyala" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Password"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı kopyala"
+          }
+        }
+      }
+    },
+    "Paylaş menüsüne ekle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Share Menu"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaş menüsüne ekle"
+          }
+        }
+      }
+    },
+    "Paylaş menüsüne ekleme rehberi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Share Menu Guide"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaş menüsüne ekleme rehberi"
+          }
+        }
+      }
+    },
+    "Paylaşılacak dosya bulunamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No files found to share."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaşılacak dosya bulunamadı."
+          }
+        }
+      }
+    },
+    "Paylaşım sayfasında alttaki uygulama simgeleri satırını sağa doğru sona kadar kaydırın ve Diğer (More) ••• simgesine dokunun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the share sheet, scroll the row of app icons at the bottom all the way to the right and tap the More ••• icon."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaşım sayfasında alttaki uygulama simgeleri satırını sağa doğru sona kadar kaydırın ve Diğer (More) ••• simgesine dokunun."
+          }
+        }
+      }
+    },
+    "Reddedildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Declined"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reddedildi"
+          }
+        }
+      }
+    },
+    "Reddet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decline"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reddet"
+          }
+        }
+      }
+    },
+    "Seçilen öğe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected Item"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seçilen öğe"
+          }
+        }
+      }
+    },
+    "Sistem" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistem"
+          }
+        }
+      }
+    },
+    "Sürüm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sürüm"
+          }
+        }
+      }
+    },
+    "Tamam" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamam"
+          }
+        }
+      }
+    },
+    "Tanıdık" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Known"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tanıdık"
+          }
+        }
+      }
+    },
+    "Tanıdık cihaz" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Known Device"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tanıdık cihaz"
+          }
+        }
+      }
+    },
+    "Tanıdık olmayan bilgisayarda gönderimi onaylamanız gerekir; ekrandaki kod iki yerde aynı olmalı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For a computer that isn't known yet, you need to approve the transfer on it. The code on screen must match in both places."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tanıdık olmayan bilgisayarda gönderimi onaylamanız gerekir; ekrandaki kod iki yerde aynı olmalı."
+          }
+        }
+      }
+    },
+    "Tekrar dene" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar dene"
+          }
+        }
+      }
+    },
+    "Tema" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theme"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        }
+      }
+    },
+    "Temizle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temizle"
+          }
+        }
+      }
+    },
+    "Uygulama" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulama"
+          }
+        }
+      }
+    },
+    "Uygulama dilini iPhone Ayarlar'ından değiştirin" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the app language in iPhone Settings"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulama dilini iPhone Ayarlar'ından değiştirin"
+          }
+        }
+      }
+    },
+    "Uygulama kapalıyken bildirim al" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notify When App Is Closed"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulama kapalıyken bildirim al"
+          }
+        }
+      }
+    },
+    "Uygulama satırını sona kaydırın" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll the app row to the end"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulama satırını sona kaydırın"
+          }
+        }
+      }
+    },
+    "Uygulamalar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apps"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulamalar"
+          }
+        }
+      }
+    },
+    "Uygulamalar (Apps) listesinde sağ üstte Düzenle (Edit) varsa dokunun. Öneriler (Suggestions) bölümünde WinDrop'un solundaki yeşil + düğmesine dokunun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the Apps list, tap Edit at the top right if it appears. In Suggestions, tap the green + button to the left of WinDrop."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulamalar (Apps) listesinde sağ üstte Düzenle (Edit) varsa dokunun. Öneriler (Suggestions) bölümünde WinDrop'un solundaki yeşil + düğmesine dokunun."
+          }
+        }
+      }
+    },
+    "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll get a notification for files from your computer even if you close the app (internet required)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir)."
+          }
+        }
+      }
+    },
+    "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir). Bildirimde dosya adı olmaz; yalnız tanıdık bilgisayarlar bildirim gönderebilir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll get a notification for files from your computer even if you close the app (internet required). Notifications don't include file names; only known computers can send notifications."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir). Bildirimde dosya adı olmaz; yalnız tanıdık bilgisayarlar bildirim gönderebilir."
+          }
+        }
+      }
+    },
+    "Uygulamayı uygulama değiştiricide yukarı kaydırıp kapatırsanız bilgisayarınız telefonunuzu göremez. WinDrop'u bir kez açmanız yeterli." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you swipe the app away in the App Switcher, your computer can't see your iPhone. Just open WinDrop once."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygulamayı uygulama değiştiricide yukarı kaydırıp kapatırsanız bilgisayarınız telefonunuzu göremez. WinDrop'u bir kez açmanız yeterli."
+          }
+        }
+      }
+    },
+    "Vazgeç" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vazgeç"
+          }
+        }
+      }
+    },
+    "Wi-Fi yokken bilgisayar etkin noktasını açar. Bir kereye mahsus Ayarlar > Wi-Fi'den bu ağa katılın; iPhone sonra hatırlar." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When there's no Wi-Fi, your computer turns on its hotspot. Join this network once in Settings > Wi-Fi; your iPhone remembers it after that."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi yokken bilgisayar etkin noktasını açar. Bir kereye mahsus Ayarlar > Wi-Fi'den bu ağa katılın; iPhone sonra hatırlar."
+          }
+        }
+      }
+    },
+    "Wi-Fi'ı açın — WinDrop gerisini halleder. (Denetim Merkezi'nden açabilirsiniz.)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on Wi-Fi and WinDrop takes care of the rest. (You can turn it on in Control Center.)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi'ı açın — WinDrop gerisini halleder. (Denetim Merkezi'nden açabilirsiniz.)"
+          }
+        }
+      }
+    },
+    "WinDrop'u AirDrop gibi paylaş menüsüne ekle · 1 dk" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add WinDrop to the share menu like AirDrop · 1 min"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop'u AirDrop gibi paylaş menüsüne ekle · 1 dk"
+          }
+        }
+      }
+    },
+    "WinDrop'un Bluetooth izni yok." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop doesn't have Bluetooth access."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop'un Bluetooth izni yok."
+          }
+        }
+      }
+    },
+    "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop doesn't have Bluetooth access. Allow it in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop'un Bluetooth izni yok. Ayarlar'dan izin verin."
+          }
+        }
+      }
+    },
+    "WinDrop'un yanındaki + işaretine dokunun" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + next to WinDrop"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop'un yanındaki + işaretine dokunun"
+          }
+        }
+      }
+    },
+    "WinDrop'un yerel ağ izni kapalı. Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan açın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop doesn't have Local Network access. Turn it on in Settings > Privacy & Security > Local Network."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop'un yerel ağ izni kapalı. Ayarlar > Gizlilik ve Güvenlik > Yerel Ağ'dan açın."
+          }
+        }
+      }
+    },
+    "WinDrop, Favoriler (Favourites) bölümüne AirDrop'un hemen altına eklenir. İsterseniz sağdaki ≡ tutamacıyla yukarı sürükleyin. Sonra sağ üstteki mavi ✓ (Bitti / Done) düğmesine dokunun." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop is added to Favorites right below AirDrop. If you like, drag it up with the ≡ handle on the right. Then tap the blue ✓ Done button at the top right."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WinDrop, Favoriler (Favourites) bölümüne AirDrop'un hemen altına eklenir. İsterseniz sağdaki ≡ tutamacıyla yukarı sürükleyin. Sonra sağ üstteki mavi ✓ (Bitti / Done) düğmesine dokunun."
+          }
+        }
+      }
+    },
+    "Windows'ta dosyaya sağ tıklayıp Gönder > WinDrop'u seçin ya da dosyayı WinDrop penceresine sürükleyip bırakın. Telefonda WinDrop açık (veya arka planda) olmalı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On Windows, right-click a file and choose Send to > WinDrop, or drag and drop the file onto the WinDrop window. WinDrop must be open (or in the background) on your iPhone."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows'ta dosyaya sağ tıklayıp Gönder > WinDrop'u seçin ya da dosyayı WinDrop penceresine sürükleyip bırakın. Telefonda WinDrop açık (veya arka planda) olmalı."
+          }
+        }
+      }
+    },
+    "Windows'taki WinDrop'ta gösterilen eşleştirme QR kodunu kameraya gösterin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Point the camera at the pairing QR code shown in WinDrop on Windows."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows'taki WinDrop'ta gösterilen eşleştirme QR kodunu kameraya gösterin."
+          }
+        }
+      }
+    },
+    "Yakındaki bilgisayarlar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nearby Computers"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakındaki bilgisayarlar"
+          }
+        }
+      }
+    },
+    "Yakındaki bilgisayarlar aranıyor…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching for nearby computers…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakındaki bilgisayarlar aranıyor…"
+          }
+        }
+      }
+    },
+    "Yakındaki bilgisayarlardan dosya alabilirsiniz" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can receive files from nearby computers"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yakındaki bilgisayarlardan dosya alabilirsiniz"
+          }
+        }
+      }
+    },
+    "Yeni bir bilgisayarla ilk kez paylaşırken WinDrop'u bir kez açın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first time you share with a new computer, open WinDrop once."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni bir bilgisayarla ilk kez paylaşırken WinDrop'u bir kez açın."
+          }
+        }
+      }
+    },
+    "Yeni cihaz" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Device"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni cihaz"
+          }
+        }
+      }
+    },
+    "bağlantı kapandı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "connection closed"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bağlantı kapandı"
+          }
+        }
+      }
+    },
+    "ve %lld dosya daha…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %lld more file…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %lld more files…"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ve %lld dosya daha…"
+          }
+        }
+      }
+    },
+    "veya WinDrop penceresine sürükleyip bırakın" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "or drag and drop onto the WinDrop window"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "veya WinDrop penceresine sürükleyip bırakın"
+          }
+        }
+      }
+    },
+    "Çizim: Favoriler ve Öneriler listesi; Öneriler'deki WinDrop satırında vurgulanmış yeşil artı düğmesi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustration: the Favorites and Suggestions lists, with the green plus button highlighted on the WinDrop row in Suggestions."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çizim: Favoriler ve Öneriler listesi; Öneriler'deki WinDrop satırında vurgulanmış yeşil artı düğmesi."
+          }
+        }
+      }
+    },
+    "Çizim: WinDrop, Favoriler'de AirDrop'un altında; sağ üstte vurgulanmış mavi onay düğmesi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustration: WinDrop in Favorites below AirDrop, with the blue check button highlighted at the top right."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çizim: WinDrop, Favoriler'de AirDrop'un altında; sağ üstte vurgulanmış mavi onay düğmesi."
+          }
+        }
+      }
+    },
+    "Çizim: Windows penceresi; dosyanın sağ tık menüsünde Gönder altında vurgulanmış WinDrop; altında sürükle-bırak alanı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustration: a Windows window, with WinDrop highlighted under Send to in the file's right-click menu and a drag-and-drop area below."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çizim: Windows penceresi; dosyanın sağ tık menüsünde Gönder altında vurgulanmış WinDrop; altında sürükle-bırak alanı."
+          }
+        }
+      }
+    },
+    "Çizim: bir öğe seçili, alt çubukta vurgulanmış Paylaş simgesi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustration: an item is selected and the Share icon is highlighted in the bottom bar."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çizim: bir öğe seçili, alt çubukta vurgulanmış Paylaş simgesi."
+          }
+        }
+      }
+    },
+    "Çizim: paylaşım sayfası; uygulama satırının sonunda vurgulanmış Diğer üç nokta simgesi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustration: the share sheet, with the More three-dot icon highlighted at the end of the app row."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çizim: paylaşım sayfası; uygulama satırının sonunda vurgulanmış Diğer üç nokta simgesi."
+          }
+        }
+      }
+    },
+    "Çizim: uygulama satırında WinDrop ikinci sırada; altında yakındaki bilgisayarın vurgulanmış kutusu." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illustration: WinDrop is second in the app row, with the nearby computer highlighted in a box below."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çizim: uygulama satırında WinDrop ikinci sırada; altında yakındaki bilgisayarın vurgulanmış kutusu."
+          }
+        }
+      }
+    },
+    "ÖNERİLER" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SUGGESTIONS"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ÖNERİLER"
+          }
+        }
+      }
+    },
+    "Öğeyi seçin, Paylaş'a dokunun" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an item, then tap Share"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öğeyi seçin, Paylaş'a dokunun"
+          }
+        }
+      }
+    },
+    "İleri" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İleri"
+          }
+        }
+      }
+    },
+    "İptal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İptal"
+          }
+        }
+      }
+    },
+    "İptal edildi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canceled"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İptal edildi"
+          }
+        }
+      }
+    },
+    "İsteğe bağlı. Bilgisayara ne doğrudan ne etkin noktayla ulaşılamazsa gönderim internet üzerinden bu sunucudan geçer (uçtan uca şifreli; sunucu içeriği göremez). Her seferinde kota uyarısıyla onayınız istenir. Boşsa bu yol kapalıdır." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional. If your computer can't be reached directly or through its hotspot, the transfer goes over the internet through this server (end-to-end encrypted; the server can't see the contents). You're asked to confirm each time with a data usage warning. If empty, this route is off."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İsteğe bağlı. Bilgisayara ne doğrudan ne etkin noktayla ulaşılamazsa gönderim internet üzerinden bu sunucudan geçer (uçtan uca şifreli; sunucu içeriği göremez). Her seferinde kota uyarısıyla onayınız istenir. Boşsa bu yol kapalıdır."
+          }
+        }
+      }
+    },
+    "İsteğe bağlı. Windows'taki WinDrop'ta gösterilen QR kodu okutursanız o bilgisayardan gelen dosyalar (üst sınıra kadar) sormadan kabul edilir. Yalnız QR ile eşli bilgisayarlar için geçerlidir; \"Tanıdık\" bilgisayarlardan gelenler her zaman sorulur. Uygulama arka plandayken otomatik kabul edilen aktarımda bildirim yalnız bittiğinde gelir." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional. If you scan the QR code shown in WinDrop on Windows, files from that computer are accepted without asking (up to the limit). This only applies to computers paired with a QR code; files from \"Known\" computers are always confirmed first. When the app is in the background, an auto-accepted transfer sends a notification only when it finishes."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İsteğe bağlı. Windows'taki WinDrop'ta gösterilen QR kodu okutursanız o bilgisayardan gelen dosyalar (üst sınıra kadar) sormadan kabul edilir. Yalnız QR ile eşli bilgisayarlar için geçerlidir; \"Tanıdık\" bilgisayarlardan gelenler her zaman sorulur. Uygulama arka plandayken otomatik kabul edilen aktarımda bildirim yalnız bittiğinde gelir."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

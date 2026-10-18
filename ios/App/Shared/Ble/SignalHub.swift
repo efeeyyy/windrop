@@ -67,7 +67,7 @@ enum SignalError: Error, LocalizedError {
     case notConnected
 
     var errorDescription: String? {
-        "Bilgisayar şu an yakında değil (Bluetooth bağlantısı yok)."
+        String(localized: "Bilgisayar şu an yakında değil (Bluetooth bağlantısı yok).")
     }
 }
 

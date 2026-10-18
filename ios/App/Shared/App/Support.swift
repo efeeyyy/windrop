@@ -32,8 +32,8 @@ enum MailboxError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .timeout: return "Bilgisayardan yanıt gelmedi (zaman aşımı)."
-        case .closed: return "Bağlantı kapandı."
+        case .timeout: return String(localized: "Bilgisayardan yanıt gelmedi (zaman aşımı).")
+        case .closed: return String(localized: "Bağlantı kapandı.")
         }
     }
 }

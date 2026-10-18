@@ -97,4 +97,86 @@
   <data name="Dialog.PickFiles" xml:space="preserve"><value>Gönderilecek dosyaları seçin</value></data>
   <data name="Dialog.PickSendFolder" xml:space="preserve"><value>Gönderilecek klasörü seçin</value></data>
   <data name="Dialog.PickFolder" xml:space="preserve"><value>İndirme klasörünü seçin</value></data>
+
+  <!-- Dil seçimi -->
+  <data name="Settings.Language" xml:space="preserve"><value>Dil / Language</value></data>
+  <data name="Settings.LangSystem" xml:space="preserve"><value>Sistem dili</value></data>
+  <data name="Settings.LangRestartNote" xml:space="preserve"><value>Uygulamayı yeniden başlatınca uygulanır / Applies after restart</value></data>
+  <data name="Settings.RestartNow" xml:space="preserve"><value>Şimdi yeniden başlat / Restart now</value></data>
+  <data name="Unit.PerSecond" xml:space="preserve"><value>/sn</value></data>
+
+  <!-- Platform hata kodları (UserErrorCode) -->
+  <data name="Err.BtAudioLocalStopped" xml:space="preserve"><value>Bu bilgisayarda Bluetooth ses başladı; BLE ile aktarım durduruldu.</value></data>
+  <data name="Err.BtAudioPhoneStopped" xml:space="preserve"><value>iPhone'da Bluetooth ses başladı; BLE ile aktarım durduruldu.</value></data>
+  <data name="Err.PairingRemoved" xml:space="preserve"><value>Eşleştirme kaldırıldı.</value></data>
+  <data name="Err.BleDisconnected" xml:space="preserve"><value>Bluetooth bağlantısı koptu.</value></data>
+  <data name="Err.BleNoResponse" xml:space="preserve"><value>iPhone Bluetooth üzerinden yanıt vermedi (zaman aşımı). Yol yok.</value></data>
+  <data name="Err.BleTransferCut" xml:space="preserve"><value>Bluetooth üzerinden aktarım kesildi.</value></data>
+  <data name="Err.NotNearby" xml:space="preserve"><value>Cihaz yakında değil (Bluetooth bağlantısı yok).</value></data>
+  <data name="Err.FileNotFound" xml:space="preserve"><value>Dosya bulunamadı: {0}</value></data>
+  <data name="Err.FileUnreadable" xml:space="preserve"><value>Dosya veya klasör okunamadı: {0}</value></data>
+  <data name="Err.NoFilesToSend" xml:space="preserve"><value>Gönderilecek dosya yok.</value></data>
+  <data name="Err.TooManyFiles" xml:space="preserve"><value>En çok {0} dosya gönderilebilir.</value></data>
+  <data name="Err.FolderTooDeep" xml:space="preserve"><value>Klasör en çok {0} seviye derinlikte olabilir: {1}</value></data>
+  <data name="Err.FolderPathTooLong" xml:space="preserve"><value>Klasör yolu en çok {0} karakter olabilir: {1}</value></data>
+  <data name="Err.PushDisabled" xml:space="preserve"><value>Push bu sunucuda kapalı.</value></data>
+  <data name="Err.PushUnknown" xml:space="preserve"><value>Telefonun bildirim kaydı sunucuda yok; telefonda uygulamayı açıp Bluetooth ile bağlanmasını bekleyin.</value></data>
+  <data name="Err.PushRateLimited" xml:space="preserve"><value>Telefona çok fazla bildirim gönderildi; biraz sonra yeniden deneyin.</value></data>
+  <data name="Err.PushServerError" xml:space="preserve"><value>Bildirim sunucusu hata verdi (HTTP {0}).</value></data>
+  <data name="Err.PushUnreachable" xml:space="preserve"><value>Bildirim sunucusuna ulaşılamadı.</value></data>
+  <data name="Err.PhoneNoResponse" xml:space="preserve"><value>Telefon yanıt vermedi.</value></data>
+  <data name="Err.OfferNoResponse" xml:space="preserve"><value>Karşı cihaz teklife yanıt vermedi.</value></data>
+  <data name="Err.RejectedByPeer" xml:space="preserve"><value>Karşı cihaz reddetti.</value></data>
+  <data name="Err.RejectedByPeerReason" xml:space="preserve"><value>Karşı cihaz reddetti ({0}).</value></data>
+  <data name="Err.NoDiskSpace" xml:space="preserve"><value>İndirme klasörünün bulunduğu sürücüde yeterli boş alan yok.</value></data>
+  <data name="Err.PathNoHotspotSupport" xml:space="preserve"><value>iPhone etkin nokta yolunu desteklemiyor ve bir Wi-Fi ağına bağlı değil. Yol yok.</value></data>
+  <data name="Err.PathNoHotspotInVersion" xml:space="preserve"><value>iPhone bir Wi-Fi ağına bağlı değil ve etkin nokta yolu bu sürümde kullanılamıyor. Yol yok.</value></data>
+  <data name="Err.HotspotOpenFailed" xml:space="preserve"><value>Windows Mobil etkin noktası açılamadı:</value></data>
+  <data name="Err.HotspotInUse" xml:space="preserve"><value>Windows Mobil etkin noktası zaten sizin tarafınızdan kullanılıyor; WinDrop kendi etkin noktasını açamıyor. Etkin noktayı kapatın ya da iPhone'u bir Wi-Fi ağına bağlayıp yeniden deneyin.</value></data>
+  <data name="Err.NoNetworkAddress" xml:space="preserve"><value>Bu bilgisayarda kullanılabilir ağ adresi yok (ağa bağlı değil).</value></data>
+  <data name="Err.DirectFailedReported" xml:space="preserve"><value>Doğrudan bağlantı kurulamadı (iPhone bildirdi: {0}). Yol yok.</value></data>
+  <data name="Err.PhoneDataTimeout" xml:space="preserve"><value>iPhone veri bağlantısını kuramadı (zaman aşımı). Yol yok.</value></data>
+  <data name="Err.ConnectionLostNoReconnect" xml:space="preserve"><value>Bağlantı koptu ve iPhone yeniden bağlanmadı.</value></data>
+  <data name="Err.BleAlsoSize" xml:space="preserve"><value>BLE (küçük dosya) yolu da kullanılamıyor: toplam boyut {0} KB'ı aşıyor.</value></data>
+  <data name="Err.BleAlsoLocalAudio" xml:space="preserve"><value>BLE (küçük dosya) yolu da kullanılamıyor: bu bilgisayarda Bluetooth ses çıkışı kullanılıyor.</value></data>
+  <data name="Err.BleAlsoPhoneAudio" xml:space="preserve"><value>BLE (küçük dosya) yolu da kullanılamıyor: iPhone'da Bluetooth ses çıkışı kullanılıyor.</value></data>
+  <data name="Err.BleBusy" xml:space="preserve"><value>BLE yolu bu eşle başka bir aktarım için kullanılıyor.</value></data>
+  <data name="Err.RelayUrlInvalidHint" xml:space="preserve"><value>Aktarma sunucusu adresi geçersiz (Ayarlar'da wss://… biçiminde girin).</value></data>
+  <data name="Err.RelayUrlInvalid" xml:space="preserve"><value>Aktarma sunucusu adresi geçersiz.</value></data>
+  <data name="Err.RelayNotApproved" xml:space="preserve"><value>Aktarma sunucusu üzerinden gönderim onaylanmadı.</value></data>
+  <data name="Err.RelayDropped" xml:space="preserve"><value>Aktarma bağlantısı koptu.</value></data>
+  <data name="Err.RelayTooManyRooms" xml:space="preserve"><value>Aktarma sunucusu çok sık oda açıldığı için reddetti (dakikada en çok 10). Biraz sonra deneyin.</value></data>
+  <data name="Err.RelayRoomFull" xml:space="preserve"><value>Aktarma odası dolu (aynı rol zaten bağlı).</value></data>
+  <data name="Err.RelayRoomClosed" xml:space="preserve"><value>Aktarma odası kapanmış.</value></data>
+  <data name="Err.RelayUnreachable" xml:space="preserve"><value>Aktarma sunucusuna bağlanılamadı: {0}</value></data>
+  <data name="Err.RelayRefused" xml:space="preserve"><value>Aktarma sunucusu bağlantıyı reddetti (HTTP {0}).</value></data>
+  <data name="Err.RelayPhoneJoinTimeout" xml:space="preserve"><value>iPhone aktarma odasına zamanında bağlanmadı.</value></data>
+  <data name="Err.RelayPhoneFailed" xml:space="preserve"><value>iPhone aktarma sunucusuna bağlanamadı (relay_fail).</value></data>
+  <data name="Err.RelayHandshakeFailed" xml:space="preserve"><value>Aktarma el sıkışması başarısız: {0}</value></data>
+  <data name="Err.RelayAlsoFailed" xml:space="preserve"><value>Aktarma yolu da başarısız. Yol yok.</value></data>
+  <data name="Err.NoPath" xml:space="preserve"><value>Yol yok.</value></data>
+  <data name="Err.HashMismatch" xml:space="preserve"><value>{0} dosya doğrulanamadı (SHA-256 uyuşmadı).</value></data>
+  <data name="Err.RemoteCanceled" xml:space="preserve"><value>Karşı taraf iptal etti.</value></data>
+  <data name="Err.TransferCut" xml:space="preserve"><value>Aktarım kesildi.</value></data>
+  <data name="Err.TransferCutWith" xml:space="preserve"><value>Aktarım kesildi: {0}</value></data>
+  <data name="Err.UnexpectedEnd" xml:space="preserve"><value>Aktarım beklenmedik şekilde sona erdi.</value></data>
+  <data name="Err.TransferFailedWith" xml:space="preserve"><value>Aktarım başarısız: {0}</value></data>
+  <data name="Err.TransferFailedUnexpected" xml:space="preserve"><value>Aktarım başarısız (beklenmeyen hata).</value></data>
+  <data name="Err.HotspotRestartFailed" xml:space="preserve"><value>Mobil etkin nokta yeniden başlatılamadı: {0}</value></data>
+  <data name="Err.HotspotInTransition" xml:space="preserve"><value>Mobil etkin nokta şu an değişiyor; birkaç saniye sonra tekrar deneyin.</value></data>
+  <data name="Err.HotspotStartFailed" xml:space="preserve"><value>Mobil etkin nokta başlatılamadı: {0}</value></data>
+  <data name="Err.HotspotNeedNetwork" xml:space="preserve"><value>Mobil etkin nokta için bilgisayarın bir ağa bağlı olması gerekir (internet bağlantı profili yok). Wi-Fi veya Ethernet'e bağlanıp tekrar deneyin.</value></data>
+  <data name="Err.HotspotUnavailableHere" xml:space="preserve"><value>Mobil etkin nokta bu bilgisayarda kullanılamıyor:</value></data>
+  <data name="Err.CapGroupPolicy" xml:space="preserve"><value>grup ilkesiyle kapatılmış.</value></data>
+  <data name="Err.CapHardware" xml:space="preserve"><value>donanım desteklemiyor.</value></data>
+  <data name="Err.CapOperator" xml:space="preserve"><value>operatör tarafından kapatılmış.</value></data>
+  <data name="Err.CapSku" xml:space="preserve"><value>Windows sürümü desteklemiyor.</value></data>
+  <data name="Err.CapAppMissing" xml:space="preserve"><value>gerekli uygulama yüklü değil.</value></data>
+  <data name="Err.CapSystem" xml:space="preserve"><value>sistem özelliği kapalı.</value></data>
+  <data name="Err.HsWifiOff" xml:space="preserve"><value>Wi-Fi kapalı; Wi-Fi'ı açıp tekrar deneyin.</value></data>
+  <data name="Err.HsEntitlement" xml:space="preserve"><value>Mobil etkin nokta yetkilendirmesi başarısız.</value></data>
+  <data name="Err.HsOpInProgress" xml:space="preserve"><value>Başka bir etkin nokta işlemi sürüyor.</value></data>
+  <data name="Err.HsBtOff" xml:space="preserve"><value>Bluetooth kapalı.</value></data>
+  <data name="Err.HsLimited" xml:space="preserve"><value>Ağ bağlantısı sınırlı; etkin nokta açılamadı.</value></data>
+  <data name="Err.HsStartStatus" xml:space="preserve"><value>Mobil etkin nokta başlatılamadı ({0}).</value></data>
 </root>

@@ -148,7 +148,7 @@ final class TransferCoordinator {
             }
             try? await Task.sleep(nanoseconds: Self.offerSecondWait)
             guard !Task.isCancelled, self.isAwaitingReply(item) else { return }
-            self.fail(item, "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun.")
+            self.fail(item, String(localized: "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun."))
         }
     }
 
@@ -262,8 +262,8 @@ final class TransferCoordinator {
             // Arka plandayken istem görünmez; ön plana gelince gösterilir.
             Task { await notifications.requestAuthorizationIfNeeded() }
             if isAppInBackground() {
-                let size = ByteCountFormatter.string(fromByteCount: offer.total, countStyle: .file)
-                let what = offer.count == 1 ? (names.first ?? "1 dosya") : "\(offer.count) dosya"
+                let size = FileSizeText.string(offer.total)
+                let what = offer.count == 1 ? (names.first ?? String(localized: "\(1) dosya")) : String(localized: "\(Int(offer.count)) dosya")
                 notifications.postOffer(transferId: offer.transferId, peerName: peer.name, summary: "\(what) (\(size))")
             }
         }
@@ -383,7 +383,7 @@ final class TransferCoordinator {
         Task {
             do {
                 let count = try await PhotoSaver.save(files).count
-                item.photosSaveMessage = "\(count) öğe Fotoğraflar'a kaydedildi."
+                item.photosSaveMessage = String(localized: "\(count) öğe Fotoğraflar'a kaydedildi.")
             } catch {
                 item.photosSaveMessage = error.localizedDescription
             }
@@ -568,7 +568,7 @@ final class TransferCoordinator {
         } else if summary.canceledByRemote {
             item.state = .cancelled
         } else {
-            fail(item, summary.error ?? "\(summary.failedFileIDs.count) dosya aktarılamadı.")
+            fail(item, summary.error ?? String(localized: "\(summary.failedFileIDs.count) dosya aktarılamadı."))
         }
         finishCleanup(item)
     }
@@ -604,20 +604,25 @@ final class TransferCoordinator {
         let body: String
         switch item.direction {
         case .send:
-            body = "\(item.fileCount) \(item.isFolderTransfer ? "klasör öğesi" : "dosya") \(peerName) bilgisayarına gönderildi"
+            let what = item.isFolderTransfer
+                ? String(localized: "\(item.fileCount) klasör öğesi")
+                : String(localized: "\(item.fileCount) dosya")
+            body = String(localized: "\(what) \(peerName) bilgisayarına gönderildi")
         case .receive:
             let kinds = Set(item.fileNames.map { name in
                 UTType(filenameExtension: (name as NSString).pathExtension).map { type -> Int in
                     type.conforms(to: .movie) ? 2 : (type.conforms(to: .image) ? 1 : 0)
                 } ?? 0
             })
+            let count = item.fileCount
             let noun: String
-            if item.isFolderTransfer { noun = "dosya" }
-            else if kinds == [1] { noun = "fotoğraf" }
-            else if kinds == [2] { noun = "video" }
-            else if !kinds.contains(0) { noun = "fotoğraf/video" }
-            else { noun = "dosya" }
-            body = "\(peerName)'dan \(item.fileCount) \(noun) alındı — \(item.savedPlace?.text ?? "Dosyalar'a kaydedildi")"
+            if item.isFolderTransfer { noun = String(localized: "\(count) dosya") }
+            else if kinds == [1] { noun = String(localized: "\(count) fotoğraf") }
+            else if kinds == [2] { noun = String(localized: "\(count) video") }
+            else if !kinds.contains(0) { noun = String(localized: "\(count) fotoğraf/video") }
+            else { noun = String(localized: "\(count) dosya") }
+            let place = item.savedPlace?.text ?? String(localized: "Dosyalar'a kaydedildi")
+            body = String(localized: "\(peerName)'dan \(noun) alındı — \(place)")
         }
         notifications.postResult(transferId: item.id, body: body)
     }
