@@ -158,6 +158,21 @@ final class SignalHub: BleCentralDelegate, SignalSending {
 
     private var isPairing: Bool { pairingDepth > 0 }
 
+    /// Eşleştirilecek PC zaten bağlı mı? `match` = karşı statik anahtarı `publicKey` olan oturumun (ya da kayıtlı
+    /// PC'nin) çevre birimi; `others` = başka PC'lerin oturumlarına ait çevre birimleri.
+    func pairingTarget(publicKey: Data) -> (match: UUID?, others: Set<UUID>) {
+        var match: UUID?
+        var others: Set<UUID> = []
+        for peer in peers.values {
+            if peer.publicKey == publicKey { match = peer.peripheralID } else { others.insert(peer.peripheralID) }
+        }
+        if match == nil, let pid = identity.pc(withKeyID: DeviceId.hex(publicKey: publicKey))?.peripheralID {
+            match = pid
+        }
+        if let match { others.remove(match) }
+        return (match, others)
+    }
+
     // MARK: SignalSending
 
     func isReady(_ keyID: String) -> Bool { channels[keyID] != nil }

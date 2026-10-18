@@ -1,3 +1,4 @@
+import CoreBluetooth
 import Foundation
 import Observation
 @preconcurrency import WinDropKit
@@ -80,9 +81,24 @@ final class PairingController {
         defer { hub.endPairing() }
         do {
             let key = try identity.deviceKey()
-            let peripheral = try await central.discoverForPairing(pcName: invite.pcName, timeout: 20)
-            phase = .connecting(invite.pcName)
-            let link = try await central.openLink(to: peripheral, timeout: 15)
+            await central.awaitReady()
+            // Önce mevcut bağlantılar (iOS bağlı çevre birimini taramada göstermez), yoksa tarama.
+            let target = hub.pairingTarget(publicKey: invite.pcPublicKey)
+            let peripheral: CBPeripheral
+            let link: BlePeripheralLink
+            if let existing = central.findConnectedPeripheral(preferred: target.match, excluding: target.others) {
+                peripheral = existing
+                phase = .connecting(invite.pcName)
+                link = try await central.reopenForPairing(existing, timeout: 15)
+            } else {
+                do {
+                    peripheral = try await central.discoverForPairing(pcName: invite.pcName, timeout: 20)
+                } catch BleError.timeout {
+                    throw PairingError.pcNotFound
+                }
+                phase = .connecting(invite.pcName)
+                link = try await central.openLink(to: peripheral, timeout: 15)
+            }
             openedLink = link
             let transport = BleMessageTransport(link: BleLinkAdapter(link: link))
             // XXpsk3; PC anahtarı QR'daki `k` ile uyuşmazsa Kit 3. mesajdan önce SessionError.peerKeyMismatch fırlatır.

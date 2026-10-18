@@ -37,6 +37,9 @@ public sealed class AppSettings
     /// </summary>
     public string RelayUrl { get; set; } = "";
 
+    /// <summary>"Arka planda çalışıyor" bildirimi bir kez gösterildi (bir daha gösterilmez).</summary>
+    public bool TrayHintShown { get; set; }
+
     public static AppSettings Load(string? path = null)
     {
         path ??= DefaultPath;

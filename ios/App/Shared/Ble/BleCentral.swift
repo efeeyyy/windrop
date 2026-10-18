@@ -200,6 +200,48 @@ final class BleCentral: NSObject {
         }
     }
 
+    /// iOS bağlı çevre birimlerini taramada bildirmez: zaten bağlı olan PC'yi tanımlayıcıdan (`preferred`) ya da
+    /// WinDrop servisleriyle bağlı çevre birimlerinden bulur. `excluding` = başka PC'ye ait olduğu bilinenler;
+    /// tanımlayıcı eşleşmesi yoksa ve tek aday kalırsa o döner (birden çoksa belirsiz: nil, tarama yapılır).
+    func findConnectedPeripheral(preferred: UUID?, excluding: Set<UUID>) -> CBPeripheral? {
+        guard let manager else { return nil }
+        if let preferred, let p = manager.retrievePeripherals(withIdentifiers: [preferred]).first,
+           p.state == .connected || p.state == .connecting {
+            return p
+        }
+        let candidates = manager.retrieveConnectedPeripherals(withServices: ProtocolIds.discoveryServices)
+            .filter { !excluding.contains($0.identifier) }
+        return candidates.count == 1 ? candidates[0] : nil
+    }
+
+    /// Eşleştirme için çevre birimini temiz bir oturumla açar: mevcut oturum kapatılır, GATT bağlantısı kesilip
+    /// hemen yeniden bağlanılır (aynı PC'ye ikinci bir GATT oturumu açılamaz; PC yeni ön eki baştan okur).
+    func reopenForPairing(_ peripheral: CBPeripheral, timeout: TimeInterval) async throws -> BlePeripheralLink {
+        guard state == .poweredOn else { throw BleError.unavailable(state) }
+        let id = peripheral.identifier
+        peripherals[id] = peripheral
+        peripheral.delegate = self
+        var attempt = 0
+        while true {
+            attempt += 1
+            links.removeValue(forKey: id)?.close()
+            if peripheral.state != .disconnected {
+                manager?.cancelPeripheralConnection(peripheral)
+                let deadline = Date().addingTimeInterval(3)
+                while peripheral.state != .disconnected, Date() < deadline {
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                }
+                // `didDisconnect` geri çağrısı durum değişiminden biraz sonra gelebilir; yeni bekleyeni bozmasın.
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+            do {
+                return try await openLink(to: peripheral, timeout: timeout)
+            } catch BleError.disconnected where attempt < 2 {
+                continue
+            }
+        }
+    }
+
     private func expireScan(_ token: Int) {
         guard token == scanToken else { return }
         finishScan(.failure(BleError.timeout))

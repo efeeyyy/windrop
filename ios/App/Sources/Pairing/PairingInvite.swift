@@ -6,9 +6,11 @@ enum PairingError: Error, LocalizedError {
     case notPaired
     case rejectedByPC
     case saveFailed
+    case pcNotFound
 
     var errorDescription: String? {
         switch self {
+        case .pcNotFound: return "Bilgisayar bulunamadı — bilgisayarda WinDrop'un açık ve QR ekranının görünür olduğundan emin olun."
         case .invalidCode: return "Bu bir WinDrop eşleştirme kodu değil."
         case .unsupportedVersion(let v): return "Eşleştirme kodu sürümü (\(v)) desteklenmiyor. Uygulamayı güncelleyin."
         case .notPaired: return "Eşleştirme tamamlanmadı."

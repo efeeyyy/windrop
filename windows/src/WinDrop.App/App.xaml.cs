@@ -64,9 +64,12 @@ public partial class App : Application, IAppShell
         _main = new MainWindow(_mainVm);
         _main.HiddenToTray += (_, _) =>
         {
-            if (_balloonShown) return;
+            if (_balloonShown || _settings.TrayHintShown) return;
             _balloonShown = true;
             _tray?.ShowBalloon(Strings.Get("Tray.Background"));
+            _settings.TrayHintShown = true;   // yalnız ilk seferde; kalıcı
+            try { _settings.Save(); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { AppLog.Write($"ayar kaydedilemedi: {ex.Message}"); }
         };
 
         _tray = new TrayIcon(ShowMain, PickAndStage, ExitApp);

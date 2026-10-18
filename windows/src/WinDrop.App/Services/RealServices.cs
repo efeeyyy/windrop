@@ -34,7 +34,7 @@ public sealed class DeviceService : IDeviceService
                 .ToList();
             foreach (var n in _rt.Coordinator.NearbyPeers)
             {
-                if (list.All(d => d.Id != n.PeerId)) list.Add(new DeviceInfo(n.PeerId, n.Name, true));
+                if (list.All(d => d.Id != n.PeerId)) list.Add(new DeviceInfo(n.PeerId, n.Name, true, IsTrusted: false));
             }
             return list;
         }

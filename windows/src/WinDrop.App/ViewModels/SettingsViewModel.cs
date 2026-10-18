@@ -49,7 +49,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void RefreshDevices()
     {
         PairedDevices.Clear();
-        foreach (var d in _devices.Devices) PairedDevices.Add(d);
+        // Yalnız kayıtlı (eşli/tanıdık) cihazlar kaldırılabilir; yakındaki bilinmeyen iPhone'lar burada listelenmez.
+        foreach (var d in _devices.Devices.Where(d => d.IsTrusted)) PairedDevices.Add(d);
         OnPropertyChanged(nameof(HasNoDevices));
         OnPropertyChanged(nameof(HasDevices));
     }

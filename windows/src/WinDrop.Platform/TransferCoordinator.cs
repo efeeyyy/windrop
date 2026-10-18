@@ -247,8 +247,17 @@ public sealed class TransferCoordinator : IAsyncDisposable
     public void DropPeer(string peerId)
     {
         PeerSession? s;
-        lock (_lock) _sessions.TryGetValue(peerId, out s);
-        s?.Close();
+        lock (_lock)
+        {
+            if (_sessions.Remove(peerId, out s)) _silencedUntil.Remove(peerId);   // listede hemen yok say
+        }
+        if (s is null) return;
+        s.IsKnown = false;
+        s.IsPaired = false;
+        s.Faulted = true;   // PROTOCOL §3a: oturum biterken iPhone'a WDR gider; sonraki bağlantı XX + onayla gelir
+        s.Close();
+        FailNegotiating(peerId, "Eşleştirme kaldırıldı.");
+        PeersChanged?.Invoke();
     }
 
     // ---------------------------------------------------------------- BLE oturumu

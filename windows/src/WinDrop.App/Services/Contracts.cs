@@ -5,7 +5,7 @@ namespace WinDrop.App.Services;
 
 /// <summary>Eşli cihaz. <see cref="Name"/> eşleştirme anındaki addır.</summary>
 /// <param name="CanPush">PROTOCOL §6.5: yakında değil ama push bildirimiyle uyandırılabilir (pushId kayıtlı + aktarma sunucusu adresi dolu).</param>
-public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false);
+public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false, bool IsTrusted = true);
 
 /// <summary>Açık eşleştirme oturumu: QR yükü + süre; <see cref="Cancel"/> eşleştirme modunu kapatır.</summary>
 public sealed class PairingSession
