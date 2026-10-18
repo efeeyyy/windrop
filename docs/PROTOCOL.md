@@ -168,6 +168,7 @@ Aktarımın sonucu **yalnız veri kanalındaki `DONE`** ile belirlenir (BLE'de `
      **yeniler** (SSID aynı kalır, DPAPI kaydı güncellenir; açık kalan etkin nokta bir sonraki başlatmada yeni parolayla
      yeniden kurulur). Eşli/tanıdık cihazlar için parola sabit kalır (iOS ağı hatırlasın diye). iPhone her zaman o anki
      parolayı `hotspot` iletisinden alır; yenilenmiş parola kayıtlı ağın üzerine yazılır.
+- **Yol değişimi:** bekleme sırasında wifi durumu değişirse PC ek yolu (`addr`/`hotspot`) aynı `transferId` ile gönderir; iPhone ilk başarılı bağlantıyı kullanır (PC, etkin veri oturumu varken aynı `transferId`'ye gelen ikinci bağlantıyı kapatır; kopmadan sonra yeniden bağlanma serbesttir).
 3. **Aktarma:** iki taraf internetteyse kullanıcıya uyarı: "İnternet/mobil veri kullanılacak
    (X MB), uçtan uca şifreli". Onaylanırsa: aktarma sunucusu adresi **uygulamaya gömülü/yapılandırılmış**
    alan adıdır, mesajla gelmez (kötü niyetli eşli cihaz iPhone'u kendi sunucusuna yönlendiremez).

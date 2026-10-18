@@ -21,6 +21,14 @@ enum HotspotJoiner {
         #endif
     }
 
+    /// Etkin noktaya katılma vazgeçildi (başka yol kazandı): ağ profilini siler, iPhone etkin noktaya geçmez.
+    /// Yetki yoksa (elle katılım) yapılacak bir şey yok.
+    static func abandon(_ credentials: HotspotCredentials) {
+        #if HOTSPOT_ENTITLEMENT
+        NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: credentials.ssid)
+        #endif
+    }
+
     static func join(_ credentials: HotspotCredentials) async throws -> HotspotJoinOutcome {
         #if HOTSPOT_ENTITLEMENT
         let configuration = NEHotspotConfiguration(ssid: credentials.ssid, passphrase: credentials.pass, isWEP: false)

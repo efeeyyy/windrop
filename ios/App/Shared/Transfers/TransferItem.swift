@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 @preconcurrency import WinDropKit
 
 /// Aktarımlar listesindeki bir satır (gönderme veya alma).
@@ -95,6 +96,32 @@ final class TransferItem: Identifiable {
     var photosSaveMessage: String?
     /// Alınan dosyaların nereye kaydedildiği (yalnız alma, bitince).
     var savedPlace: SavedPlace?
+    /// Fotoğraflar'a taşınan ilk medyanın küçük resmi: kaydetmeden ÖNCE dosyadan üretilir (okuma izni gerekmez).
+    var previewImage: UIImage?
+    /// Fotoğraflar'a kaydedilen ilk öğenin `PHAsset.localIdentifier`'ı (önizleme yoksa, okuma izni varsa yedek kaynak).
+    var photoAssetID: String?
+    /// Hotspot yolu beklenirken iPhone'un Wi-Fi'ı bir ağa bağlı değil: "Wi-Fi'ı açın" notu gösterilir.
+    var wifiOffNotice = false
+
+    /// Wi-Fi kapalıyken etkin nokta yolu seçildiğinde gösterilen yönerge (iOS uygulamaların Wi-Fi'ı açmasına izin vermez).
+    static let wifiOffNoticeText = "Wi-Fi'ı açın — WinDrop gerisini halleder. (Denetim Merkezi'nden açabilirsiniz.)"
+
+    /// Veri yolu denemeleri: doğrudan (`addr`) ve etkin nokta (`hotspot`) yarışabilir; ilk başarılı bağlantı kazanır.
+    enum PathKind: Hashable { case direct, hotspot }
+    @ObservationIgnored var attempts: [PathKind: Task<Void, Never>] = [:]
+    @ObservationIgnored var directTargets: [HostPort] = []
+    @ObservationIgnored var hotspotCredentials: HotspotCredentials?
+    /// Bir yol kazandı (bağlantı kuruldu); sonradan gelen `addr`/`hotspot` yok sayılır.
+    @ObservationIgnored var pathWon = false
+
+    /// Bir veri yolu (deneme ya da çalışan aktarım) şu an sürüyor mu?
+    var hasActivePath: Bool { task != nil || !attempts.isEmpty }
+
+    func cancelPaths() {
+        task?.cancel()
+        for attempt in attempts.values { attempt.cancel() }
+        attempts = [:]
+    }
 
     /// Gönderirken ilk dosyanın yerel kaynağı (önizleme için; `outgoing` bitince boşaltılır).
     @ObservationIgnored var sendPreviewURL: URL?

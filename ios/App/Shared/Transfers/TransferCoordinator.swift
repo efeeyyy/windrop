@@ -180,7 +180,7 @@ final class TransferCoordinator {
             }
         case .cancel(let cancel):
             if let item = item(withID: cancel.transferId), item.pcID == peer.id, !item.isFinished {
-                item.task?.cancel()
+                item.cancelPaths()
                 item.state = .cancelled
                 notifications.clear(transferId: item.id)
                 finishCleanup(item)
@@ -329,7 +329,7 @@ final class TransferCoordinator {
 
     func cancel(_ item: TransferItem) {
         guard item.isCancellable else { return }
-        item.task?.cancel()
+        item.cancelPaths()
         item.state = .cancelled
         finishCleanup(item)
         let pcID = item.pcID
@@ -368,7 +368,7 @@ final class TransferCoordinator {
     /// (PROTOCOL §6 madde 3); ayar boş/geçersizse veya token bozuksa `relay_fail` gider. Kullanıcı onayı beklenir.
     private func handleRelay(_ message: RelayMessage, from peer: NearbyPeer) {
         guard let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), !item.isFinished,
-              item.task == nil, item.state == .awaitingPeer, item.relayEndpoint == nil else { return }
+              !item.hasActivePath, item.state == .awaitingPeer, item.relayEndpoint == nil else { return }
         guard let base = relayUrl(), let token = RelayRoom.decodeToken(message.token),
               let endpoint = RelayRoom.endpoint(relayUrl: base, roomId: RelayRoom.roomId(token: token), role: .phone) else {
             Task { await report(.relayFail, item: item) }
@@ -392,16 +392,25 @@ final class TransferCoordinator {
 
     // MARK: Veri yolu (PROTOCOL §6)
 
-    /// `addr` (wifi=connected): adaylara paralel TCP.
+    /// `addr` (wifi=connected): adaylara paralel TCP. Etkin nokta beklenirken de kabul edilir ve onunla yarışır:
+    /// ilk başarılı bağlantı kazanır, diğer deneme iptal edilir (`claimPath`).
     private func beginDirect(_ item: TransferItem, candidates: [AddressCandidate], peer: NearbyPeer) {
-        guard item.task == nil, !item.isFinished else { return }
+        guard item.task == nil, !item.isFinished, !item.pathWon else { return }
         let targets = candidates.map { HostPort(host: $0.ip, port: UInt16(clamping: $0.port)) }
-        item.state = .connecting
-        item.task = Task { [weak self] in
+        if let running = item.attempts[.direct] {
+            guard item.directTargets != targets else { return }   // aynı adaylar: süren deneme yeter
+            running.cancel()                                      // yeni adaylar (ör. Wi-Fi değişti): yeniden dene
+        }
+        item.directTargets = targets
+        if item.attempts.isEmpty { item.state = .connecting }
+        // Etkin nokta yarışta ise iPhone yeni bağlandığından (DHCP/yönlendirme) daha uzun denenir.
+        let window: TimeInterval = item.attempts[.hotspot] != nil ? 12 : 4
+        item.attempts[.direct] = Task { [weak self] in
             guard let self else { return }
             do {
                 // İlk yerel ağ izni istemi açıkken bağlantı .waiting kalır (DataClient en çok 30 sn bekler); sonra kısa tekrar turları.
-                let stream = try await DataClient.connect(to: targets, retryUntil: Date().addingTimeInterval(4))
+                let stream = try await DataClient.connect(to: targets, retryUntil: Date().addingTimeInterval(window))
+                guard self.claimPath(item, winner: .direct) else { stream.close(); return }
                 await self.report(.tcpOk, item: item)
                 await self.run(item, stream: stream, peer: peer)
             } catch {
@@ -411,49 +420,92 @@ final class TransferCoordinator {
                     self.fail(item, LocalNetworkPermission.deniedMessage)
                     return
                 }
-                self.awaitNextPath(item)
+                self.attemptFailed(item, .direct)
             }
         }
     }
 
-    /// `hotspot` (wifi=none): etkin noktaya katıl, sonra TCP.
+    /// `hotspot` (wifi=none): etkin noktaya katıl, sonra TCP. Doğrudan deneme sürerken (Wi-Fi koptu) de kabul edilir.
     private func beginHotspot(_ item: TransferItem, message: HotspotMessage, peer: NearbyPeer) {
-        guard item.task == nil, !item.isFinished else { return }
+        guard item.task == nil, !item.isFinished, !item.pathWon, item.attempts[.hotspot] == nil else { return }
         if let ssid = message.ssid, let pass = message.pass {
             identity.setHotspot(HotspotCredentials(ssid: ssid, pass: pass), for: peer.id)
         }
         guard let credentials = identity.hotspot(for: peer.id) else {
             // TODO(windows-sync): eşleştirmesiz ilk temasta PC `hotspot` mesajına ssid/pass koymalı (PROTOCOL §4, §6.2).
             Task { await report(.hotspotFail, item: item) }
-            awaitNextPath(item)
+            if item.attempts.isEmpty { awaitNextPath(item) }
             return
         }
         let target = HostPort(host: message.ip, port: UInt16(clamping: message.port))
+        item.hotspotCredentials = credentials
+        item.wifiOffNotice = !isWifiConnected()   // Wi-Fi kapalı/bağlı değil: önce "Wi-Fi'ı açın" yönergesi
         item.state = .joiningHotspot
-        item.task = Task { [weak self] in
+        item.attempts[.hotspot] = Task { [weak self] in
             guard let self else { return }
             do {
                 let outcome = try await HotspotJoiner.join(credentials)
+                if Task.isCancelled {   // join iptal edilemez: doğrudan yol kazanmışsa profili geri al
+                    HotspotJoiner.abandon(credentials)
+                    return
+                }
                 var wait: TimeInterval = 20
                 if outcome == .manualRequired {
                     item.hotspotPrompt = credentials
                     item.state = .needsManualHotspot
-                    wait = 120   // kullanıcı Ayarlar'a gidip katılana kadar bekle
+                    wait = 120   // kullanıcı Ayarlar'a gidip katılana (ya da Wi-Fi'ı açıp PC `addr` yollayana) kadar bekle
                 }
                 let stream = try await DataClient.connect(to: [target], retryUntil: Date().addingTimeInterval(wait))
-                item.hotspotPrompt = nil
+                guard self.claimPath(item, winner: .hotspot) else { stream.close(); return }
                 await self.report(.hotspotOk, item: item)
                 await self.run(item, stream: stream, peer: peer)
             } catch {
                 if Task.isCancelled { return }
-                item.hotspotPrompt = nil
                 await self.report(.hotspotFail, item: item)
-                self.awaitNextPath(item)
+                self.attemptFailed(item, .hotspot)
             }
         }
     }
 
-    /// Doğrudan yol başarısız: yolu PC seçer (`bleData` veya `relay`, §6.3/§6.4a). Kota uyarısı `relay` gelince gösterilir.
+    /// Wi-Fi durumu değişti (NetworkMonitor): etkin nokta beklenirken "Wi-Fi'ı açın" notu kendiliğinden kalkar/çıkar.
+    /// `status` PC'ye ayrıca `SignalHub.broadcastStatus` ile gider; PC aynı transferId için `addr` yollar (bkz. `beginDirect`).
+    func wifiChanged() {
+        let connected = isWifiConnected()
+        for item in items where item.attempts[.hotspot] != nil && !item.pathWon && !item.isFinished {
+            item.wifiOffNotice = !connected
+        }
+    }
+
+    /// İlk başarılı bağlantı yolu kazanır: diğer denemeler iptal edilir, "bir kereye mahsus" ekranı kapanır.
+    /// Kaybeden bağlantıyı çağıran kapatır (`false` döner).
+    private func claimPath(_ item: TransferItem, winner: TransferItem.PathKind) -> Bool {
+        guard !item.pathWon, !item.isFinished else { return false }
+        item.pathWon = true
+        if winner != .hotspot, item.attempts[.hotspot] != nil, let credentials = item.hotspotCredentials {
+            HotspotJoiner.abandon(credentials)   // yarım kalmış katılma iPhone'u aktarım ortasında ağdan atmasın
+        }
+        for (kind, attempt) in item.attempts where kind != winner { attempt.cancel() }
+        item.attempts = item.attempts.filter { $0.key == winner }
+        item.hotspotPrompt = nil
+        item.wifiOffNotice = false
+        return true
+    }
+
+    private func attemptFailed(_ item: TransferItem, _ kind: TransferItem.PathKind) {
+        guard !item.pathWon else { return }
+        item.attempts[kind] = nil
+        if kind == .hotspot {
+            item.hotspotPrompt = nil
+            item.wifiOffNotice = false
+        }
+        if item.attempts.isEmpty {
+            awaitNextPath(item)
+        } else if item.attempts[.direct] != nil {
+            item.state = .connecting
+        }
+    }
+
+    /// Tüm denemeler başarısız: yolu PC seçer (`bleData` veya `relay`, §6.3/§6.4a). Kota uyarısı `relay` gelince gösterilir.
     private func awaitNextPath(_ item: TransferItem) {
         guard !item.isFinished else { return }
         item.task = nil
@@ -529,8 +581,13 @@ final class TransferCoordinator {
             item.savedPlace = .files
             return
         }
+        // Taşıma dosyayı Documents'tan kaldırır: satır küçük resmi KAYDETMEDEN önce dosyadan üretilir (okuma izni istenmez).
+        let thumbnail = await PhotoSaver.makeThumbnail(for: media[0].url)
         do {
-            let saved = try await PhotoSaver.save(media, move: true)
+            let result = try await PhotoSaver.saveWithAssets(media, move: true)
+            let saved = result.files
+            item.previewImage = thumbnail
+            item.photoAssetID = result.assetIDs.first
             let savedURLs = Set(saved.map(\.url))
             item.receivedFiles = item.receivedFiles.filter { !savedURLs.contains($0.url) }
             item.savedPlace = item.receivedFiles.isEmpty ? .photos : .photosAndFiles
@@ -576,7 +633,7 @@ final class TransferCoordinator {
     /// gelen MANIFEST kaçmasın: `bleData` ve çerçeveler aynı ana aktör döngüsünde sırayla işlenir).
     @discardableResult
     private func beginBle(_ item: TransferItem, peer: NearbyPeer) -> Bool {
-        guard item.task == nil, item.state == .awaitingPeer || item.state == .awaitingRelayConsent,
+        guard !item.hasActivePath, item.state == .awaitingPeer || item.state == .awaitingRelayConsent,
               let session = signals.beginBleTransfer(peer.id) else { return false }
         item.state = .transferring
         let pcID = peer.id
@@ -629,6 +686,8 @@ final class TransferCoordinator {
             FilePreparer.release(item.outgoing)
             item.outgoing = []
         }
+        for attempt in item.attempts.values { attempt.cancel() }
+        item.attempts = [:]
         item.task = nil
     }
 }

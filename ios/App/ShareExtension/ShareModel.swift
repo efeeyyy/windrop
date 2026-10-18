@@ -57,8 +57,9 @@ final class ShareModel {
         hub.onPeerGone = { [weak transfers] pcID in
             transfers?.peerGone(pcID)
         }
-        network.onChange = { [weak hub] in
+        network.onChange = { [weak hub, weak transfers] in
             hub?.broadcastStatus()
+            transfers?.wifiChanged()
         }
         audio.onChange = { [weak hub] in
             hub?.broadcastStatus()

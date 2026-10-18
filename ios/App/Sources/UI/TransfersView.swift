@@ -36,7 +36,9 @@ private struct TransferRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                TransferThumbnail(url: item.previewURL, isFolder: item.isFolderTransfer, direction: item.direction)
+                TransferThumbnail(
+                    url: item.previewURL, isFolder: item.isFolderTransfer, direction: item.direction,
+                    preview: item.previewImage, assetID: item.photoAssetID)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.title).font(.headline).lineLimit(2)
                     Text(item.statusText).font(.subheadline).foregroundStyle(.secondary)
@@ -51,6 +53,14 @@ private struct TransferRow: View {
 
             if item.state == .transferring {
                 ProgressView(value: Double(item.bytesDone), total: Double(max(item.totalBytes, 1)))
+            }
+
+            if item.wifiOffNotice, item.state == .joiningHotspot || item.state == .needsManualHotspot {
+                Label(TransferItem.wifiOffNoticeText, systemImage: "wifi")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
             }
 
             if item.state == .needsManualHotspot, let credentials = item.hotspotPrompt {
@@ -128,8 +138,14 @@ private struct TransferThumbnail: View {
     let url: URL?
     let isFolder: Bool
     let direction: TransferItem.Direction
+    /// Fotoğraflar'a taşınmadan önce üretilmiş küçük resim (varsa her şeyden önce gelir).
+    var preview: UIImage?
+    /// Fotoğraflar'a kaydedilen öğenin kimliği: yalnız okuma izni zaten varsa yedek kaynak.
+    var assetID: String?
     @Environment(\.displayScale) private var displayScale
     @State private var image: UIImage?
+
+    private var taskKey: String { "\(url?.path ?? "")|\(assetID ?? "")|\(preview != nil)" }
 
     var body: some View {
         Group {
@@ -142,8 +158,17 @@ private struct TransferThumbnail: View {
         .frame(width: 56, height: 56)
         .background(Color.secondary.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .task(id: url) {
-            guard !isFolder, let url else { image = nil; return }
+        .task(id: taskKey) {
+            if let preview { image = preview; return }
+            guard !isFolder else { image = nil; return }
+            guard let url else {
+                if let assetID {
+                    image = await PhotoSaver.assetThumbnail(localIdentifier: assetID, scale: displayScale)
+                } else {
+                    image = nil
+                }
+                return
+            }
             if let cached = ThumbnailCache.image(for: url) { image = cached; return }
             image = await ThumbnailCache.generate(for: url, scale: displayScale)
         }

@@ -73,8 +73,9 @@ final class AppModel {
         hub.onPeerGone = { [weak transfers] pcID in
             transfers?.peerGone(pcID)
         }
-        network.onChange = { [weak hub] in
-            hub?.broadcastStatus()
+        network.onChange = { [weak hub, weak transfers] in
+            hub?.broadcastStatus()   // Wi-Fi bir ağa bağlanınca PC, bekleyen aktarım için `addr` yollar (bekleme sırasında da)
+            transfers?.wifiChanged()
         }
         audio.onChange = { [weak hub] in
             hub?.broadcastStatus()

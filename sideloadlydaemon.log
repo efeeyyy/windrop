@@ -5975,3 +5975,33 @@ The login or password is incorrect - or there were too many login attempts in a 
 2026/10/18 23:53:44 Will tick
 2026/10/18 23:53:44 Apps [{Udid:00008110-001870901A45A01E Name:Efey IsM1:false IsTV:false WiFi:false LastSeen:0001-01-01 00:00:00 +0000 UTC LastChecked:0001-01-01 00:00:00 +0000 UTC LastError: FailuresCount:0}] map[string][]*model.Installation{"00008110-001870901A45A01E":[]*model.Installation{(*model.Installation)(0xc000475b88)}}
 2026/10/18 23:53:44 Done tick
+2026/10/18 23:54:44 Got timeout, refreshing
+2026/10/18 23:54:44 Timeout stop: false
+2026/10/18 23:54:44 Drain failed?..
+2026/10/18 23:54:44 Will tick
+2026/10/18 23:54:44 Apps [{Udid:00008110-001870901A45A01E Name:Efey IsM1:false IsTV:false WiFi:false LastSeen:0001-01-01 00:00:00 +0000 UTC LastChecked:0001-01-01 00:00:00 +0000 UTC LastError: FailuresCount:0}] map[string][]*model.Installation{"00008110-001870901A45A01E":[]*model.Installation{(*model.Installation)(0xc000334788)}}
+2026/10/18 23:54:44 Done tick
+2026/10/18 23:55:44 Got timeout, refreshing
+2026/10/18 23:55:44 Timeout stop: false
+2026/10/18 23:55:44 Drain failed?..
+2026/10/18 23:55:44 Will tick
+2026/10/18 23:55:44 Apps [{Udid:00008110-001870901A45A01E Name:Efey IsM1:false IsTV:false WiFi:false LastSeen:0001-01-01 00:00:00 +0000 UTC LastChecked:0001-01-01 00:00:00 +0000 UTC LastError: FailuresCount:0}] map[string][]*model.Installation{"00008110-001870901A45A01E":[]*model.Installation{(*model.Installation)(0xc000334c88)}}
+2026/10/18 23:55:44 Done tick
+2026/10/18 23:56:44 Got timeout, refreshing
+2026/10/18 23:56:44 Timeout stop: false
+2026/10/18 23:56:44 Drain failed?..
+2026/10/18 23:56:44 Will tick
+2026/10/18 23:56:44 Apps [{Udid:00008110-001870901A45A01E Name:Efey IsM1:false IsTV:false WiFi:false LastSeen:0001-01-01 00:00:00 +0000 UTC LastChecked:0001-01-01 00:00:00 +0000 UTC LastError: FailuresCount:0}] map[string][]*model.Installation{"00008110-001870901A45A01E":[]*model.Installation{(*model.Installation)(0xc000334a08)}}
+2026/10/18 23:56:44 Done tick
+2026/10/18 23:57:44 Got timeout, refreshing
+2026/10/18 23:57:44 Timeout stop: false
+2026/10/18 23:57:44 Drain failed?..
+2026/10/18 23:57:44 Will tick
+2026/10/18 23:57:44 Apps [{Udid:00008110-001870901A45A01E Name:Efey IsM1:false IsTV:false WiFi:false LastSeen:0001-01-01 00:00:00 +0000 UTC LastChecked:0001-01-01 00:00:00 +0000 UTC LastError: FailuresCount:0}] map[string][]*model.Installation{"00008110-001870901A45A01E":[]*model.Installation{(*model.Installation)(0xc0002ac008)}}
+2026/10/18 23:57:44 Done tick
+2026/10/18 23:58:44 Got timeout, refreshing
+2026/10/18 23:58:44 Timeout stop: false
+2026/10/18 23:58:44 Drain failed?..
+2026/10/18 23:58:44 Will tick
+2026/10/18 23:58:44 Apps [{Udid:00008110-001870901A45A01E Name:Efey IsM1:false IsTV:false WiFi:false LastSeen:0001-01-01 00:00:00 +0000 UTC LastChecked:0001-01-01 00:00:00 +0000 UTC LastError: FailuresCount:0}] map[string][]*model.Installation{"00008110-001870901A45A01E":[]*model.Installation{(*model.Installation)(0xc0003c6008)}}
+2026/10/18 23:58:44 Done tick

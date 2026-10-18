@@ -369,6 +369,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                     PeersChanged?.Invoke();
                 }
                 session.Wifi = h.Wifi;
+                OnPeerWifiChanged(session);
                 session.BtAudio = h.BtAudio;
                 session.Caps = h.Caps;
                 PlatformLog.Write($"BLE hello: wifi={h.Wifi ?? "?"} caps=[{string.Join(",", h.Caps)}]");
@@ -383,7 +384,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 OnPushId(session, push);
                 break;
             case StatusMessage st:
-                if (st.Wifi is not null) session.Wifi = st.Wifi;
+                if (st.Wifi is not null) { session.Wifi = st.Wifi; OnPeerWifiChanged(session); }
                 session.BtAudio = st.BtAudio;
                 if (st.BtAudio) FailBleTransfers(session.PeerId, "iPhone'da Bluetooth ses başladı; BLE ile aktarım durduruldu.");
                 break;
@@ -722,7 +723,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private async Task RunSenderAsync(State s, PeerSession session)
     {
         var ct = s.Cts.Token;
-        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind);
+        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => s.DualPath);
         Update(s, TransferPhase.Negotiating);
         var preview = BuildPreview(s.Files!);
         await session.Channel.SendSignalAsync(new OfferMessage(s.Id, s.Count, s.Total, preview), ct).ConfigureAwait(false);
@@ -888,7 +889,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             throw new TransferException("İndirme klasörünün bulunduğu sürücüde yeterli boş alan yok.");
         }
 
-        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind);
+        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => s.DualPath);
         Update(s, TransferPhase.Connecting);
         await session.Channel.SendSignalAsync(new AcceptMessage(s.Id), ct).ConfigureAwait(false);
         await RunPathAsync(s, session, ct).ConfigureAwait(false);
@@ -918,41 +919,111 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 throw new PathUnavailableException("iPhone etkin nokta yolunu desteklemiyor ve bir Wi-Fi ağına bağlı değil. Yol yok.");
             if (_o.Hotspot is null || _o.HotspotConfig is null)
                 throw new PathUnavailableException("iPhone bir Wi-Fi ağına bağlı değil ve etkin nokta yolu bu sürümde kullanılamıyor. Yol yok.");
-
-            s.HotspotRequested = true;
-            _o.Hotspot.TransferStarted();   // boşta zamanlayıcısı bu aktarım bitene kadar durur
-            bool started;
-            var cfg = _o.HotspotConfig();
-            try
-            {
-                started = await _o.Hotspot.StartAsync(cfg, ct).ConfigureAwait(false);
-            }
-            catch (HotspotException ex)
-            {
-                throw new PathUnavailableException("Windows Mobil etkin noktası açılamadı: " + ex.Message);
-            }
-            if (!started)
-                throw new PathUnavailableException(
-                    "Windows Mobil etkin noktası zaten sizin tarafınızdan kullanılıyor; WinDrop kendi etkin noktasını açamıyor. " +
-                    "Etkin noktayı kapatın ya da iPhone'u bir Wi-Fi ağına bağlayıp yeniden deneyin.");
-
-            var ip = _o.HotspotAddress?.Invoke() ?? "192.168.137.1";
-            s.ConnectTimeout = _o.Timeouts.HotspotConnect;
-            s.Touch(_o.Time);
-            // §6.2: hotspot yalnız kullanıcının onayladığı aktarımda gider (alıcıda onay/otomatik kabul, gönderende kullanıcının seçimi).
-            s.HotspotSent = true;
-            await session.Channel.SendSignalAsync(new HotspotMessage(s.Id, ip, port, cfg.Ssid, cfg.Passphrase), ct).ConfigureAwait(false);
-            PlatformLog.Write($"hotspot gönderildi {s.Id}: {ip}:{port}");
+            await SendHotspotPathAsync(s, session, port, ct).ConfigureAwait(false);
+            // Etkin nokta açılırken iPhone bir Wi-Fi'a bağlandıysa ek yol olarak addr da gider (§6 yol değişimi).
+            if (session.Wifi == WifiState.Connected) await TrySendExtraAddrAsync(s, session, ct).ConfigureAwait(false);
         }
         else
         {
-            var ips = (_o.CandidateAddresses ?? DefaultCandidates)();
-            if (ips.Count == 0) throw new PathUnavailableException("Bu bilgisayarda kullanılabilir ağ adresi yok (ağa bağlı değil).");
-            s.ConnectTimeout = _o.Timeouts.Connect;
-            s.Touch(_o.Time);
-            var cands = ips.Select(ip => new AddrCandidate(ip, port)).ToArray();
-            await session.Channel.SendSignalAsync(new AddrMessage(s.Id, cands), ct).ConfigureAwait(false);
-            PlatformLog.Write($"addr gönderildi {s.Id}: {cands.Length} aday, port {port}");
+            await SendAddrPathAsync(s, session, port, ct, extra: false).ConfigureAwait(false);
+        }
+    }
+
+    private async Task SendHotspotPathAsync(State s, PeerSession session, int port, CancellationToken ct)
+    {
+        if (Interlocked.Exchange(ref s.HotspotClaimed, 1) != 0) return;
+        s.HotspotRequested = true;
+        _o.Hotspot!.TransferStarted();   // boşta zamanlayıcısı bu aktarım bitene kadar durur
+        bool started;
+        var cfg = _o.HotspotConfig!();
+        try
+        {
+            started = await _o.Hotspot.StartAsync(cfg, ct).ConfigureAwait(false);
+        }
+        catch (HotspotException ex)
+        {
+            throw new PathUnavailableException("Windows Mobil etkin noktası açılamadı: " + ex.Message);
+        }
+        if (!started)
+            throw new PathUnavailableException(
+                "Windows Mobil etkin noktası zaten sizin tarafınızdan kullanılıyor; WinDrop kendi etkin noktasını açamıyor. " +
+                "Etkin noktayı kapatın ya da iPhone'u bir Wi-Fi ağına bağlayıp yeniden deneyin.");
+
+        var ip = _o.HotspotAddress?.Invoke() ?? "192.168.137.1";
+        s.ConnectTimeout = _o.Timeouts.HotspotConnect;
+        s.Touch(_o.Time);
+        // §6.2: hotspot yalnız kullanıcının onayladığı aktarımda gider (alıcıda onay/otomatik kabul, gönderende kullanıcının seçimi).
+        s.HotspotSent = true;
+        await session.Channel.SendSignalAsync(new HotspotMessage(s.Id, ip, port, cfg.Ssid, cfg.Passphrase), ct).ConfigureAwait(false);
+        PlatformLog.Write($"hotspot gönderildi {s.Id}: {ip}:{port}");
+    }
+
+    private async Task SendAddrPathAsync(State s, PeerSession session, int port, CancellationToken ct, bool extra)
+    {
+        var ips = (_o.CandidateAddresses ?? DefaultCandidates)();
+        if (ips.Count == 0)
+        {
+            if (extra) return;
+            throw new PathUnavailableException("Bu bilgisayarda kullanılabilir ağ adresi yok (ağa bağlı değil).");
+        }
+        if (Interlocked.Exchange(ref s.AddrClaimed, 1) != 0) return;
+        if (!extra) s.ConnectTimeout = _o.Timeouts.Connect;
+        s.Touch(_o.Time);
+        var cands = ips.Select(ip => new AddrCandidate(ip, port)).ToArray();
+        await session.Channel.SendSignalAsync(new AddrMessage(s.Id, cands), ct).ConfigureAwait(false);
+        PlatformLog.Write($"addr gönderildi {s.Id}: {cands.Length} aday, port {port}{(extra ? " (ek yol)" : "")}");
+    }
+
+    /// <summary>Aktarım henüz veri oturumu kurmadı ve BLE/son durumda değil mi (yol beklemesi sürüyor)?</summary>
+    private static bool IsWaitingForPath(State s) =>
+        !s.ConnectionActive && !s.EverConnected && !s.IsTerminal && s.Ble is null;
+
+    private async Task TrySendExtraAddrAsync(State s, PeerSession session, CancellationToken ct)
+    {
+        if (!IsWaitingForPath(s) || s.AddrClaimed != 0 || s.HotspotClaimed == 0) return;
+        s.DualPath = true;   // iki yol da açık: ilk gelen veri oturumu kalır, ikincisi reddedilir
+        await SendAddrPathAsync(s, session, _o.DataPort(), ct, extra: true).ConfigureAwait(false);
+    }
+
+    private async Task TrySendExtraHotspotAsync(State s, PeerSession session, CancellationToken ct)
+    {
+        if (!IsWaitingForPath(s) || s.HotspotClaimed != 0 || s.AddrClaimed == 0) return;
+        if (_o.Hotspot is null || _o.HotspotConfig is null) return;
+        if (session.Caps.Count > 0 && !session.Caps.Contains("hotspot")) return;
+        s.DualPath = true;
+        try { await SendHotspotPathAsync(s, session, _o.DataPort(), ct).ConfigureAwait(false); }
+        catch (PathUnavailableException ex)
+        {
+            PlatformLog.Write($"ek etkin nokta yolu kurulamadı {s.Id}: {ex.Message}");   // doğrudan yol sürüyor; aktarım düşmez
+        }
+    }
+
+    /// <summary>
+    /// §6 yol değişimi: bekleme sırasında eşin Wi-Fi durumu değişirse ek yol aynı transferId ile gönderilir
+    /// (etkin nokta bekleyen + wifi=connected → addr; addr bekleyen + wifi=none → hotspot). İlk başarılı veri oturumu kullanılır.
+    /// </summary>
+    private void OnPeerWifiChanged(PeerSession session)
+    {
+        State[] list;
+        lock (_lock) list = [.. _states.Values.Where(x => x.PeerId == session.PeerId)];
+        var wifi = session.Wifi;
+        if (wifi != WifiState.Connected && wifi != WifiState.None) return;
+        foreach (var s in list)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var ct = s.Cts.Token;
+                    if (wifi == WifiState.Connected) await TrySendExtraAddrAsync(s, session, ct).ConfigureAwait(false);
+                    else await TrySendExtraHotspotAsync(s, session, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is OperationCanceledException or IOException or ObjectDisposedException
+                                               or ProtocolException or NoiseException or InvalidOperationException)
+                {
+                    PlatformLog.Write($"ek yol gönderilemedi {s.Id}: {ex.GetType().Name}");
+                }
+            });
         }
     }
 
@@ -1459,6 +1530,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
         public string? RejectReason;
         public bool HotspotRequested;
         public volatile bool HotspotSent;
+        public int HotspotClaimed;
+        public int AddrClaimed;
+        /// <summary>Hem addr hem hotspot gönderildi: yol yarışı; ikinci veri bağlantısı reddedilir.</summary>
+        public volatile bool DualPath;
         /// <summary>Teklif/gönderim anında eş eşli veya tanıdık mıydı (onay sonrası "tanıdık" yapılması bunu değiştirmez).</summary>
         public bool KnownAtStart;
         public int Generation;

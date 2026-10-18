@@ -205,6 +205,99 @@ public class TransferCoordinatorTests
     }
 
     [Fact]
+    public async Task HotspotWaiting_WifiBecomesConnected_SendsAddr_FirstDataSessionWins_SecondRejected()
+    {
+        await using var h = new Harness();
+        using var phone = await h.ConnectPhoneAsync(WifiState.None);
+        var data = T.Random(120_000, 21);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "dual.bin", data)]);
+        var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
+        await phone.SendAsync(new AcceptMessage(offer.TransferId));
+        var hs = Assert.IsType<HotspotMessage>(await phone.ReceiveAsync());
+
+        // iPhone Wi-Fi'a bağlandı (eduroam): aynı transferId için ek yol olarak addr gelir; etkin nokta açık kalır.
+        await phone.SendAsync(new StatusMessage(WifiState.Connected, false));
+        var addr = Assert.IsType<AddrMessage>(await phone.ReceiveAsync());
+        Assert.Equal(offer.TransferId, addr.TransferId);
+        Assert.Equal(h.Listener.Port, Assert.Single(addr.Candidates).Port);
+        Assert.Equal(1, h.Hotspot.StartCalls);
+
+        // Yinelenen status ikinci addr üretmez.
+        await phone.SendAsync(new StatusMessage(WifiState.Connected, false));
+
+        var (first, c1) = await T.ConnectDataAsync(hs.Port, offer.TransferId, h.PhoneKey, h.PcPublicKey);
+        using (c1)
+        using (first)
+        {
+            var (second, c2) = await T.ConnectDataAsync(addr.Candidates[0].Port, offer.TransferId, h.PhoneKey, h.PcPublicKey);
+            using (c2)
+            using (second)
+            {
+                // İkinci veri bağlantısı PC tarafından kapatılır; ilk oturum etkilenmez.
+                var opts2 = new ReceiverOptions(h.PcId, offer.TransferId, new OfferInfo(1, data.Length));
+                var rx2 = Record.ExceptionAsync(() => new FileReceiver(second, T.Store(h.Dir.Path, "phone2"), opts2).RunAsync());
+                Assert.NotNull(await rx2.WaitAsync(T.Wait));
+            }
+
+            var opts = new ReceiverOptions(h.PcId, offer.TransferId, new OfferInfo(1, data.Length));
+            var rx = await new FileReceiver(first, T.Store(h.Dir.Path, "phone"), opts).RunAsync().WaitAsync(T.Wait);
+            Assert.Equal(TransferOutcome.Completed, rx.Outcome);
+        }
+        Assert.Equal(TransferPhase.Completed, (await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait)).Phase);
+        await Poll.UntilAsync(() => h.Hotspot.Finished == 1, "etkin nokta bitişi bildirilmedi");
+    }
+
+    [Fact]
+    public async Task HotspotWaiting_WifiConnected_AddrPathCompletes()
+    {
+        await using var h = new Harness();
+        using var phone = await h.ConnectPhoneAsync(WifiState.None);
+        var data = T.Random(90_000, 22);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "addrwin.bin", data)]);
+        var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
+        await phone.SendAsync(new AcceptMessage(offer.TransferId));
+        Assert.IsType<HotspotMessage>(await phone.ReceiveAsync());
+
+        await phone.SendAsync(new StatusMessage(WifiState.Connected, false));
+        var addr = Assert.IsType<AddrMessage>(await phone.ReceiveAsync());
+        var (channel, client) = await T.ConnectDataAsync(addr.Candidates[0].Port, offer.TransferId, h.PhoneKey, h.PcPublicKey);
+        using (client)
+        using (channel)
+        {
+            var opts = new ReceiverOptions(h.PcId, offer.TransferId, new OfferInfo(1, data.Length));
+            Assert.Equal(TransferOutcome.Completed, (await new FileReceiver(channel, T.Store(h.Dir.Path, "phone"), opts).RunAsync().WaitAsync(T.Wait)).Outcome);
+        }
+        Assert.Equal(TransferPhase.Completed, (await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait)).Phase);
+    }
+
+    [Fact]
+    public async Task AddrWaiting_WifiBecomesNone_SwitchesToHotspot()
+    {
+        await using var h = new Harness();
+        using var phone = await h.ConnectPhoneAsync(WifiState.Connected);
+        var data = T.Random(90_000, 23);
+        var snap = h.Coord.Send(h.PhoneId, [WriteFile(h, "tohs.bin", data)]);
+        var offer = Assert.IsType<OfferMessage>(await phone.ReceiveAsync());
+        await phone.SendAsync(new AcceptMessage(offer.TransferId));
+        Assert.IsType<AddrMessage>(await phone.ReceiveAsync());
+        Assert.Equal(0, h.Hotspot.StartCalls);
+
+        await phone.SendAsync(new StatusMessage(WifiState.None, false));
+        var hs = Assert.IsType<HotspotMessage>(await phone.ReceiveAsync());
+        Assert.Equal(offer.TransferId, hs.TransferId);
+        Assert.Equal(1, h.Hotspot.StartCalls);
+
+        var (channel, client) = await T.ConnectDataAsync(hs.Port, offer.TransferId, h.PhoneKey, h.PcPublicKey);
+        using (client)
+        using (channel)
+        {
+            var opts = new ReceiverOptions(h.PcId, offer.TransferId, new OfferInfo(1, data.Length));
+            Assert.Equal(TransferOutcome.Completed, (await new FileReceiver(channel, T.Store(h.Dir.Path, "phone"), opts).RunAsync().WaitAsync(T.Wait)).Outcome);
+        }
+        Assert.Equal(TransferPhase.Completed, (await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait)).Phase);
+    }
+
+    [Fact]
     public async Task WifiNone_UserHotspotBusy_FailsWithClearMessage_AndCancelsPeer()
     {
         await using var h = new Harness();

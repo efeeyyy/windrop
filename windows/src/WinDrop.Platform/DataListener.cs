@@ -18,12 +18,13 @@ public sealed class PendingTransferTable
     private readonly object _lock = new();
     private readonly Dictionary<TransferId, Entry> _entries = [];
 
-    public IDisposable Register(TransferId id, byte[] expectedPeerPublicKey, DataSessionHandler handler, HandshakeKind? requiredKind = null)
+    public IDisposable Register(TransferId id, byte[] expectedPeerPublicKey, DataSessionHandler handler, HandshakeKind? requiredKind = null,
+        Func<bool>? keepExistingActive = null)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(expectedPeerPublicKey);
         ArgumentNullException.ThrowIfNull(handler);
-        var entry = new Entry(this, id, (byte[])expectedPeerPublicKey.Clone(), handler, requiredKind);
+        var entry = new Entry(this, id, (byte[])expectedPeerPublicKey.Clone(), handler, requiredKind, keepExistingActive);
         lock (_lock)
         {
             if (!_entries.TryAdd(id, entry)) throw new InvalidOperationException("transferId zaten kayıtlı.");
@@ -49,7 +50,8 @@ public sealed class PendingTransferTable
         }
     }
 
-    internal sealed class Entry(PendingTransferTable owner, TransferId id, byte[] peerKey, DataSessionHandler handler, HandshakeKind? requiredKind) : IDisposable
+    internal sealed class Entry(PendingTransferTable owner, TransferId id, byte[] peerKey, DataSessionHandler handler, HandshakeKind? requiredKind,
+        Func<bool>? keepExistingActive) : IDisposable
     {
         private readonly object _gate = new();
         private IDisposable? _active;
@@ -62,13 +64,17 @@ public sealed class PendingTransferTable
         /// <summary>BLE oturumunun deseni: IK ise TCP'de de IK, XX ise XX (null: denetleme).</summary>
         public HandshakeKind? RequiredKind { get; } = requiredKind;
 
-        /// <summary>Yeni (kimliği doğrulanmış) bağlantı eskisini kapatır. Kayıt kaldırılmışsa false.</summary>
+        /// <summary>
+        /// Yeni (kimliği doğrulanmış) bağlantı eskisini kapatır (yeniden bağlanma). İstisna: <c>keepExistingActive</c> doğruysa
+        /// (iki yol yarışı: addr + hotspot) etkin bağlantı korunur, yeni bağlantı false ile reddedilir. Kayıt kaldırılmışsa da false.
+        /// </summary>
         public bool TrySetActive(IDisposable connection)
         {
             IDisposable? old;
             lock (_gate)
             {
                 if (_disposed) return false;
+                if (_active is not null && keepExistingActive?.Invoke() == true) return false;
                 old = _active;
                 _active = connection;
             }
@@ -220,7 +226,7 @@ public sealed class DataListener : IAsyncDisposable
                 await channel.EnsureEstablishedAsync(hs.Token).ConfigureAwait(false);   // PROTOCOL §1: 0-RTT yok
                 if (!entry!.TrySetActive(holder))
                 {
-                    PlatformLog.Write($"DataListener {remote}: aktarım kaydı artık yok, kapatıldı.");
+                    PlatformLog.Write($"DataListener {remote}: aktarım kaydı artık yok ya da başka bir veri oturumu sürüyor, kapatıldı.");
                     return;
                 }
                 PlatformLog.Write($"DataListener {remote}: veri oturumu kuruldu ({new TransferId(prefix.TransferId)})");

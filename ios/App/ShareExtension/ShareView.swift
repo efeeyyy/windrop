@@ -115,6 +115,10 @@ private struct SendingView: View {
                     Button("Vazgeç", role: .destructive) { model.cancel() }.buttonStyle(.bordered)
                 }
             }
+            if item.wifiOffNotice, item.state == .joiningHotspot || item.state == .needsManualHotspot {
+                Label(TransferItem.wifiOffNoticeText, systemImage: "wifi")
+                    .font(.subheadline.weight(.semibold)).multilineTextAlignment(.center)
+            }
             if item.state == .needsManualHotspot, let creds = item.hotspotPrompt {
                 Text("Ayarlar > Wi-Fi'dan \"\(creds.ssid)\" ağına katılın (parola: \(creds.pass)); sonra buraya dönün.")
                     .font(.footnote).multilineTextAlignment(.center)
