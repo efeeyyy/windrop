@@ -21,6 +21,7 @@ struct PairView: View {
                 Spacer(minLength: 0)
             }
             .padding()
+            .themedBackground()
             .navigationTitle("Eşleştir")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

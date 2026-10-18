@@ -16,6 +16,8 @@ struct TransfersView: View {
                     }
                 }
             }
+            .themedList()
+            .themedBackground()
             .navigationTitle("Aktarımlar")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {

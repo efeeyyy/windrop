@@ -1,3 +1,4 @@
+import CoreBluetooth
 import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
@@ -41,13 +42,6 @@ struct HomeView: View {
                     Text(errorText).foregroundStyle(.red).font(.footnote).multilineTextAlignment(.center)
                 }
 
-                Button {
-                    model.hub.startNearby()   // ilk basışta Bluetooth izni istenir
-                } label: {
-                    Label(readyTitle, systemImage: "dot.radiowaves.left.and.right")
-                }
-                .buttonStyle(.bordered)
-
                 if !model.hub.nearbyList.isEmpty {
                     VStack(spacing: 4) {
                         ForEach(model.hub.nearbyList) { peer in
@@ -58,10 +52,22 @@ struct HomeView: View {
                 if let warning = bluetoothWarning {
                     Label(warning, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange).font(.footnote)
+                } else if needsBluetoothPrompt {
+                    Button {
+                        model.hub.startNearby()   // kullanıcı dokunuşu: Bluetooth izni burada istenir
+                    } label: {
+                        Label("Bluetooth izni vermek için dokunun", systemImage: "dot.radiowaves.left.and.right")
+                            .font(.footnote)
+                    }
+                    .buttonStyle(.borderless)
+                } else {
+                    Label("Yakındaki bilgisayarlardan dosya alabilirsiniz", systemImage: "dot.radiowaves.left.and.right")
+                        .foregroundStyle(.secondary).font(.footnote)
                 }
                 Spacer()
             }
             .padding()
+            .themedBackground()
             .navigationTitle("WinDrop")
             .confirmationDialog("Ne göndermek istersiniz?", isPresented: $showSourceDialog, titleVisibility: .visible) {
                 Button("Fotoğraf veya video") { showPhotoPicker = true }
@@ -93,8 +99,9 @@ struct HomeView: View {
         }
     }
 
-    private var readyTitle: String {
-        model.hub.isSearching ? "Almaya hazır" : "Almaya hazır ol"
+    /// İzin henüz sorulmadı (açılışta sorulmaz; ilk "Dosya gönder" akışında ya da bu dokunuşla istenir).
+    private var needsBluetoothPrompt: Bool {
+        !model.hub.hasStarted && CBCentralManager.authorization == .notDetermined
     }
 
     private var bluetoothWarning: String? {

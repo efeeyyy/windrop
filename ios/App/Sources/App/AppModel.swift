@@ -1,3 +1,4 @@
+import CoreBluetooth
 import Foundation
 import Observation
 import UIKit
@@ -112,7 +113,9 @@ final class AppModel {
         #if PUSH_ENABLED
         push.refresh()   // APNs kaydını tazele (belirteç değişmiş olabilir)
         #endif
-        guard hub.hasStarted else { return }   // hiç Gönder/Almaya hazır ol denmediyse hiçbir şey başlatma
+        // Bluetooth izni zaten verilmişse alma dinlemesi kendiliğinden başlar; verilmemişse (ilk açılış)
+        // izin istemi çıkarmamak için bekler (ilk "Dosya gönder" akışında istenir).
+        guard hub.hasStarted || CBCentralManager.authorization == .allowedAlways else { return }
         hub.startNearby()
         hub.central.ensureConnections()
     }

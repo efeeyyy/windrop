@@ -43,6 +43,7 @@ struct HowItWorksView: View {
                 Text("Bilgisayara göndermek için WinDrop'u açıp Dosya gönder'e dokunmanız yeterli; cihazlar kendiliğinden belirir.")
             }
         }
+        .themedList()
         .navigationTitle("Nasıl çalışır")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -55,6 +56,7 @@ struct InfoCardSheet: View {
     var body: some View {
         NavigationStack {
             List { Section { NoteList() } }
+                .themedList()
                 .navigationTitle("Bilmeniz gerekenler")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {

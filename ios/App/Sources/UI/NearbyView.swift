@@ -45,6 +45,7 @@ struct NearbyView: View {
                 }
                 .padding()
             }
+            .themedBackground()
             .navigationTitle("Gönder")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

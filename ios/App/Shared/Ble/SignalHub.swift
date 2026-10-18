@@ -70,7 +70,7 @@ enum SignalError: Error, LocalizedError {
 }
 
 /// BLE oturumlarını yönetir (PROTOCOL §2b): tarama -> bağlan -> IK (tanıdık) veya XX -> `hello` -> ileti okuma döngüsü.
-/// CBCentralManager tembeldir: `start()` çağrılana (Gönder / Almaya hazır ol) kadar hiçbir izin istenmez.
+/// CBCentralManager tembeldir: `start()` çağrılana (Gönder / izin verilmişse ön plan) kadar hiçbir izin istenmez.
 @MainActor
 @Observable
 final class SignalHub: BleCentralDelegate, SignalSending {
@@ -116,7 +116,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
 
     // MARK: Başlatma (tembel)
 
-    /// Merkezi başlatır (ilk seferde Bluetooth izin istemi çıkar). Gönder / Almaya hazır ol dokunuşunda çağrılır.
+    /// Merkezi başlatır (ilk seferde Bluetooth izin istemi çıkar). Gönder dokunuşunda ve izin verilmişse uygulama öne gelince çağrılır.
     func start() {
         hasStarted = true
         central.start()

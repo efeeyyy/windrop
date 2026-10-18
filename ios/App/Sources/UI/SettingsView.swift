@@ -10,6 +10,8 @@ struct SettingsView: View {
         !relayUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && RelaySettings.isValid(relayUrl)
     }
     #endif
+    @AppStorage(AppTheme.key) private var themeRaw = AppTheme.system.rawValue
+    @FocusState private var fieldFocused: Bool
     @State private var removalCandidate: KnownPC?
     @State private var showRemovalDialog = false
     @State private var showPairing = false
@@ -18,7 +20,18 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
+                    Picker("Tema", selection: $themeRaw) {
+                        ForEach(AppTheme.allCases) { theme in
+                            Text(theme.title).tag(theme.rawValue)
+                        }
+                    }
+                } header: {
+                    Text("Görünüm")
+                }
+
+                Section {
                     TextField(UIDevice.current.name, text: $deviceName)
+                        .focused($fieldFocused)
                         .autocorrectionDisabled()
                 } header: {
                     Text("Bu cihazın adı")
@@ -38,6 +51,7 @@ struct SettingsView: View {
 
                 Section {
                     TextField("wss://…workers.dev", text: $relayUrl)
+                        .focused($fieldFocused)
                         .keyboardType(.URL)
                         .textContentType(.URL)
                         .textInputAutocapitalization(.never)
@@ -118,6 +132,15 @@ struct SettingsView: View {
                     LabeledContent("Sürüm", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-")
                 } header: {
                     Text("Hakkında")
+                }
+            }
+            .themedList()
+            .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(TapGesture().onEnded { fieldFocused = false })
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Bitti") { fieldFocused = false }
                 }
             }
             .navigationTitle("Ayarlar")

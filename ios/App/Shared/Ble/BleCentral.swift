@@ -38,7 +38,7 @@ final class BleCentral: NSObject {
     var isStarted: Bool { manager != nil }
 
     /// CBCentralManager TEMBEL oluşturulur (ilk oluşturma Bluetooth izin istemini çıkarır): yalnız kullanıcı
-    /// Gönder/Almaya hazır ol dediğinde veya izin zaten verilmişken açılışta (durum geri yükleme) çağrılır.
+    /// Gönder dediğinde veya uygulama öne gelince veya izin zaten verilmişken açılışta (durum geri yükleme) çağrılır.
     func start() {
         guard manager == nil else { return }
         var options: [String: Any] = [CBCentralManagerOptionShowPowerAlertKey: true]

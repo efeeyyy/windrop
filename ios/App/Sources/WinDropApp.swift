@@ -12,6 +12,7 @@ struct WinDropApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
+                .appTheme()
         }
     }
 }

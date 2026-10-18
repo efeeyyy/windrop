@@ -131,8 +131,11 @@ final class BleLinkAdapter: BleLink, @unchecked Sendable {
         self.mtu = max(23, link.mtu)
     }
 
+    /// Tüm `c2p` yazmaları onaylı gider: cihaz testinde (2026-10-18) Windows GATT sunucusu yanıtsız
+    /// yazmaların bir kısmını düşürdü (ön ek kaybı, "sıra no atlaması"). BLE yalnız küçük mesaj taşıdığı için
+    /// hız kaybı önemsiz.
     func write(_ payload: Data) async throws {
-        try await link.send([payload])
+        try await link.sendReliable(payload)
     }
 
     func writeReliable(_ payload: Data) async throws {

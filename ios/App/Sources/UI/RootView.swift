@@ -18,6 +18,7 @@ struct RootView: View {
                 .tabItem { Label("Ayarlar", systemImage: "gearshape") }
                 .tag(AppModel.Tab.settings)
         }
+        .onAppear { model.didBecomeActive() }   // ilk açılış: sahne zaten etkin, onChange tetiklenmez
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 model.didBecomeActive()
