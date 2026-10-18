@@ -2,14 +2,28 @@ import Foundation
 import UIKit
 
 enum DeviceInfo {
-    /// Ayarlar'daki cihaz adı alanının UserDefaults anahtarı (uzantı kendi UserDefaults'unu görür: App Groups yok).
+    /// Ayarlar'daki "Bu cihazın adı" alanının anahtarı. Değer `SharedGroup.defaults`'ta tutulur: grup varsa uygulama ve
+    /// uzantı aynı adı görür; yoksa uzantı kendi varsayılanını kullanır.
     static let nameKey = "deviceName"
+    /// Ad ipucu kartı kapatıldı mı (yalnız ana uygulama).
+    static let nameHintDismissedKey = "deviceNameHintDismissed"
 
-    /// Ayarlar'da girilen ad; yoksa cihaz adı. (iOS 16+ `UIDevice.name` genel ad dönebilir.)
+    /// Varsayılan ad. iOS 16+ `UIDevice.current.name` (yetki olmadan) genel "iPhone" döner ve kullanıcının verdiği adı
+    /// okumak mümkün değildir; bu yüzden ad Ayarlar'dan elle girilir.
+    @MainActor
+    static var defaultName: String {
+        UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+    }
+
+    /// `hello.name` olarak gönderilen ad: Ayarlar'da girilen; boşsa varsayılan ("iPhone"/"iPad").
     @MainActor
     static func name() -> String {
-        let custom = UserDefaults.standard.string(forKey: nameKey)?
+        let custom = SharedGroup.defaults.string(forKey: nameKey)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return String((custom.isEmpty ? UIDevice.current.name : custom).prefix(64))
+        return String((custom.isEmpty ? defaultName : custom).prefix(64))
     }
+
+    /// Ad hâlâ varsayılan mı (girilmemiş ya da varsayılanın aynısı)?
+    @MainActor
+    static var isDefaultName: Bool { name() == defaultName }
 }

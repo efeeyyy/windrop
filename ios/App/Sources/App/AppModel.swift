@@ -19,6 +19,8 @@ final class AppModel {
     }
 
     static let deviceNameKey = DeviceInfo.nameKey
+    /// Uzantı çökerse "inactive" sinyali gelmez: bırakma bu süre sonra kalkar (uzantı açıkken sinyal tazelenir).
+    static let shareYieldTimeoutNanos: UInt64 = 120_000_000_000
 
     var selectedTab: Tab = .home
 
@@ -29,11 +31,13 @@ final class AppModel {
     let hub: SignalHub
     let transfers: TransferCoordinator
     let pairing: PairingController
+    @ObservationIgnored private var shareYieldTimeout: Task<Void, Never>?
     #if PUSH_ENABLED
     let push: PushManager
     #endif
 
     init() {
+        SharedGroup.migrateSettings(keys: [DeviceInfo.nameKey])   // grup öncesi ad ayarı gruba taşınır
         let identity = IdentityStore()
         let network = NetworkMonitor()
         let audio = BluetoothAudioMonitor()
@@ -102,7 +106,7 @@ final class AppModel {
         // İzin zaten verilmişse (ve tanıdık PC varsa) merkez kurulur; izin istemi çıkarmaz.
         hub.startIfAlreadyAuthorized()
         // PROTOCOL §3a: Paylaşım uzantısı açıkken BLE bağlantıları bırakılır, kapanınca yeniden kurulur.
-        ShareActivitySignal.observe { [weak hub] active in hub?.central.setYielding(active) }
+        ShareActivitySignal.observe { [weak self] active in self?.shareActivityChanged(active) }
     }
 
     #if PUSH_ENABLED
@@ -113,7 +117,28 @@ final class AppModel {
     }
     #endif
 
+    /// Paylaşım uzantısı açıldı/kapandı. Açıkken bağlantılar bırakılır; uzantı çökerse "inactive" gelmez, bu yüzden
+    /// `shareYieldTimeout` sonra (uzantı açıkken ~30 sn arayla tazelenir) bırakma kendiliğinden kalkar.
+    private func shareActivityChanged(_ active: Bool) {
+        shareYieldTimeout?.cancel()
+        shareYieldTimeout = nil
+        hub.central.setYielding(active)
+        if active {
+            shareYieldTimeout = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: Self.shareYieldTimeoutNanos)
+                guard !Task.isCancelled else { return }
+                self?.shareYieldTimeout = nil
+                self?.hub.central.setYielding(false)
+            }
+        } else {
+            // Uzantı yeni tanıdık PC ekledi/çıkarmış olabilir (ortak kimlik deposu).
+            identity.reload()
+            hub.syncWanted()
+        }
+    }
+
     func didBecomeActive() {
+        identity.reload()   // uzantı değişikliklerini al (ortak depo)
         #if PUSH_ENABLED
         push.refresh()   // APNs kaydını tazele (belirteç değişmiş olabilir)
         #endif

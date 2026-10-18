@@ -8,6 +8,9 @@ struct NearbyView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showHint = false
     @State private var errorText: String?
+    @AppStorage(DeviceInfo.nameHintDismissedKey) private var nameHintDismissed = false
+    /// Ad hâlâ varsayılan ("iPhone"/"iPad") ve ipucu kapatılmadıysa küçük, kapatılabilir ipucu gösterilir.
+    private var showNameHint: Bool { !nameHintDismissed && DeviceInfo.isDefaultName }
 
     private let columns = [GridItem(.adaptive(minimum: 110), spacing: 16)]
 
@@ -15,6 +18,23 @@ struct NearbyView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    if showNameHint {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "info.circle").foregroundStyle(.secondary)
+                            Text("Bilgisayarda '\(DeviceInfo.defaultName)' olarak görünüyorsunuz — Ayarlar'dan adınızı değiştirin.")
+                                .font(.footnote)
+                            Spacer(minLength: 4)
+                            Button {
+                                nameHintDismissed = true
+                            } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Kapat")
+                        }
+                        .padding(10)
+                        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                    }
                     Text("\(session.files.count == 1 ? "1 dosya" : "\(session.files.count) dosya") gönderilecek")
                         .font(.subheadline).foregroundStyle(.secondary)
                     if let warning = bluetoothWarning {

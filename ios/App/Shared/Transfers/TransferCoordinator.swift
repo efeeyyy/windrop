@@ -241,8 +241,9 @@ final class TransferCoordinator {
         let names = offer.preview.prefix(5).map { entry -> String in
             entry.hasSuffix("/") ? FileNameSanitizer.sanitize(String(entry.dropLast())) + "/" : FileNameSanitizer.sanitize(entry)
         }
-        // Otomatik kabul yalnız QR ile eşleştirilmiş PC'den ve boyut sınırı içinde (PROTOCOL §5, §7).
-        let auto = peer.isKnown && peer.autoAccept && offer.total <= TransferRunner.acceptAutoLimit
+        // Otomatik kabul yalnız QR ile eşleştirilmiş PC'den, Ayarlar'da açıksa ve boyut sınırı içinde (PROTOCOL §5, §7);
+        // "tanıdık" (onayla eklenen) PC'lerden gelen her teklif sorulur.
+        let auto = peer.isKnown && peer.autoAccept && AutoAcceptSettings.isEnabled && offer.total <= AutoAcceptSettings.limit
         let item = TransferItem(
             id: offer.transferId, direction: .receive, pcID: peer.id, pcName: peer.name,
             fileNames: Array(names), fileCount: offer.count, totalBytes: offer.total,
@@ -253,6 +254,8 @@ final class TransferCoordinator {
 
         if auto {
             item.userAccepted = true   // QR ile eşleştirilmiş PC için kullanıcının önceden verdiği otomatik kabul
+            // Arka plandayken teklif bildirimi YOK; yalnız aktarım bitince `notifyFinished` bildirir (izin tembel istenir).
+            Task { await notifications.requestAuthorizationIfNeeded() }
             sendAccept(item)
         } else {
             // Bildirim izni tembel: ilk teklifte (ya da ilk Gönder'de) istenir, açılışta değil.

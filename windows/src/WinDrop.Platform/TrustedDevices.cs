@@ -8,9 +8,11 @@ namespace WinDrop.Platform;
 /// Güvenilen cihaz. <see cref="Name"/> eşleştirme/ilk kabul anındaki addır; arayüz hep bunu gösterir.
 /// <see cref="IsFamiliar"/>: QR ile eşleştirilmedi, PROTOCOL §2b "yakındaki herkes" modunda alıcı onayıyla hatırlandı
 /// (sonraki bağlantılar IK; otomatik kabul <b>yok</b>). false = QR ile eşli.
+/// <see cref="LastBleId"/>/<see cref="LastSeen"/>: en son bağlanılan BLE bağlantı kimliği ve zamanı (yinelenen kayıtları ayırt etmek için); yoksa null.
 /// <see cref="PushId"/>: cihazın aktarma sunucusundaki push kaydı kimliği (PROTOCOL §6.5; yalnız cihazın kendi bildirimiyle, biçimi doğrulanmış); yoksa null.
 /// </summary>
-public sealed record TrustedDevice(byte[] PublicKey, string Name, DateTimeOffset PairedAt, bool IsFamiliar = false, string? PushId = null)
+public sealed record TrustedDevice(byte[] PublicKey, string Name, DateTimeOffset PairedAt, bool IsFamiliar = false, string? PushId = null,
+    string? LastBleId = null, DateTimeOffset? LastSeen = null)
 {
     public byte[] DeviceId => IdentityStore.ComputeDeviceId(PublicKey);
 }
@@ -51,7 +53,7 @@ public sealed class TrustedDevices
             var previous = items.FirstOrDefault(d => d.PublicKey.AsSpan().SequenceEqual(publicKey));
             if (previous is { IsFamiliar: false }) familiar = false;
             items.RemoveAll(d => d.PublicKey.AsSpan().SequenceEqual(publicKey));
-            items.Add(new TrustedDevice((byte[])publicKey.Clone(), name, pairedAt ?? DateTimeOffset.UtcNow, familiar, previous?.PushId));
+            items.Add(new TrustedDevice((byte[])publicKey.Clone(), name, pairedAt ?? DateTimeOffset.UtcNow, familiar, previous?.PushId, previous?.LastBleId, previous?.LastSeen));
             Save(items);
         }
     }
@@ -70,6 +72,45 @@ public sealed class TrustedDevices
             if (idx < 0) return false;
             if (items[idx].PushId == pushId) return true;
             items[idx] = items[idx] with { PushId = pushId };
+            Save(items);
+            return true;
+        }
+    }
+
+    /// <summary>Kayıtlı cihazın adını günceller (en çok 40 karakter, denetim karakterleri temizlenir). Değişmediyse/kayıt yoksa false.</summary>
+    public bool UpdateName(byte[] publicKey, string name)
+    {
+        var clean = CleanName(name);
+        if (clean is null) return false;
+        lock (_lock)
+        {
+            var items = EnsureLoaded();
+            int idx = items.FindIndex(d => d.PublicKey.AsSpan().SequenceEqual(publicKey));
+            if (idx < 0 || items[idx].Name == clean) return false;
+            items[idx] = items[idx] with { Name = clean };
+            Save(items);
+            return true;
+        }
+    }
+
+    /// <summary>Ad temizliği: denetim/yön karakterleri atılır, 40 karaktere kısaltılır; boşsa null.</summary>
+    public static string? CleanName(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var s = PairingService.SanitizeName(raw);
+        if (s.Length > 40) s = s[..40].TrimEnd();
+        return s.Length == 0 ? null : s;
+    }
+
+    /// <summary>Cihazın son görülme zamanını ve BLE bağlantı kimliğini yazar. Kayıt yoksa false.</summary>
+    public bool NoteSeen(byte[] publicKey, string? bleId, DateTimeOffset now)
+    {
+        lock (_lock)
+        {
+            var items = EnsureLoaded();
+            int idx = items.FindIndex(d => d.PublicKey.AsSpan().SequenceEqual(publicKey));
+            if (idx < 0) return false;
+            items[idx] = items[idx] with { LastBleId = bleId ?? items[idx].LastBleId, LastSeen = now };
             Save(items);
             return true;
         }
@@ -125,7 +166,8 @@ public sealed class TrustedDevices
         lock (_lock) return EnsureLoaded().FirstOrDefault(d => d.DeviceId.AsSpan().SequenceEqual(deviceId));
     }
 
-    private sealed record Entry(string Key, string Name, long PairedAtUnixMs, bool Familiar = false, string? PushId = null);
+    private sealed record Entry(string Key, string Name, long PairedAtUnixMs, bool Familiar = false, string? PushId = null,
+        string? BleId = null, long? LastSeenUnixMs = null);
 
     private List<TrustedDevice> EnsureLoaded() => _items ??= Load();
 
@@ -142,7 +184,8 @@ public sealed class TrustedDevices
                 var key = Convert.FromBase64String(e.Key);
                 if (key.Length != 32 || string.IsNullOrWhiteSpace(e.Name)) throw new JsonException("geçersiz kayıt");
                 list.Add(new TrustedDevice(key, e.Name, DateTimeOffset.FromUnixTimeMilliseconds(e.PairedAtUnixMs), e.Familiar,
-                    PushIds.IsValid(e.PushId) ? e.PushId : null));
+                    PushIds.IsValid(e.PushId) ? e.PushId : null, e.BleId,
+                    e.LastSeenUnixMs is { } ms ? DateTimeOffset.FromUnixTimeMilliseconds(ms) : null));
             }
             return list;
         }
@@ -156,7 +199,8 @@ public sealed class TrustedDevices
 
     private void Save(List<TrustedDevice> items)
     {
-        var entries = items.Select(d => new Entry(Convert.ToBase64String(d.PublicKey), d.Name, d.PairedAt.ToUnixTimeMilliseconds(), d.IsFamiliar, d.PushId));
+        var entries = items.Select(d => new Entry(Convert.ToBase64String(d.PublicKey), d.Name, d.PairedAt.ToUnixTimeMilliseconds(), d.IsFamiliar, d.PushId,
+            d.LastBleId, d.LastSeen?.ToUnixTimeMilliseconds()));
         Storage.WriteAtomic(_path, Storage.Protect(JsonSerializer.SerializeToUtf8Bytes(entries), Purpose));
     }
 }

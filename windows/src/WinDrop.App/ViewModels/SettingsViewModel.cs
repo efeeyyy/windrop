@@ -50,7 +50,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         PairedDevices.Clear();
         // Yalnız kayıtlı (eşli/tanıdık) cihazlar kaldırılabilir; yakındaki bilinmeyen iPhone'lar burada listelenmez.
-        foreach (var d in _devices.Devices.Where(d => d.IsTrusted)) PairedDevices.Add(d);
+        foreach (var d in _devices.RegisteredDevices.Where(d => d.IsTrusted)) PairedDevices.Add(d);
         OnPropertyChanged(nameof(HasNoDevices));
         OnPropertyChanged(nameof(HasDevices));
     }
@@ -76,7 +76,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (MessageBox.Show(Strings.Get("Settings.RemoveAllConfirm"), Strings.Get("App.Title"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-        foreach (var d in _devices.Devices.ToArray()) _devices.RemoveDevice(d.Id);
+        foreach (var d in _devices.RegisteredDevices.ToArray()) _devices.RemoveDevice(d.Id);
     }
 
     [RelayCommand]

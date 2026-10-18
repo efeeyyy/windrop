@@ -15,6 +15,7 @@ public sealed class FakeDeviceService : IDeviceService
     ];
 
     public IReadOnlyList<DeviceInfo> Devices => _devices.ToArray();
+    public IReadOnlyList<DeviceInfo> RegisteredDevices => _devices.ToArray();
 
     public event EventHandler? DevicesChanged;
     public event EventHandler<PairingRequest>? PairingRequested;

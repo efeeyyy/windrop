@@ -248,6 +248,7 @@ public sealed class BleSignalServer : IAsyncDisposable
         public OrderedInbox Inbox { get; } = new();
         public Task? Run { get; set; }
         public bool IsClosed => _closed.IsCancellationRequested;
+        public string? LinkId => key;
 
         public int Mtu
         {

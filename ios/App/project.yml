@@ -12,9 +12,11 @@
 # WinDrop-Push.entitlements (aps-environment) dosyasını bağlar ve PUSH_ENABLED derleme bayrağını açar. Ücretsiz hesapta
 # push kodu hiç derlenmez. (Hotspot ve Push'u birlikte istiyorsanız iki yetkiyi tek dosyada birleştirip bayrakları ekleyin.)
 # Paylaşım Uzantısı (WinDropShare, iOS paylaşım menüsü): Shared/ klasörü iki hedefe de derlenir; ShareExtension/ yalnız uzantıdır.
-# Kimlik paylaşımı (App Groups / Keychain Sharing) ÜCRETLİ hesapta: iki hedefin SWIFT_ACTIVE_COMPILATION_CONDITIONS'una
-# APP_GROUP ekleyin ve iki hedefe `keychain-access-groups` = $(AppIdentifierPrefix)com.efe.windrop.shared yetkisi verin
-# (Keychain.swift `#if APP_GROUP`). Ücretsiz hesapta APP_GROUP kapalı: uzantı kendi cihaz anahtarını kullanır.
+# Tek kimlik: iki hedefe `com.apple.security.application-groups` = group.$(WINDROP_BUNDLE_ID) yetkisi verilir (*.entitlements) ve
+# Info.plist `WinDropAppGroup` aynı adı taşır. Uygulama ve uzantı böylece aynı cihaz anahtarını, tanıdık PC listesini (Keychain,
+# erişim grubu = App Group kimliği) ve ayarları (UserDefaults paketi) paylaşır. Grup imzalamada kaydedilmediyse (ücretsiz hesap /
+# Sideloadly) çalışma zamanında algılanır (SharedGroup.swift) ve uzantı kendi kimliğiyle çalışır. Ana uygulamanın mevcut anahtarı
+# ilk açılışta ortak depoya taşınır (kimlik değişmez). Cihaz adı Ayarlar'dan elle girilir (iOS adı okutmaz).
 
 name: WinDrop
 
@@ -87,7 +89,7 @@ targets:
           - bluetooth-central
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
-        AppIdentifierPrefix: $(AppIdentifierPrefix)   # Keychain.swift APP_GROUP kipi okur
+        WinDropAppGroup: group.$(WINDROP_BUNDLE_ID)   # SharedGroup.swift okur (ortak cihaz kimliği/ayarlar)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WINDROP_BUNDLE_ID)
@@ -124,7 +126,7 @@ targets:
         NSLocalNetworkUsageDescription: Aynı ağdaki bilgisayarınıza dosya göndermek için yerel ağa erişim gerekir.
         NSBonjourServices:
           - _windrop._tcp
-        AppIdentifierPrefix: $(AppIdentifierPrefix)   # Keychain.swift APP_GROUP kipi okur
+        WinDropAppGroup: group.$(WINDROP_BUNDLE_ID)   # SharedGroup.swift okur (ortak cihaz kimliği/ayarlar)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: ShareViewController
@@ -136,6 +138,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WINDROP_BUNDLE_ID).share
+        CODE_SIGN_ENTITLEMENTS: WinDropShare.entitlements
         PRODUCT_NAME: WinDropShare
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"

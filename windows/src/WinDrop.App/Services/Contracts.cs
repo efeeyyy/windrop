@@ -5,7 +5,18 @@ namespace WinDrop.App.Services;
 
 /// <summary>Eşli cihaz. <see cref="Name"/> eşleştirme anındaki addır.</summary>
 /// <param name="CanPush">PROTOCOL §6.5: yakında değil ama push bildirimiyle uyandırılabilir (pushId kayıtlı + aktarma sunucusu adresi dolu).</param>
-public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false, bool IsTrusted = true);
+/// <param name="IsPaired">QR ile eşli (false = tanıdık).</param>
+/// <param name="LastSeen">Son görülme zamanı (kayıtlı cihazlarda); bilinmiyorsa null.</param>
+public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false, bool IsTrusted = true,
+    bool IsPaired = true, DateTimeOffset? LastSeen = null)
+{
+    /// <summary>"Eşli"/"Tanıdık" etiketi ve son görülme zamanı (ayarlardaki liste).</summary>
+    public string Detail =>
+        Infrastructure.Strings.Get(IsPaired ? "Settings.KindPaired" : "Settings.KindFamiliar") + " · " +
+        (LastSeen is { } t
+            ? Infrastructure.Strings.Format("Settings.LastSeen", t.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture))
+            : Infrastructure.Strings.Get("Settings.LastSeenUnknown"));
+}
 
 /// <summary>Açık eşleştirme oturumu: QR yükü + süre; <see cref="Cancel"/> eşleştirme modunu kapatır.</summary>
 public sealed class PairingSession
@@ -33,6 +44,9 @@ public sealed record PairingRequest(string RequestId, string DeviceName, string?
 public interface IDeviceService
 {
     IReadOnlyList<DeviceInfo> Devices { get; }
+
+    /// <summary>Tüm kayıtlı (eşli/tanıdık) cihazlar; <see cref="Devices"/>'in gizlediği yinelenen eski kimlikler dahil (ayarlarda kaldırılabilsin).</summary>
+    IReadOnlyList<DeviceInfo> RegisteredDevices { get; }
 
     /// <summary>Liste veya yakınlık değişti.</summary>
     event EventHandler? DevicesChanged;

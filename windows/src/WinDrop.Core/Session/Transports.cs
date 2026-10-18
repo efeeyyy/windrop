@@ -69,6 +69,9 @@ public interface IBleLink
     /// <summary>Anlaşılan ATT MTU (en az 23). Tek GATT yükü en çok <c>Mtu − 3</c> bayttır.</summary>
     int Mtu { get; }
 
+    /// <summary>BLE bağlantı kimliği (aynı telefondan gelen tüm oturumlarda aynı); bilinmiyorsa null.</summary>
+    string? LinkId => null;
+
     /// <summary>Tek GATT yazma/bildirim yükü gönderir (ön ek dahil).</summary>
     ValueTask SendAsync(ReadOnlyMemory<byte> gattPayload, CancellationToken cancellationToken);
 

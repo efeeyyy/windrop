@@ -2,8 +2,8 @@ import Foundation
 import Observation
 import UIKit
 
-/// Paylaşım Uzantısı'nın durumu: kendi (küçük) BLE + aktarım yığınını kurar; ana uygulamayla durum paylaşmaz
-/// (App Groups yok). Kimlik: uzantının kendi Keychain alanındaki cihaz anahtarı (`#if APP_GROUP` ile ortak).
+/// Paylaşım Uzantısı'nın durumu: kendi (küçük) BLE + aktarım yığınını kurar. Kimlik: App Group varsa ana uygulamayla ortak
+/// cihaz anahtarı ve tanıdık liste (`IdentityStore`); grup yoksa uzantının kendi kimliği olur. Yalnız ekran açıkken bağlanır.
 /// Bilinmeyen PC: XX + doğrulama kodu; alıcı PC'de onay gerekir (PROTOCOL §2b).
 @MainActor
 @Observable
@@ -32,6 +32,7 @@ final class ShareModel {
     private var files: [OutgoingFile] = []
     @ObservationIgnored private var started = false
     @ObservationIgnored private var finishing = false
+    @ObservationIgnored private var isShutDown = false
     @ObservationIgnored var onFinish: (@MainActor () -> Void)?
     @ObservationIgnored var onCancel: (@MainActor () -> Void)?
 
@@ -71,7 +72,7 @@ final class ShareModel {
 
     /// Görünüm açılınca: yakındaki PC'ler taranır (Bluetooth izni burada istenebilir), dosyalar sırayla hazırlanır.
     func start() async {
-        guard !started else { return }
+        guard !started, !isShutDown else { return }
         started = true
         network.start()
         audio.start()   // yalnız okur
@@ -134,12 +135,19 @@ final class ShareModel {
         }
         FilePreparer.release(files)
         files = []
-        hub.stopNearby()
+        shutdown()
         onCancel?()
     }
 
     private func finish() {
-        hub.stopNearby()
+        shutdown()
         onFinish?()
+    }
+
+    /// Uzantı ekranı kapanırken (tamamlandı / vazgeçildi / ekran kayboldu): tarama durur ve tüm Bluetooth bağlantıları
+    /// iptal edilir; bir daha bağlanılmaz. Her çıkış yolundan güvenle birden çok kez çağrılabilir.
+    func shutdown() {
+        isShutDown = true
+        hub.shutdown()
     }
 }

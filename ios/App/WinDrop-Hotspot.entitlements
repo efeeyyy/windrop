@@ -5,5 +5,11 @@
 	<!-- Yalnız ücretli geliştirici hesabı: "Release-Hotspot" yapılandırmasıyla kullanılır. -->
 	<key>com.apple.developer.networking.HotspotConfiguration</key>
 	<true/>
+	<!-- Uygulama ve Paylaşım Uzantısı ortak cihaz kimliği/ayarları (project.yml `WinDropAppGroup`). Grup imzalamada
+	     verilmezse çalışma zamanında algılanır ve uzantı kendi kimliğiyle çalışır. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.$(WINDROP_BUNDLE_ID)</string>
+	</array>
 </dict>
 </plist>

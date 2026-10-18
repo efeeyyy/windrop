@@ -26,12 +26,11 @@ public sealed class DeviceService : IDeviceService
     {
         get
         {
-            var list = _rt.Trusted.List()
-                .Select(d =>
-                {
-                    var id = DeviceId.ToHex(d.DeviceId);
-                    return new DeviceInfo(id, d.Name, _rt.Coordinator.IsNearby(id), _rt.Coordinator.CanPush(id));
-                })
+            var trusted = _rt.Trusted.List();
+            var hidden = DeviceListing.SupersededKeys(trusted, d => _rt.Coordinator.IsNearby(DeviceId.ToHex(d.DeviceId)));
+            var list = trusted
+                .Where(d => !hidden.Contains(Convert.ToBase64String(d.PublicKey)))
+                .Select(ToInfo)
                 .ToList();
             foreach (var n in _rt.Coordinator.NearbyPeers)
             {
@@ -39,6 +38,15 @@ public sealed class DeviceService : IDeviceService
             }
             return list;
         }
+    }
+
+    public IReadOnlyList<DeviceInfo> RegisteredDevices => _rt.Trusted.List().Select(ToInfo).ToList();
+
+    private DeviceInfo ToInfo(TrustedDevice d)
+    {
+        var id = DeviceId.ToHex(d.DeviceId);
+        return new DeviceInfo(id, d.Name, _rt.Coordinator.IsNearby(id), _rt.Coordinator.CanPush(id),
+            IsPaired: !d.IsFamiliar, LastSeen: d.LastSeen);
     }
 
     public event EventHandler? DevicesChanged;

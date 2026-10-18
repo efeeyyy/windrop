@@ -12,7 +12,7 @@ public sealed class PeerSession : IDisposable
 
     /// <param name="known">Güvenilen listede (QR eşli veya tanıdık).</param>
     /// <param name="name">Kayıttaki ad (bilinmeyen cihazda null; <c>hello</c> ile dolar).</param>
-    public PeerSession(byte[] publicKey, string? name, bool known, bool paired, SecureChannel channel)
+    public PeerSession(byte[] publicKey, string? name, bool known, bool paired, SecureChannel channel, string? bleId = null)
     {
         ArgumentNullException.ThrowIfNull(publicKey);
         ArgumentNullException.ThrowIfNull(channel);
@@ -21,11 +21,21 @@ public sealed class PeerSession : IDisposable
         IsKnown = known;
         IsPaired = paired;
         Channel = channel;
+        BleId = bleId;
         PeerId = DeviceId.HexFromPublicKey(publicKey);
         if (channel.Kind == HandshakeKind.XX) VerificationCode = Sas.Compute(channel.HandshakeHash);
     }
 
     private volatile string _name;
+
+    /// <summary>Oturumun geldiği BLE bağlantı kimliği (GATT oturumu); bilinmiyorsa null. Aynı telefonun iki kimliği aynı değeri paylaşabilir.</summary>
+    public string? BleId { get; }
+
+    /// <summary>Oturumun geliş sırası (aynı BLE kimliğinde en yenisi aktiftir).</summary>
+    internal long Sequence { get; set; }
+
+    /// <summary>Kayıtlı ad güncellendi (kimliği doğrulanmış oturumda yeni hello.name).</summary>
+    internal void SetRegisteredName(string name) => _name = name;
 
     /// <summary>Eşin açık anahtarı (BLE oturumunda doğrulanmış).</summary>
     public byte[] PublicKey { get; }

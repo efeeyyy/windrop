@@ -45,7 +45,7 @@ final class BleCentral: NSObject {
     /// CBCentralManager TEMBEL oluşturulur (ilk oluşturma Bluetooth izin istemini çıkarır): yalnız kullanıcı
     /// Gönder dediğinde veya uygulama öne gelince veya izin zaten verilmişken açılışta (durum geri yükleme) çağrılır.
     func start() {
-        guard manager == nil else { return }
+        guard manager == nil, !isShutDown else { return }
         var options: [String: Any] = [CBCentralManagerOptionShowPowerAlertKey: true]
         if !ProtocolIds.isExtension {
             // Uzantı geri yükleme kimliği kullanmaz: yalnız ana uygulama arka planda yeniden doğurulur.
@@ -54,16 +54,64 @@ final class BleCentral: NSObject {
         manager = CBCentralManager(delegate: self, queue: .main, options: options)
     }
 
+    // MARK: Yerel kesmeler ve kapatma
+
+    /// Bu tarafın bilerek kestiği bağlantılar (yield, kapatma, listeden çıkarma): `SignalHub` bir IK hatasını
+    /// "PC eşleşmeyi kaldırdı" diye yorumlamadan önce bakar (yerel kesme eşleşmeyi silmemeli).
+    private var localDrops: [UUID: Date] = [:]
+    /// Uzantı kapandı: bir daha bağlanılmaz, taranmaz.
+    private var isShutDown = false
+
+    func wasDroppedLocally(_ id: UUID, within seconds: TimeInterval = 10) -> Bool {
+        guard let date = localDrops[id] else { return false }
+        return Date().timeIntervalSince(date) < seconds
+    }
+
+    private func dropConnection(_ peripheral: CBPeripheral) {
+        localDrops[peripheral.identifier] = Date()
+        manager?.cancelPeripheralConnection(peripheral)
+    }
+
+    /// Paylaşım Uzantısı kapanırken: tarama durur, tüm çevre birimi bağlantıları iptal edilir, bekleyen yeniden
+    /// bağlanmalar ve açılmakta olan bağlantılar bırakılır; sonrasında hiçbir şey yeniden kurulmaz.
+    func shutdown() {
+        guard !isShutDown else { return }
+        isShutDown = true
+        wanted.removeAll()
+        wantsNearbyScan = false
+        scanRestartTask?.cancel()
+        scanRestartTask = nil
+        manager?.stopScan()
+        reconnectTasks.values.forEach { $0.cancel() }
+        reconnectTasks.removeAll()
+        for id in Array(linkWaiters.keys) {
+            failLinkWaiter(id, error: BleError.disconnected, cancelConnection: false)
+        }
+        if scanWaiter != nil { finishScan(.failure(BleError.disconnected)) }
+        for link in links.values { link.close() }
+        for p in peripherals.values where p.state != .disconnected {
+            dropConnection(p)
+        }
+        if let manager {
+            for p in manager.retrieveConnectedPeripherals(withServices: ProtocolIds.discoveryServices)
+            where p.state != .disconnected && peripherals[p.identifier] == nil {
+                dropConnection(p)
+            }
+        }
+    }
+
     // MARK: Bekleyen bağlantılar (eşli PC'ler)
 
     /// Eşli PC çevre birimi tanımlayıcıları. Listeden çıkanların bağlantısı kesilir.
-    func setWanted(_ ids: Set<UUID>) {
+    func setWanted(_ requested: Set<UUID>) {
+        // Uzantıda bekleyen (kalıcı) bağlantı ve otomatik yeniden bağlanma yok: yalnız açıkken taramayla bulunanlara bağlanılır.
+        let ids: Set<UUID> = (ProtocolIds.isExtension || isShutDown) ? [] : requested
         let removed = wanted.subtracting(ids)
         wanted = ids
         for id in removed {
             reconnectTasks.removeValue(forKey: id)?.cancel()
             if let p = peripherals[id], p.state != .disconnected {
-                manager?.cancelPeripheralConnection(p)
+                dropConnection(p)
             }
         }
         ensureConnections()
@@ -127,7 +175,7 @@ final class BleCentral: NSObject {
     func closeLink(_ id: UUID) {
         if let p = peripherals[id], p.state != .disconnected {
             resetting.insert(id)
-            manager?.cancelPeripheralConnection(p)
+            dropConnection(p)
         }
     }
 
@@ -142,6 +190,7 @@ final class BleCentral: NSObject {
     /// Gönderme ekranı açıkken tarar; her ~4 sn tarama yeniden başlatılır (`allowDuplicates=false` aynı cihazı
     /// bir tarama oturumunda bir kez bildirir; başarısız bağlanılanlar böylece yeniden denenir).
     func startNearbyScan() {
+        guard !isShutDown else { return }
         start()
         wantsNearbyScan = true
         applyScan()
@@ -181,7 +230,7 @@ final class BleCentral: NSObject {
         if yielding {
             if scanWaiter == nil { manager?.stopScan() }
             for p in peripherals.values where p.state != .disconnected {
-                manager?.cancelPeripheralConnection(p)
+                dropConnection(p)
             }
         } else {
             applyScan()
@@ -190,7 +239,7 @@ final class BleCentral: NSObject {
     }
 
     private func applyScan() {
-        guard state == .poweredOn, wantsNearbyScan, !isPaused, !isYielding, scanWaiter == nil else { return }
+        guard state == .poweredOn, wantsNearbyScan, !isShutDown, !isPaused, !isYielding, scanWaiter == nil else { return }
         manager?.scanForPeripherals(
             withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
     }
@@ -283,6 +332,7 @@ final class BleCentral: NSObject {
 
     /// Eşleştirme için bir çevre birimine bağlanır; GATT hazır olunca bağlantıyı döndürür.
     func openLink(to peripheral: CBPeripheral, timeout: TimeInterval) async throws -> BlePeripheralLink {
+        guard !isShutDown else { throw BleError.disconnected }
         guard state == .poweredOn else { throw BleError.unavailable(state) }
         let id = peripheral.identifier
         peripherals[id] = peripheral
@@ -356,6 +406,7 @@ final class BleCentral: NSObject {
     }
 
     private func tearDownAllLinks() {
+        for id in links.keys { localDrops[id] = Date() }   // Bluetooth kapandı: PC reddi sayılmaz
         resetting.removeAll()
         reconnectTasks.values.forEach { $0.cancel() }
         reconnectTasks.removeAll()

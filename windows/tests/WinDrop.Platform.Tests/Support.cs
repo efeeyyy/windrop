@@ -32,6 +32,8 @@ internal sealed class MemoryBleLink : IBleLink
 
     public int Mtu { get; }
 
+    public string? LinkId { get; set; }
+
     public ValueTask SendAsync(ReadOnlyMemory<byte> gattPayload, CancellationToken cancellationToken)
     {
         if (gattPayload.Length > Mtu - 3) throw new InvalidOperationException("GATT yükü MTU − 3'ü aşıyor.");
@@ -210,9 +212,10 @@ internal sealed class Harness : IAsyncDisposable
     public string PcId => DeviceId.HexFromPublicKey(PcPublicKey);
 
     /// <summary>iPhone IK ile BLE'ye bağlanır, PC hello'sunu okur, kendi hello'sunu yollar.</summary>
-    public async Task<Phone> ConnectPhoneAsync(string? wifi, NoiseKeyPair? key = null, bool xx = false, bool btAudio = false, bool resync = false)
+    public async Task<Phone> ConnectPhoneAsync(string? wifi, NoiseKeyPair? key = null, bool xx = false, bool btAudio = false, bool resync = false, string? bleId = null, string? helloName = null)
     {
         var (phoneLink, pcLink) = MemoryBleLink.CreatePair();
+        pcLink.LinkId = bleId;
         LinkTasks.Add(resync ? Acceptor.RunLinkWithResyncAsync(pcLink, CancellationToken.None) : Acceptor.RunLinkAsync(pcLink, CancellationToken.None));
         var transport = new BleMessageTransport(phoneLink);
         var channel = await (xx
@@ -222,7 +225,7 @@ internal sealed class Harness : IAsyncDisposable
         var hello = Assert.IsType<HelloMessage>(await phone.ReceiveAsync());
         Assert.Equal("TestPC", hello.Name);
         phone.PcHello = hello;
-        await phone.SendAsync(new HelloMessage(1, "iPhone", ["tcp", "hotspot"], wifi, btAudio));
+        await phone.SendAsync(new HelloMessage(1, helloName ?? (xx ? "iPhone" : Trusted.FindByPublicKey((key ?? PhoneKey).PublicKey)?.Name ?? "iPhone"), ["tcp", "hotspot"], wifi, btAudio));
         var deadline = DateTime.UtcNow + T.Wait;
         while (!Coord.IsNearby(DeviceId.HexFromPublicKey((key ?? PhoneKey).PublicKey)))
         {

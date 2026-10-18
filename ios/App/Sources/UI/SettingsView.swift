@@ -2,7 +2,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @AppStorage(AppModel.deviceNameKey) private var deviceName = ""
+    @AppStorage(AppModel.deviceNameKey, store: SharedGroup.defaults) private var deviceName = ""
+    @AppStorage(AutoAcceptSettings.enabledKey) private var autoAcceptPaired = true
+    @AppStorage(AutoAcceptSettings.limitKey) private var autoAcceptLimit = AutoAcceptSettings.maxLimit
     @AppStorage(RelaySettings.key) private var relayUrl = ""
     #if PUSH_ENABLED
     @AppStorage(PushManager.enabledKey) private var pushEnabled = false
@@ -16,6 +18,11 @@ struct SettingsView: View {
     @State private var removalCandidate: KnownPC?
     @State private var showRemovalDialog = false
     @State private var showPairing = false
+
+    /// Eşli (QR) bilgisayarlar önce, sonra tanıdıklar; ada göre.
+    private var sortedPCs: [KnownPC] {
+        model.identity.knownPCs.sorted { ($0.autoAccept ? 0 : 1, $0.name) < ($1.autoAccept ? 0 : 1, $1.name) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -43,13 +50,13 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    TextField(UIDevice.current.name, text: $deviceName)
+                    TextField(DeviceInfo.defaultName, text: $deviceName)
                         .focused($fieldFocused)
                         .autocorrectionDisabled()
                 } header: {
                     Text("Bu cihazın adı")
                 } footer: {
-                    Text("Bilgisayara gönderilen ad. Boşsa cihaz adı kullanılır.")
+                    Text("Bilgisayarda bu ad görünür. Apple, uygulamaların iPhone'unuza verdiğiniz adı okumasına izin vermez; bu yüzden adı buraya yazın.")
                 }
 
                 Section {
@@ -58,8 +65,16 @@ struct SettingsView: View {
                     } label: {
                         Label("Otomatik kabul için eşleştir", systemImage: "qrcode.viewfinder")
                     }
+                    Toggle("Eşli bilgisayarlardan gelenleri otomatik kabul et", isOn: $autoAcceptPaired)
+                    if autoAcceptPaired {
+                        Picker("Otomatik kabul üst sınırı", selection: $autoAcceptLimit) {
+                            ForEach(AutoAcceptSettings.limitOptions) { option in
+                                Text(option.title).tag(option.bytes)
+                            }
+                        }
+                    }
                 } footer: {
-                    Text("İsteğe bağlı. Windows'taki WinDrop'ta gösterilen QR kodu okutursanız o bilgisayardan gelen küçük dosyalar sormadan kabul edilir. Normal kullanım için eşleştirme gerekmez.")
+                    Text("İsteğe bağlı. Windows'taki WinDrop'ta gösterilen QR kodu okutursanız o bilgisayardan gelen dosyalar (üst sınıra kadar) sormadan kabul edilir. Yalnız QR ile eşli bilgisayarlar için geçerlidir; \"Tanıdık\" bilgisayarlardan gelenler her zaman sorulur. Uygulama arka plandayken otomatik kabul edilen aktarımda bildirim yalnız bittiğinde gelir.")
                 }
 
                 Section {
@@ -94,16 +109,25 @@ struct SettingsView: View {
                 }
                 #endif
 
-                Section("Tanıdık bilgisayarlar") {
+                Section("Bilgisayarlar") {
                     if model.identity.knownPCs.isEmpty {
-                        Text("Henüz yok. Bir bilgisayara gönderdiğinizde veya ondan dosya kabul ettiğinizde burada görünür.")
+                        Text("Henüz yok. QR ile eşleştirdiğiniz veya bir bilgisayara gönderip ondan dosya kabul ettiğiniz bilgisayarlar burada görünür.")
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(model.identity.knownPCs) { pc in
+                    ForEach(sortedPCs) { pc in
                         HStack {
-                            VStack(alignment: .leading) {
-                                Text(pc.name)
-                                Text(pc.autoAccept ? "Otomatik kabul açık" : "Her seferinde sorulur")
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(pc.name)
+                                    Text(pc.autoAccept ? "Eşli" : "Tanıdık")
+                                        .font(.caption2.bold())
+                                        .padding(.horizontal, 6).padding(.vertical, 2)
+                                        .background(pc.autoAccept ? Color.green.opacity(0.2) : Color.secondary.opacity(0.2), in: Capsule())
+                                        .foregroundStyle(pc.autoAccept ? Color.green : Color.secondary)
+                                }
+                                Text(pc.autoAccept
+                                     ? (autoAcceptPaired ? "Otomatik kabul açık" : "Eşli; otomatik kabul kapalı (her seferinde sorulur)")
+                                     : "Her seferinde sorulur")
                                     .font(.caption).foregroundStyle(.secondary)
                                 Text("Kimlik: \(String(pc.id.prefix(8)))")
                                     .font(.caption2).foregroundStyle(.tertiary)

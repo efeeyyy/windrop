@@ -82,6 +82,8 @@ public sealed class SignalSessionAcceptor
 
         public int Mtu => inner.Mtu;
 
+        public string? LinkId => inner.LinkId;
+
         public ValueTask SendAsync(ReadOnlyMemory<byte> gattPayload, CancellationToken cancellationToken) =>
             inner.SendAsync(gattPayload, cancellationToken);
 
@@ -157,7 +159,7 @@ public sealed class SignalSessionAcceptor
                 PlatformLog.Write("BLE: oturum işleyicisi yok, kapatıldı.");
                 return (false, null);
             }
-            using var session = new PeerSession(remoteKey, peer?.Name, peer is not null, peer is { IsFamiliar: false }, channel);
+            using var session = new PeerSession(remoteKey, peer?.Name, peer is not null, peer is { IsFamiliar: false }, channel, link.LinkId);
             channel = null;   // sahipliği session aldı
             PlatformLog.Write($"BLE: oturum kuruldu ({session.Channel.Kind}, {(session.IsKnown ? (session.IsPaired ? "eşli" : "tanıdık") : "bilinmeyen")})");
             await handler(session, ct).ConfigureAwait(false);

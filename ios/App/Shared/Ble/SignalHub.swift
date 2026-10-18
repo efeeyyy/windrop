@@ -169,6 +169,22 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         central.stopNearbyScan()
     }
 
+    /// Paylaşım Uzantısı kapanırken (tamamlandı / vazgeçildi / ekran kapandı): tarama durur, tüm oturumlar ve
+    /// çevre birimi bağlantıları iptal edilir, bir daha yeniden bağlanılmaz. Yinelenen çağrı zararsızdır.
+    func shutdown() {
+        isSearching = false
+        for (pid, slot) in slots {
+            slot.nextLink = nil
+            interrupt(pid, slot)
+        }
+        channels.values.forEach { $0.frames?.fail(BleError.disconnected) }
+        channels.removeAll()
+        let gone = Array(peers.keys)
+        peers.removeAll()
+        central.shutdown()
+        gone.forEach { onPeerGone?($0) }
+    }
+
     /// QR eşleştirme boyunca tarama/otomatik bağlanma duraklatılır.
     func beginPairing() -> BleCentral {
         pairingDepth += 1
@@ -501,8 +517,11 @@ final class SignalHub: BleCentralDelegate, SignalSending {
                         transport: transport, prefix: Prefix.ble(), localKey: localKey, remoteStaticKey: known.publicKey)
                     usedIK = true
                 } catch {
-                    forceXX.insert(pid)   // bağlantı yeniden kurulunca XX denenir (PC anahtarı değişmiş olabilir)
-                    if !Task.isCancelled, slot.phase == .handshaking {
+                    // Bu taraf bağlantıyı kendi kesmişse (paylaşım uzantısı açıldı, Bluetooth kapandı) PC reddi sayılmaz:
+                    // eşleşme silinmez, IK sonraki bağlantıda yeniden denenir.
+                    let droppedLocally = central.wasDroppedLocally(pid)
+                    if !droppedLocally { forceXX.insert(pid) }   // bağlantı yeniden kurulunca XX denenir (PC anahtarı değişmiş olabilir)
+                    if !droppedLocally, !Task.isCancelled, slot.phase == .handshaking {
                         // PC IK'yı kapattı ("güvenilmeyen anahtar": eşleşme PC'de kaldırılmış): yerelde tanıdık/eşli kaydı sil.
                         identity.remove(known)   // eşli bayrağı (autoAccept) ve etkin nokta bilgisi de gider
                         syncWanted()

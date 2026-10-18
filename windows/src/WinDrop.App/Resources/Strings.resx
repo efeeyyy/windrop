@@ -75,6 +75,10 @@
   <data name="Settings.AutoStart" xml:space="preserve"><value>Windows ile başlat</value></data>
   <data name="Settings.PairedDevices" xml:space="preserve"><value>Eşli cihazlar</value></data>
   <data name="Settings.NoDevices" xml:space="preserve"><value>Eşli cihaz yok.</value></data>
+  <data name="Settings.KindPaired" xml:space="preserve"><value>Eşli</value></data>
+  <data name="Settings.KindFamiliar" xml:space="preserve"><value>Tanıdık</value></data>
+  <data name="Settings.LastSeen" xml:space="preserve"><value>Son görülme: {0}</value></data>
+  <data name="Settings.LastSeenUnknown" xml:space="preserve"><value>Son görülme: bilinmiyor</value></data>
   <data name="Settings.Remove" xml:space="preserve"><value>Kaldır</value></data>
   <data name="Settings.RemoveAll" xml:space="preserve"><value>Tümünü kaldır</value></data>
   <data name="Settings.RemoveConfirm" xml:space="preserve"><value>‘{0}’ eşleşmesi kaldırılsın mı?</value></data>

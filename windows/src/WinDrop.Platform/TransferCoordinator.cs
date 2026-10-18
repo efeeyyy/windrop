@@ -61,7 +61,7 @@ public sealed record OfferRequest(TransferId Id, string PeerId, string PeerName,
 public sealed record RelayApprovalRequest(TransferId Id, string PeerId, string PeerName, int FileCount, long TotalBytes);
 
 /// <summary>PC'nin BLE'de gördüğü yakındaki iPhone (iPhone'un kurduğu bağlantı + hello).</summary>
-public sealed record NearbyPeer(string PeerId, string Name, bool IsKnown, bool IsPaired);
+public sealed record NearbyPeer(string PeerId, string Name, bool IsKnown, bool IsPaired, string? BleId = null);
 
 /// <summary>Anlaşılır (Türkçe) aktarım hatası; ileti kullanıcıya gösterilebilir.</summary>
 public class TransferException(string message) : InvalidOperationException(message);
@@ -175,6 +175,13 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private readonly object _lock = new();
     private readonly Dictionary<TransferId, State> _states = [];
     private readonly Dictionary<string, PeerSession> _sessions = [];
+    private readonly Dictionary<string, string> _lastPeerByBle = [];            // BLE kimliği → son görülen eş kimliği
+    private readonly Dictionary<string, Queue<DateTimeOffset>> _identityChanges = [];   // BLE kimliği → son kimlik değişimleri
+    private long _sessionSeq;
+
+    /// <summary>Aynı BLE kimliğinden bu sürede bu kadardan fazla kimlik değişimi döngü sayılır (günlüğe uyarı).</summary>
+    internal static readonly TimeSpan IdentityFlapWindow = TimeSpan.FromSeconds(10);
+    internal const int IdentityFlapLimit = 3;
     private readonly Dictionary<string, Queue<DateTimeOffset>> _offerTimes = [];
     private readonly Queue<DateTimeOffset> _unknownOfferTimes = [];
     private readonly Dictionary<string, DateTimeOffset> _silencedUntil = [];
@@ -238,8 +245,13 @@ public sealed class TransferCoordinator : IAsyncDisposable
         get
         {
             lock (_lock)
-                return _sessions.Values.Where(s => s.HelloReceived)
-                    .Select(s => new NearbyPeer(s.PeerId, s.Name, s.IsKnown, s.IsPaired)).ToArray();
+            {
+                var ready = _sessions.Values.Where(s => s.HelloReceived).ToArray();
+                // Aynı BLE kimliğinden (aynı telefon) birden çok anahtar varsa yalnız en yeni (aktif) oturum "Yakında".
+                return ready
+                    .Where(s => s.BleId is null || ready.All(o => o.BleId != s.BleId || o.Sequence <= s.Sequence))
+                    .Select(s => new NearbyPeer(s.PeerId, s.Name, s.IsKnown, s.IsPaired, s.BleId)).ToArray();
+            }
         }
     }
 
@@ -267,12 +279,39 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(session);
         PeerSession? replaced;
+        List<PeerSession> superseded = [];
+        var now = _o.Time.GetUtcNow();
+        var flapping = false;
         lock (_lock)
         {
+            session.Sequence = ++_sessionSeq;
             _sessions.TryGetValue(session.PeerId, out replaced);
             _sessions[session.PeerId] = session;
+            if (session.BleId is { } bleId)
+            {
+                // Aynı BLE kimliğinden başka anahtarla gelen oturum öncekinin yerini alır; eski kimlik "Yakında" kalmaz.
+                foreach (var old in _sessions.Values.Where(o => o.BleId == bleId && o.PeerId != session.PeerId).ToArray())
+                {
+                    _sessions.Remove(old.PeerId);
+                    superseded.Add(old);
+                }
+                if (_lastPeerByBle.TryGetValue(bleId, out var lastPeer) && lastPeer != session.PeerId)
+                {
+                    if (!_identityChanges.TryGetValue(bleId, out var q)) _identityChanges[bleId] = q = new();
+                    q.Enqueue(now);
+                    while (q.Count > 0 && now - q.Peek() > IdentityFlapWindow) q.Dequeue();
+                    flapping = q.Count > IdentityFlapLimit;
+                }
+                _lastPeerByBle[bleId] = session.PeerId;
+            }
         }
+        if (flapping)
+            PlatformLog.Write($"UYARI: aynı BLE kimliğinden {IdentityFlapWindow.TotalSeconds:0} sn içinde {IdentityFlapLimit}'ten fazla kimlik değişimi " +
+                              "(aynı telefonda iki farklı anahtar); son gelen oturum tutuluyor, eskisi sıfırlanıyor.");
         replaced?.Close();
+        foreach (var old in superseded) old.Close();
+        if (session.IsKnown && session.Channel.Kind == HandshakeKind.IK)
+            _o.Trusted.NoteSeen(session.PublicKey, session.BleId, now);
         PeersChanged?.Invoke();
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, session.Closed);
@@ -320,6 +359,15 @@ public sealed class TransferCoordinator : IAsyncDisposable
         {
             case HelloMessage h:
                 session.SetHelloName(PairingService.SanitizeName(h.Name));
+                // Kimliği doğrulanmış (IK; eşli/tanıdık) oturumda değişen ad kayda yansır. XX'te ad yalnız onaydan sonra kaydedilir.
+                if (session.IsKnown && session.Channel.Kind == HandshakeKind.IK
+                    && TrustedDevices.CleanName(h.Name) is { } newName
+                    && _o.Trusted.UpdateName(session.PublicKey, newName))
+                {
+                    session.SetRegisteredName(newName);
+                    PlatformLog.Write("Kayıtlı cihaz adı güncellendi.");
+                    PeersChanged?.Invoke();
+                }
                 session.Wifi = h.Wifi;
                 session.BtAudio = h.BtAudio;
                 session.Caps = h.Caps;
