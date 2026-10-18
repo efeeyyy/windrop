@@ -26,6 +26,31 @@ final class TransferItem: Identifiable {
         case cancelled
     }
 
+    /// Alınan dosyaların kaydedildiği yer (aktarım satırında gösterilir).
+    enum SavedPlace: Equatable {
+        case photos
+        case files
+        /// Medya Fotoğraflar'a, kalanlar (medya olmayan dosyalar) Dosyalar'da.
+        case photosAndFiles
+        /// Fotoğraflar izni yok: dosya Dosyalar'da kaldı.
+        case photosDenied
+        /// Fotoğraflar'a kaydedilemedi (izin dışı hata): dosya Dosyalar'da kaldı.
+        case photosFailed
+
+        var text: String {
+            switch self {
+            case .photos: return "Fotoğraflar'a kaydedildi"
+            case .files: return "Dosyalar › WinDrop'a kaydedildi"
+            case .photosAndFiles: return "Medya Fotoğraflar'a, diğerleri Dosyalar › WinDrop'a kaydedildi"
+            case .photosDenied: return "Fotoğraflar izni yok — Dosyalar'a kaydedildi"
+            case .photosFailed: return "Fotoğraflar'a kaydedilemedi — Dosyalar'a kaydedildi"
+            }
+        }
+
+        /// Dokununca açılacak yer: tamamen Fotoğraflar'daysa Fotoğraflar, aksi halde Dosyalar.
+        var opensPhotos: Bool { self == .photos }
+    }
+
     /// PROTOCOL §6.3 / ARCHITECTURE: aktarma yolu seçilirse gösterilecek uyarı.
     static let relayWarning = "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir."
 
@@ -68,6 +93,8 @@ final class TransferItem: Identifiable {
     var receivedFiles: [StoredFile] = []
     var hotspotPrompt: HotspotCredentials?
     var photosSaveMessage: String?
+    /// Alınan dosyaların nereye kaydedildiği (yalnız alma, bitince).
+    var savedPlace: SavedPlace?
 
     /// Gönderirken ilk dosyanın yerel kaynağı (önizleme için; `outgoing` bitince boşaltılır).
     @ObservationIgnored var sendPreviewURL: URL?

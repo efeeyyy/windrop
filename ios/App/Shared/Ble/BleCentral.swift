@@ -119,6 +119,11 @@ final class BleCentral: NSObject {
         resetSession(p)
     }
 
+    /// Daha önce görülen çevre birimi (kimliğinden); yoksa sistemin hatırladığı.
+    func knownPeripheral(_ id: UUID) -> CBPeripheral? {
+        peripherals[id] ?? manager?.retrievePeripherals(withIdentifiers: [id]).first
+    }
+
     func closeLink(_ id: UUID) {
         if let p = peripherals[id], p.state != .disconnected {
             resetting.insert(id)

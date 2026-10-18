@@ -44,6 +44,7 @@
   <data name="Pair.Waiting" xml:space="preserve"><value>iPhone bekleniyor…</value></data>
   <data name="Pair.Remaining" xml:space="preserve"><value>Kalan süre: {0}</value></data>
   <data name="Pair.Expired" xml:space="preserve"><value>Süre doldu.</value></data>
+  <data name="Pair.AlreadyPaired" xml:space="preserve"><value>‘{0}’ zaten eşli.</value></data>
   <data name="Pair.Restart" xml:space="preserve"><value>Yeniden başlat</value></data>
   <data name="Pair.Confirm" xml:space="preserve"><value>‘{0}’ eşleşsin mi?</value></data>
   <data name="Pair.Code" xml:space="preserve"><value>Doğrulama kodu: {0}. iPhone ekranındaki kodla aynı mı? Farklıysa Reddet.</value></data>

@@ -18,6 +18,7 @@ public sealed class DeviceService : IDeviceService
         _rt.Coordinator.PeersChanged += RaiseChanged;
         _rt.Pairing.DeviceTrusted += _ => RaiseChanged();
         _rt.Pairing.PairingRequested += r => _ui.Post(_ => PairingRequested?.Invoke(this, new PairingRequest(r.RequestId, r.DeviceName, r.VerificationCode)), null);
+        _rt.Pairing.AlreadyPaired += n => _ui.Post(_ => AlreadyPaired?.Invoke(this, n), null);
     }
 
     /// <summary>Eşli + tanıdık cihazlar ve (PROTOCOL §2b) yakındaki bilinmeyen iPhone'lar (iPhone'un kurduğu BLE bağlantısı + hello).</summary>
@@ -42,6 +43,7 @@ public sealed class DeviceService : IDeviceService
 
     public event EventHandler? DevicesChanged;
     public event EventHandler<PairingRequest>? PairingRequested;
+    public event EventHandler<string>? AlreadyPaired;
 
     private void RaiseChanged() => _ui.Post(_ => DevicesChanged?.Invoke(this, EventArgs.Empty), null);
 

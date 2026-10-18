@@ -18,6 +18,7 @@ public sealed class FakeDeviceService : IDeviceService
 
     public event EventHandler? DevicesChanged;
     public event EventHandler<PairingRequest>? PairingRequested;
+    public event EventHandler<string>? AlreadyPaired;
 
     public Task<PairingSession> StartPairingAsync()
     {
@@ -38,6 +39,7 @@ public sealed class FakeDeviceService : IDeviceService
     public void RespondToPairing(PairingRequest request, bool accept)
     {
         if (!accept) return;
+        if (_devices.Any(d => d.Name == request.DeviceName)) { AlreadyPaired?.Invoke(this, request.DeviceName); return; }
         _devices.Add(new DeviceInfo("fake-" + request.RequestId[..6], request.DeviceName, true));
         DevicesChanged?.Invoke(this, EventArgs.Empty);
     }

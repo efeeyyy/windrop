@@ -80,8 +80,7 @@ private struct TransferRow: View {
             }
 
             if item.state == .done, item.direction == .receive {
-                Text("Dosyalar uygulamasında WinDrop klasöründe.")
-                    .font(.caption).foregroundStyle(.secondary)
+                SavedPlaceLabel(place: item.savedPlace ?? .files)
                 if item.receivedFiles.contains(where: { $0.mediaKind != nil }) {
                     Button {
                         model.transfers.saveToPhotos(item)
@@ -187,5 +186,40 @@ struct ManualHotspotBox: View {
         }
         .padding(10)
         .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+/// "Nereye kaydedildi" satırı; dokununca Fotoğraflar (`photos-redirect://`) veya Dosyalar (`shareddocuments://<Documents>`)
+/// açılır. Açılamıyorsa (canOpenURL false) yalnız metin görünür.
+private struct SavedPlaceLabel: View {
+    let place: TransferItem.SavedPlace
+    @Environment(\.openURL) private var openURL
+
+    private var target: URL? {
+        let url: URL?
+        if place.opensPhotos {
+            url = URL(string: "photos-redirect://")
+        } else {
+            let path = AppPaths.receivedDirectory.path
+            let encoded = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? path
+            url = URL(string: "shareddocuments://" + encoded)
+        }
+        guard let url, UIApplication.shared.canOpenURL(url) else { return nil }
+        return url
+    }
+
+    var body: some View {
+        if let target {
+            Button {
+                openURL(target)
+            } label: {
+                Label(place.text, systemImage: place.opensPhotos ? "photo.on.rectangle" : "folder")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+        } else {
+            Text(place.text).font(.caption).foregroundStyle(.secondary)
+        }
     }
 }

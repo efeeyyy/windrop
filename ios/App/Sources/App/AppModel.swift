@@ -76,7 +76,8 @@ final class AppModel {
             hub?.broadcastStatus()
         }
         notifications.onOpen = { [weak self] transferId in
-            self?.selectedTab = .home
+            // Biten aktarım bildirimi: Aktarımlar sekmesi; teklif bildirimi: ana sayfa (onay sayfası).
+            if let transferId, self?.transfers.item(withID: transferId)?.state == .done { self?.selectedTab = .transfers } else { self?.selectedTab = .home }
             #if PUSH_ENABLED
             // Uzaktan (push) bildirimde `transferId` yoktur: PC'leri tara ve bağlan; PC bekleyen teklifi yeniden yollar (§6.5).
             if transferId == nil { self?.startScanFromPush() }
@@ -85,6 +86,7 @@ final class AppModel {
         // Arka plan: BLE ile uyanınca IK + hello, bildirim ve ret gönderimi arka plan görevi içinde biter.
         hub.beginBackgroundTask = AppBackgroundTask.starter
         notifications.beginBackgroundTask = AppBackgroundTask.starter
+        transfers.beginBackgroundTask = AppBackgroundTask.starter
         transfers.isWifiConnected = { network.isWifiConnected }
         transfers.isBluetoothAudioActive = { audio.currentValue() }
         transfers.isAppInBackground = { UIApplication.shared.applicationState != .active }

@@ -11,6 +11,7 @@ struct SettingsView: View {
     }
     #endif
     @AppStorage(AppTheme.key) private var themeRaw = AppTheme.system.rawValue
+    @AppStorage(IncomingMediaDestination.key) private var mediaDestinationRaw = IncomingMediaDestination.photos.rawValue
     @FocusState private var fieldFocused: Bool
     @State private var removalCandidate: KnownPC?
     @State private var showRemovalDialog = false
@@ -27,6 +28,18 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Görünüm")
+                }
+
+                Section {
+                    Picker("Gelen fotoğraf ve videolar", selection: $mediaDestinationRaw) {
+                        ForEach(IncomingMediaDestination.allCases) { destination in
+                            Text(destination.title).tag(destination.rawValue)
+                        }
+                    }
+                } header: {
+                    Text("Alınan dosyalar")
+                } footer: {
+                    Text("Bilgisayardan gelen tekil fotoğraf ve videolar seçtiğiniz yere kaydedilir. Fotoğraflar seçiliyse galeride en son eklenen olarak görünür; izin ilk alımda sorulur. Diğer dosyalar ve klasörler Dosyalar > WinDrop'ta kalır.")
                 }
 
                 Section {

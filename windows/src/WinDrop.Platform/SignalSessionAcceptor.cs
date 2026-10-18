@@ -137,8 +137,8 @@ public sealed class SignalSessionAcceptor
                     return (false, null);
                 }
                 PlatformLog.Write("BLE: XXpsk3 el sıkışması tamam (eşleştirme).");
-                var paired = await _pairing.HandleChannelAsync(channel, mode!, ct).ConfigureAwait(false);
-                PlatformLog.Write(paired ? "BLE: eşleştirme tamamlandı." : "BLE: eşleştirme tamamlanmadı.");
+                var outcome = await _pairing.HandleChannelAsync(channel, mode!, ct).ConfigureAwait(false);
+                PlatformLog.Write(outcome switch { PairingOutcome.Paired => "BLE: eşleştirme tamamlandı.", PairingOutcome.AlreadyPaired => "BLE: cihaz zaten eşliydi.", _ => "BLE: eşleştirme tamamlanmadı." });
                 return (false, null);
             }
 

@@ -102,6 +102,36 @@ public class PairingTests
         });
     }
 
+
+    [Fact]
+    public async Task Pairing_AlreadyPairedDevice_NoApprovalPrompt_AlreadyPairedEvent_PairInfoStillSent()
+    {
+        await using var h = new Harness(trustPhone: false);
+        h.Trusted.Add(h.PhoneKey.PublicKey, "Eski iPhone");
+        var before = Assert.Single(h.Trusted.List());
+        Assert.False(before.IsFamiliar);
+        var mode = h.Pairing.Start();
+        var (_, psk, _) = ParseQr(mode.QrPayload);
+        var prompted = false;
+        var already = new TaskCompletionSource<string>();
+        h.Pairing.PairingRequested += _ => prompted = true;
+        h.Pairing.AlreadyPaired += n => already.TrySetResult(n);
+
+        var (channel, link, run) = await PhonePairAsync(h, psk);
+        using (channel)
+        {
+            await channel.SendSignalAsync(new HelloMessage(1, "Yeni ad", ["tcp"], "connected", false));
+            Assert.IsType<HelloMessage>(await channel.ReceiveSignalAsync().AsTask().WaitAsync(T.Wait));
+            Assert.IsType<PairInfoMessage>(await channel.ReceiveSignalAsync().AsTask().WaitAsync(T.Wait));
+            link.Close();
+        }
+        await run.WaitAsync(T.Wait);
+
+        Assert.Equal("Eski iPhone", await already.Task.WaitAsync(T.Wait));   // sonuç: AlreadyPaired
+        Assert.False(prompted);
+        Assert.False(h.Pairing.IsActive);                                    // sır tüketildi
+        Assert.Equal("Eski iPhone", Assert.Single(h.Trusted.List()).Name);   // kayıt değişmedi
+    }
     [Fact]
     public async Task Pairing_Rejected_NotTrusted_NoPairInfo()
     {

@@ -407,15 +407,26 @@ final class SignalHub: BleCentralDelegate, SignalSending {
     private func drive(_ pid: UUID, _ slot: SessionSlot, link initialLink: BlePeripheralLink?, peripheral initialPeripheral: CBPeripheral?) async {
         var link = initialLink
         var peripheral = initialPeripheral
+        var xxRetried = false
         while true {
             if link == nil, let p = peripheral, slot.phase != .closing {
                 link = try? await central.openLink(to: p, timeout: 10)
                 slot.link = link
             }
             peripheral = nil
-            if let l = link { await runSession(link: l, slot: slot) }
+            var retryWithXX = false
+            if let l = link { retryWithXX = await runSession(link: l, slot: slot) }
             link = nil
             slot.link = nil
+            // IK'yı PC kapattı (eşleşme PC'de kaldırılmış): kayıt silindi; tek sefer, aynı çevre birimine XX ile yeniden bağlan.
+            if retryWithXX, !xxRetried, slot.phase != .closing, slot.nextLink == nil, !isPairing,
+               let p = central.knownPeripheral(pid) {
+                xxRetried = true
+                for _ in 0..<20 where p.state != .disconnected { try? await Task.sleep(nanoseconds: 150_000_000) }
+                slot.phase = .connecting
+                peripheral = p
+                continue
+            }
             guard let next = slot.nextLink else { break }
             slot.nextLink = nil
             guard next.isOpen else { break }
@@ -466,17 +477,19 @@ final class SignalHub: BleCentralDelegate, SignalSending {
 
     // MARK: Oturum
 
-    private func runSession(link: BlePeripheralLink, slot: SessionSlot) async {
+    /// Dönüş: true = tanıdık PC'nin IK el sıkışması reddedildi ve kayıt silindi (çağıran XX ile bir kez yeniden dener).
+    private func runSession(link: BlePeripheralLink, slot: SessionSlot) async -> Bool {
         let pid = link.peripheralID
         // Kapatma isteği bağlantı beklenirken geldiyse oturum hiç başlamaz.
         guard slot.phase == .connecting else {
             link.close()
-            return
+            return false
         }
         slot.phase = .handshaking
         // Arka planda uyandırıldıysak IK/XX + hello bitene kadar süre iste (uzantıda yok sayılır).
         let endHandshakeTask = beginBackgroundTask("com.efe.windrop.handshake")
         var keyID: String?
+        var ikRejected = false
         do {
             let localKey = try identity.deviceKey()
             let transport = BleMessageTransport(link: BleLinkAdapter(link: link))
@@ -489,6 +502,13 @@ final class SignalHub: BleCentralDelegate, SignalSending {
                     usedIK = true
                 } catch {
                     forceXX.insert(pid)   // bağlantı yeniden kurulunca XX denenir (PC anahtarı değişmiş olabilir)
+                    if !Task.isCancelled, slot.phase == .handshaking {
+                        // PC IK'yı kapattı ("güvenilmeyen anahtar": eşleşme PC'de kaldırılmış): yerelde tanıdık/eşli kaydı sil.
+                        identity.remove(known)   // eşli bayrağı (autoAccept) ve etkin nokta bilgisi de gider
+                        syncWanted()
+                        forceXX.remove(pid)
+                        ikRejected = true
+                    }
                     throw error
                 }
             } else {
@@ -563,5 +583,6 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         let wasOpen = link.isOpen
         link.close()
         if wasOpen, slot.nextLink == nil { central.closeLink(pid) }
+        return ikRejected
     }
 }

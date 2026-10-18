@@ -19,6 +19,7 @@ public sealed partial class PairingViewModel : ObservableObject, IDisposable
     {
         _devices = devices;
         _devices.PairingRequested += OnPairingRequested;
+        _devices.AlreadyPaired += OnAlreadyPaired;
         _timer.Tick += (_, _) => UpdateRemaining();
         StatusText = Strings.Get("Pair.Waiting");
     }
@@ -76,6 +77,16 @@ public sealed partial class PairingViewModel : ObservableObject, IDisposable
 
     private void OnPairingRequested(object? sender, PairingRequest request) => PendingRequest = request;
 
+    private void OnAlreadyPaired(object? sender, string name)
+    {
+        // Sır tüketildi; QR geçersiz. "Zaten eşli" göster, yeniden başlat düğmesi (IsExpired) kalsın.
+        _timer.Stop();
+        IsExpired = true;
+        QrImage = null;
+        RemainingText = "";
+        StatusText = Strings.Format("Pair.AlreadyPaired", name);
+    }
+
     [RelayCommand]
     private void Accept()
     {
@@ -120,6 +131,7 @@ public sealed partial class PairingViewModel : ObservableObject, IDisposable
     {
         _timer.Stop();
         _devices.PairingRequested -= OnPairingRequested;
+        _devices.AlreadyPaired -= OnAlreadyPaired;
         _session?.Cancel();
     }
 }

@@ -54,6 +54,21 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate, Off
         }
     }
 
+    /// Biten aktarım bildirimi (başlık "WinDrop"). İzin yoksa `add` sessizce hata verir; sorun değil.
+    func postResult(transferId: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "WinDrop"
+        content.body = body
+        content.sound = .default
+        content.userInfo = ["transferId": transferId]
+        let request = UNNotificationRequest(identifier: "done-\(transferId)", content: content, trigger: nil)
+        let endTask = beginBackgroundTask("com.efe.windrop.notify")
+        Task {
+            try? await UNUserNotificationCenter.current().add(request)
+            endTask()
+        }
+    }
+
     func clear(transferId: String) {
         let center = UNUserNotificationCenter.current()
         center.removeDeliveredNotifications(withIdentifiers: ["offer-\(transferId)"])

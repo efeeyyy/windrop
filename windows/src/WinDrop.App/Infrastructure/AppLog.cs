@@ -1,23 +1,15 @@
+using WinDrop.Platform;
+
 namespace WinDrop.App.Infrastructure;
 
-/// <summary>Basit dosya günlüğü: <c>%LOCALAPPDATA%\WinDrop\logs\app.log</c>. Hata fırlatmaz.</summary>
+/// <summary>Basit dosya günlüğü: <c>%LOCALAPPDATA%\WinDrop\logs\app.log</c> (5 MB'ta <c>app.1.log</c>'a döner). Hata fırlatmaz.</summary>
 public static class AppLog
 {
-    private static readonly object Gate = new();
-
     public static string FilePath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinDrop", "logs", "app.log");
 
-    public static void Write(string message)
-    {
-        try
-        {
-            lock (Gate)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-                File.AppendAllText(FilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} [{Environment.ProcessId}] {message}{Environment.NewLine}");
-            }
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
-    }
+    private static readonly RollingFileLog Log = new(FilePath);
+
+    public static void Write(string message) =>
+        Log.Write($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} [{Environment.ProcessId}] {message}");
 }

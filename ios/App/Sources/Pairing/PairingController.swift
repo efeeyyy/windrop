@@ -15,6 +15,8 @@ final class PairingController {
         /// (PC adı, 4 haneli doğrulama kodu; Windows onay ekranındakiyle aynı olmalı)
         case waitingApproval(String, String)
         case succeeded(String)
+        /// QR'daki PC bu iPhone ile zaten QR ile eşli; el sıkışma yapılmadı.
+        case alreadyPaired(String)
         case failed(String)
     }
 
@@ -53,6 +55,10 @@ final class PairingController {
         guard code.lowercased().hasPrefix("windrop://") else { return }
         do {
             let invite = try PairingInvite.parse(code)
+            if let known = identity.pc(withKeyID: DeviceId.hex(publicKey: invite.pcPublicKey)), known.autoAccept {
+                phase = .alreadyPaired(known.name)   // yalnız "tanıdık" (autoAccept=false) ise normal eşleştirme sürer
+                return
+            }
             phase = .searching(invite.pcName)
             task = Task { [weak self] in
                 await self?.run(invite)

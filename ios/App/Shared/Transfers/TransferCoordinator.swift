@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 import Observation
 @preconcurrency import WinDropKit
 
@@ -8,6 +9,8 @@ protocol OfferNotifying: AnyObject {
     func requestAuthorizationIfNeeded() async
     func postOffer(transferId: String, peerName: String, summary: String)
     func clear(transferId: String)
+    /// Aktarım bitti bildirimi (yalnız uygulama arka plandayken çağrılır).
+    func postResult(transferId: String, body: String)
 }
 
 /// Bildirim göstermeyen (Paylaşım Uzantısı) uygulama.
@@ -17,6 +20,7 @@ final class NoNotifications: OfferNotifying {
     func requestAuthorizationIfNeeded() async {}
     func postOffer(transferId: String, peerName: String, summary: String) {}
     func clear(transferId: String) {}
+    func postResult(transferId: String, body: String) {}
 }
 
 /// Aktarımların yaşam döngüsü: teklif -> kabul -> adres/etkin nokta -> TCP -> Kit FileSender/FileReceiver
@@ -33,6 +37,8 @@ final class TransferCoordinator {
     private let notifications: OfferNotifying
     /// Uygulama ön planda değil mi? (Uzantıda hep false; uygulama `UIApplication.applicationState` ile doldurur.)
     @ObservationIgnored var isAppInBackground: @MainActor () -> Bool = { false }
+    /// Uzun aktarım arka planda sürerken süre ister (uygulama doldurur; uzantıda API yok: boş işlem).
+    @ObservationIgnored var beginBackgroundTask: BackgroundTaskStarter = { _ in {} }
     /// Paylaşım Uzantısı: gelen teklif gösterilemez; hemen reddedilir (PC bekleyip zaman aşımına düşmesin).
     @ObservationIgnored var rejectsIncomingOffers = false
     /// iPhone şu an Wi-Fi'a bağlı mı? `hotspot` yalnız `wifi=none` iken işlenir; bağlanmazsa güvenli varsayılan: bağlı say.
@@ -373,7 +379,7 @@ final class TransferCoordinator {
         let files = item.receivedFiles
         Task {
             do {
-                let count = try await PhotoSaver.save(files)
+                let count = try await PhotoSaver.save(files).count
                 item.photosSaveMessage = "\(count) öğe Fotoğraflar'a kaydedildi."
             } catch {
                 item.photosSaveMessage = error.localizedDescription
@@ -460,7 +466,8 @@ final class TransferCoordinator {
     private func run(
         _ item: TransferItem, transport: MessageTransport, peer: NearbyPeer, onFinish: @escaping () async -> Void
     ) async {
-        defer { Task { await onFinish() } }
+        let endBackground = beginBackgroundTask("com.efe.windrop.transfer")   // arka planda alım/gönderim sürsün
+        defer { endBackground(); Task { await onFinish() } }
         do {
             let key = try identity.deviceKey()
             guard let tid = TransferId.parse(item.id) else { throw TransferFailure.invalidTransferId }
@@ -481,30 +488,78 @@ final class TransferCoordinator {
                     expectedCount: item.fileCount, expectedTotal: item.totalBytes,
                     destination: AppPaths.receivedDirectory, progress: progress)
             }
-            complete(item, summary: summary, peer: peer)
+            await complete(item, summary: summary, peer: peer)
         } catch {
             if Task.isCancelled || item.state == .cancelled { return }
             fail(item, error.localizedDescription)
         }
     }
 
-    /// Aktarım sonucunu satıra işler (TCP ve BLE ortak).
-    private func complete(_ item: TransferItem, summary: TransferSummary, peer: NearbyPeer) {
+    /// Aktarım sonucunu satıra işler (TCP ve BLE ortak). Alımda dosyalar SHA doğrulamasından geçmiş gelir; medya
+    /// (tekil dosyalar) ayara göre Fotoğraflar'a taşınır, sonra satır "bitti"ye geçer ve gerekirse bildirim gider.
+    private func complete(_ item: TransferItem, summary: TransferSummary, peer: NearbyPeer) async {
         item.receivedFiles = summary.received
         if summary.ok {
             if item.direction == .send {
                 signals.remember(peer.id)   // giden aktarım `DONE ok=true` ile bitti -> tanıdık (PROTOCOL §2b)
                 item.peerIsKnown = true
+            } else {
+                await storeReceived(item)
             }
             item.bytesDone = item.totalBytes
             item.state = .done
             noteSuccess()
+            notifyFinished(item, peerName: peer.name)
         } else if summary.canceledByRemote {
             item.state = .cancelled
         } else {
             fail(item, summary.error ?? "\(summary.failedFileIDs.count) dosya aktarılamadı.")
         }
         finishCleanup(item)
+    }
+
+    /// Alınan dosyaları yerleştirir: tekil medya dosyaları (klasör aktarımı hariç, yapı korunur) ayar "Fotoğraflar" ise
+    /// Fotoğraflar'a taşınır; izin yok/hata olursa Documents'ta kalır ve satıra nedeni yazılır.
+    private func storeReceived(_ item: TransferItem) async {
+        let media = item.receivedFiles.filter { $0.mediaKind != nil }
+        guard !item.isFolderTransfer, IncomingMediaDestination.current == .photos, !media.isEmpty else {
+            item.savedPlace = .files
+            return
+        }
+        do {
+            let saved = try await PhotoSaver.save(media, move: true)
+            let savedURLs = Set(saved.map(\.url))
+            item.receivedFiles = item.receivedFiles.filter { !savedURLs.contains($0.url) }
+            item.savedPlace = item.receivedFiles.isEmpty ? .photos : .photosAndFiles
+        } catch PhotoSaveError.denied {
+            item.savedPlace = .photosDenied
+        } catch {
+            item.savedPlace = .photosFailed
+        }
+    }
+
+    /// Uygulama arka plandayken biten aktarım için yerel bildirim (ön planda gösterilmez).
+    private func notifyFinished(_ item: TransferItem, peerName: String) {
+        guard isAppInBackground() else { return }
+        let body: String
+        switch item.direction {
+        case .send:
+            body = "\(item.fileCount) \(item.isFolderTransfer ? "klasör öğesi" : "dosya") \(peerName) bilgisayarına gönderildi"
+        case .receive:
+            let kinds = Set(item.fileNames.map { name in
+                UTType(filenameExtension: (name as NSString).pathExtension).map { type -> Int in
+                    type.conforms(to: .movie) ? 2 : (type.conforms(to: .image) ? 1 : 0)
+                } ?? 0
+            })
+            let noun: String
+            if item.isFolderTransfer { noun = "dosya" }
+            else if kinds == [1] { noun = "fotoğraf" }
+            else if kinds == [2] { noun = "video" }
+            else if !kinds.contains(0) { noun = "fotoğraf/video" }
+            else { noun = "dosya" }
+            body = "\(peerName)'dan \(item.fileCount) \(noun) alındı — \(item.savedPlace?.text ?? "Dosyalar'a kaydedildi")"
+        }
+        notifications.postResult(transferId: item.id, body: body)
     }
 
     // MARK: BLE küçük dosya yolu (PROTOCOL §6.4)
@@ -524,7 +579,8 @@ final class TransferCoordinator {
         let pcID = peer.id
         item.task = Task { [weak self] in
             guard let self else { return }
-            defer { self.signals.endBleTransfer(pcID) }
+            let endBackground = self.beginBackgroundTask("com.efe.windrop.transfer")
+            defer { endBackground(); self.signals.endBleTransfer(pcID) }
             do {
                 let progress: @Sendable (TransferProgress) -> Void = { [weak item] value in
                     Task { @MainActor in item?.apply(value) }
@@ -539,7 +595,7 @@ final class TransferCoordinator {
                         session: session, transferId: tid.bytes, peerKeyID: peer.id, expectedCount: item.fileCount,
                         expectedTotal: item.totalBytes, destination: AppPaths.receivedDirectory, progress: progress)
                 }
-                self.complete(item, summary: summary, peer: peer)
+                await self.complete(item, summary: summary, peer: peer)
             } catch {
                 if Task.isCancelled || item.state == .cancelled { return }
                 self.fail(item, error.localizedDescription)

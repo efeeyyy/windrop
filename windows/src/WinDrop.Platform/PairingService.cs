@@ -28,6 +28,9 @@ public sealed class PairingMode
     public void Cancel() => _owner.End(this);
 }
 
+/// <summary>Eşleştirme el sıkışması sonucu.</summary>
+public enum PairingOutcome { Failed, Paired, AlreadyPaired }
+
 /// <summary>PC'de onay bekleyen eşleştirme (iPhone XXpsk3'ü tamamladı, <c>hello.name</c> geldi).</summary>
 /// <param name="VerificationCode">El sıkışma özetinden 4 haneli kod (<see cref="Sas"/>); iPhone ekranındakiyle karşılaştırılır.</param>
 public sealed record PairingRequestInfo(string RequestId, string DeviceName, string? VerificationCode = null);
@@ -78,6 +81,9 @@ public sealed class PairingService
 
     /// <summary>Cihaz güvenilen listeye eklendi.</summary>
     public event Action<TrustedDevice>? DeviceTrusted;
+
+    /// <summary>QR ile eşleşmeye çalışan cihaz zaten eşli (onay istenmedi); parametre: kayıtlı ad.</summary>
+    public event Action<string>? AlreadyPaired;
 
     /// <summary>Yeni eşleştirme modu açar (öncekini geçersiz kılar).</summary>
     public PairingMode Start()
@@ -158,8 +164,8 @@ public sealed class PairingService
     /// <summary>
     /// XXpsk3 kurulmuş kanalda: sırrı tüket → iPhone <c>hello</c> → UI onayı → güvenilene ekle → PC <c>hello</c> + <c>pairInfo</c>.
     /// </summary>
-    /// <returns>true: eşleşti.</returns>
-    internal async Task<bool> HandleChannelAsync(SecureChannel channel, PairingMode mode, CancellationToken ct)
+    /// <returns>Sonuç: yeni eşleşme, zaten eşli (onay istenmez) veya başarısız.</returns>
+    internal async Task<PairingOutcome> HandleChannelAsync(SecureChannel channel, PairingMode mode, CancellationToken ct)
     {
         End(mode);   // tek kullanımlık
         string name;
@@ -170,38 +176,50 @@ public sealed class PairingService
             if (first is not HelloMessage hello)
             {
                 PlatformLog.Write("Eşleştirme: ilk mesaj hello değil, iptal.");
-                return false;
+                return PairingOutcome.Failed;
             }
             name = SanitizeName(hello.Name);
         }
 
-        var requestId = Guid.NewGuid().ToString("N");
-        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        lock (_lock) _requests[requestId] = tcs;
-        try
+        // Zaten QR ile eşli (tanıdık değil): onay istenmez, kayıt değişmez; iPhone yine normal başarı gibi pairInfo alır.
+        var existing = _trusted.FindByPublicKey(channel.RemoteStaticPublicKey);
+        var alreadyPaired = existing is { IsFamiliar: false };
+        if (alreadyPaired)
         {
-            PlatformLog.Write($"Eşleştirme isteği: '{name}'");
-            PairingRequested?.Invoke(new PairingRequestInfo(requestId, name, Sas.Compute(channel.HandshakeHash)));
-            using var approveCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            approveCts.CancelAfter(ApprovalTimeout);
-            bool accepted;
-            try { accepted = await tcs.Task.WaitAsync(approveCts.Token).ConfigureAwait(false); }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested) { accepted = false; }
-            if (!accepted)
-            {
-                PlatformLog.Write("Eşleştirme reddedildi veya zaman aşımı.");
-                return false;
-            }
-        }
-        finally
-        {
-            lock (_lock) _requests.Remove(requestId);
+            PlatformLog.Write($"Eşleştirme: '{existing!.Name}' zaten eşli, onay istenmedi.");
+            AlreadyPaired?.Invoke(existing.Name);
         }
 
-        _trusted.Add(channel.RemoteStaticPublicKey, name);
-        var device = _trusted.FindByPublicKey(channel.RemoteStaticPublicKey)!;
-        PlatformLog.Write($"Eşleştirildi: '{name}' ({DeviceId.ToHex(device.DeviceId)})");
-        DeviceTrusted?.Invoke(device);
+        if (!alreadyPaired)
+        {
+            var requestId = Guid.NewGuid().ToString("N");
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_lock) _requests[requestId] = tcs;
+            try
+            {
+                PlatformLog.Write($"Eşleştirme isteği: '{name}'");
+                PairingRequested?.Invoke(new PairingRequestInfo(requestId, name, Sas.Compute(channel.HandshakeHash)));
+                using var approveCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                approveCts.CancelAfter(ApprovalTimeout);
+                bool accepted;
+                try { accepted = await tcs.Task.WaitAsync(approveCts.Token).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested) { accepted = false; }
+                if (!accepted)
+                {
+                    PlatformLog.Write("Eşleştirme reddedildi veya zaman aşımı.");
+                    return PairingOutcome.Failed;
+                }
+            }
+            finally
+            {
+                lock (_lock) _requests.Remove(requestId);
+            }
+
+            _trusted.Add(channel.RemoteStaticPublicKey, name);
+            var device = _trusted.FindByPublicKey(channel.RemoteStaticPublicKey)!;
+            PlatformLog.Write($"Eşleştirildi: '{name}' ({DeviceId.ToHex(device.DeviceId)})");
+            DeviceTrusted?.Invoke(device);
+        }
 
         var cfg = _hotspot.GetOrCreate();
         await channel.SendSignalAsync(new HelloMessage(Prefix.CurrentVersion, _localName, ["tcp", "hotspot"], null, false), ct).ConfigureAwait(false);
@@ -212,7 +230,7 @@ public sealed class PairingService
         tail.CancelAfter(TimeSpan.FromSeconds(3));
         try { await channel.ReceiveAsync(tail.Token).ConfigureAwait(false); }
         catch (Exception ex) when (ex is OperationCanceledException or IOException or ProtocolException) { }
-        return true;
+        return alreadyPaired ? PairingOutcome.AlreadyPaired : PairingOutcome.Paired;
     }
 
     internal static string SanitizeName(string? raw)

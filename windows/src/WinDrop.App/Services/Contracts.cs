@@ -42,6 +42,9 @@ public interface IDeviceService
 
     event EventHandler<PairingRequest>? PairingRequested;
 
+    /// <summary>QR ile gelen cihaz zaten eşli (onay istenmedi); parametre: cihaz adı.</summary>
+    event EventHandler<string>? AlreadyPaired;
+
     void RespondToPairing(PairingRequest request, bool accept);
 
     void RemoveDevice(string deviceId);

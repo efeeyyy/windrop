@@ -80,6 +80,9 @@ targets:
         NSBonjourServices:
           - _windrop._tcp
         NSPhotoLibraryAddUsageDescription: Bilgisayardan aldığınız fotoğraf ve videoları Fotoğraflar'a kaydetmek için izin gerekir.
+        LSApplicationQueriesSchemes:   # canOpenURL: aktarım satırından Fotoğraflar / Dosyalar açma
+          - photos-redirect
+          - shareddocuments
         UIBackgroundModes:
           - bluetooth-central
         UIFileSharingEnabled: true
