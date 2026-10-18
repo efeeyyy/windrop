@@ -6,6 +6,7 @@ import UIKit
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
+        ShareActivitySignal.post(active: true)   // ana uygulama BLE bağlantılarını bırakır (PROTOCOL §3a)
 
         let items = extensionContext?.inputItems as? [NSExtensionItem] ?? []
         let providers = items.flatMap { $0.attachments ?? [] }
@@ -28,5 +29,14 @@ final class ShareViewController: UIViewController {
             host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
         host.didMove(toParent: self)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        ShareActivitySignal.post(active: false)
+    }
+
+    deinit {
+        ShareActivitySignal.post(active: false)
     }
 }

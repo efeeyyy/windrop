@@ -65,7 +65,7 @@ final class BleCentral: NSObject {
 
     /// Bağlı olmayan eşli PC'ler için `connect` çağırır (bitmeyen bekleyen bağlantı).
     func ensureConnections() {
-        guard state == .poweredOn, !isPaused, !wanted.isEmpty else { return }
+        guard state == .poweredOn, !isPaused, !isYielding, !wanted.isEmpty else { return }
         for p in manager?.retrievePeripherals(withIdentifiers: Array(wanted)) ?? [] {
             peripherals[p.identifier] = p
             p.delegate = self
@@ -84,6 +84,16 @@ final class BleCentral: NSObject {
         }
     }
 
+    /// PROTOCOL §3a: oturumu kapat, GATT bağlantısını kes; `didDisconnect` 1 sn sonra yeniden bağlanmayı planlar.
+    private func resetSession(_ peripheral: CBPeripheral) {
+        links[peripheral.identifier]?.close()
+        if peripheral.state != .disconnected {
+            manager?.cancelPeripheralConnection(peripheral)
+        } else {
+            scheduleReconnect(peripheral.identifier)
+        }
+    }
+
     func closeLink(_ id: UUID) {
         if let p = peripherals[id], p.state != .disconnected {
             manager?.cancelPeripheralConnection(p)
@@ -94,6 +104,8 @@ final class BleCentral: NSObject {
 
     private var wantsNearbyScan = false
     private var isPaused = false
+    /// Paylaşım uzantısı açıkken ana uygulama BLE bağlantılarını bırakır (PROTOCOL §3a).
+    private var isYielding = false
     private var scanRestartTask: Task<Void, Never>?
 
     /// Gönderme ekranı açıkken tarar; her ~4 sn tarama yeniden başlatılır (`allowDuplicates=false` aynı cihazı
@@ -131,8 +143,23 @@ final class BleCentral: NSObject {
         }
     }
 
+    /// Paylaşım uzantısı açıldı (`true`): tüm bağlantılar kesilir, tarama durur; kapanınca (`false`) yeniden kurulur.
+    func setYielding(_ yielding: Bool) {
+        guard yielding != isYielding else { return }
+        isYielding = yielding
+        if yielding {
+            if scanWaiter == nil { manager?.stopScan() }
+            for p in peripherals.values where p.state != .disconnected {
+                manager?.cancelPeripheralConnection(p)
+            }
+        } else {
+            applyScan()
+            ensureConnections()
+        }
+    }
+
     private func applyScan() {
-        guard state == .poweredOn, wantsNearbyScan, !isPaused, scanWaiter == nil else { return }
+        guard state == .poweredOn, wantsNearbyScan, !isPaused, !isYielding, scanWaiter == nil else { return }
         manager?.scanForPeripherals(
             withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
     }
@@ -239,7 +266,7 @@ final class BleCentral: NSObject {
     }
 
     private func reconnectNow(_ id: UUID) {
-        guard state == .poweredOn, wanted.contains(id), let p = peripherals[id], p.state == .disconnected else { return }
+        guard state == .poweredOn, !isYielding, wanted.contains(id), let p = peripherals[id], p.state == .disconnected else { return }
         manager?.connect(p, options: nil)
     }
 
@@ -389,6 +416,11 @@ extension BleCentral: @preconcurrency CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard error == nil, characteristic.uuid == ProtocolIds.p2cUUID, let value = characteristic.value else { return }
+        // `WDR` (tam 3 bayt) parçalama başlığından önce denetlenir.
+        if value == ProtocolIds.resetMarker {
+            resetSession(peripheral)
+            return
+        }
         links[peripheral.identifier]?.receive(value)
     }
 

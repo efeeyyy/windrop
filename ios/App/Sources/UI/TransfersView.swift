@@ -1,4 +1,6 @@
+import QuickLookThumbnailing
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TransfersView: View {
     @Environment(AppModel.self) private var model
@@ -16,8 +18,6 @@ struct TransfersView: View {
                     }
                 }
             }
-            .themedList()
-            .themedBackground()
             .navigationTitle("Aktarımlar")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -36,8 +36,7 @@ private struct TransferRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: item.direction == .send ? "arrow.up.circle" : "arrow.down.circle")
-                    .font(.title3)
+                TransferThumbnail(url: item.previewURL, isFolder: item.isFolderTransfer, direction: item.direction)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.title).font(.headline).lineLimit(2)
                     Text(item.statusText).font(.subheadline).foregroundStyle(.secondary)
@@ -93,6 +92,70 @@ private struct TransferRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// URL -> küçük resim önbelleği (bellek baskısında NSCache kendini boşaltır).
+private enum ThumbnailCache {
+    nonisolated(unsafe) static let cache: NSCache<NSURL, UIImage> = {
+        let cache = NSCache<NSURL, UIImage>()
+        cache.countLimit = 200
+        return cache
+    }()
+
+    static func image(for url: URL) -> UIImage? { cache.object(forKey: url as NSURL) }
+
+    /// Arka planda üretir; dosya yok/okunamıyorsa nil (çağıran simgeye düşer).
+    static func generate(for url: URL, scale: CGFloat) async -> UIImage? {
+        if let cached = image(for: url) { return cached }
+        guard FileManager.default.isReadableFile(atPath: url.path) else { return nil }
+        let request = QLThumbnailGenerator.Request(
+            fileAt: url, size: CGSize(width: 56, height: 56), scale: scale, representationTypes: .thumbnail)
+        guard let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request) else {
+            return nil
+        }
+        let image = representation.uiImage
+        cache.setObject(image, forKey: url as NSURL)
+        return image
+    }
+}
+
+/// Aktarım satırı önizlemesi: gerçek küçük resim; yoksa klasör/tür/yön simgesi.
+private struct TransferThumbnail: View {
+    let url: URL?
+    let isFolder: Bool
+    let direction: TransferItem.Direction
+    @Environment(\.displayScale) private var displayScale
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if !isFolder, let image {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                Image(systemName: symbol).font(.title2).foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 56, height: 56)
+        .background(Color.secondary.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .task(id: url) {
+            guard !isFolder, let url else { image = nil; return }
+            if let cached = ThumbnailCache.image(for: url) { image = cached; return }
+            image = await ThumbnailCache.generate(for: url, scale: displayScale)
+        }
+    }
+
+    private var symbol: String {
+        if isFolder { return "folder.fill" }
+        if let url, let type = UTType(filenameExtension: url.pathExtension) {
+            if type.conforms(to: .movie) { return "film" }
+            if type.conforms(to: .image) { return "photo" }
+            if type.conforms(to: .audio) { return "waveform" }
+            if type.conforms(to: .archive) { return "doc.zipper" }
+            return "doc.fill"
+        }
+        return url == nil ? (direction == .send ? "arrow.up.circle" : "arrow.down.circle") : "doc.fill"
     }
 }
 

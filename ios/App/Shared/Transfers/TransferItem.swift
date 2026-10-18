@@ -59,6 +59,17 @@ final class TransferItem: Identifiable {
     var hotspotPrompt: HotspotCredentials?
     var photosSaveMessage: String?
 
+    /// Gönderirken ilk dosyanın yerel kaynağı (önizleme için; `outgoing` bitince boşaltılır).
+    @ObservationIgnored var sendPreviewURL: URL?
+
+    /// Önizleme kaynağı: gönderirken yerel dosya, alırken kaydedilen ilk dosya.
+    var previewURL: URL? {
+        direction == .send ? sendPreviewURL : receivedFiles.first?.url
+    }
+
+    /// Klasör aktarımı mı (ad "/" ile bitiyorsa; PROTOCOL §5a)? Klasör için klasör simgesi gösterilir.
+    var isFolderTransfer: Bool { fileNames.first?.hasSuffix("/") == true }
+
     @ObservationIgnored var outgoing: [OutgoingFile] = []
     /// Aktarma odası adresi (`relay` sinyalinden türetilir: ayardaki `relayUrl` + roomId). Kullanıcı onaylayana dek bağlanılmaz.
     @ObservationIgnored var relayEndpoint: URL?

@@ -91,6 +91,7 @@ final class TransferCoordinator {
             id: transferId, direction: .send, pcID: peer.id, pcName: peer.name,
             fileNames: labels, fileCount: numbered.count, totalBytes: total, state: .awaitingPeer)
         item.outgoing = numbered
+        item.sendPreviewURL = numbered.first?.url
         item.code = peer.code
         item.peerIsKnown = peer.isKnown
         items.insert(item, at: 0)
@@ -233,6 +234,7 @@ final class TransferCoordinator {
         signals.remember(item.pcID)   // kullanıcı onayladı -> tanıdık (reddedilen saklanmaz)
         item.peerIsKnown = true
         Task { await notifications.requestAuthorizationIfNeeded() }   // tembel: ilk teklifin kabulü
+        LocalNetworkPermission.shared.trigger()   // yerel ağ izni sorusunu TCP'den önce çıkar
         sendAccept(item)
     }
 
@@ -353,13 +355,17 @@ final class TransferCoordinator {
         item.task = Task { [weak self] in
             guard let self else { return }
             do {
-                // İlk yerel ağ izni istemi uzun sürebilir: ~4 sn boyunca turlar tekrarlanır.
+                // İlk yerel ağ izni istemi açıkken bağlantı .waiting kalır (DataClient en çok 30 sn bekler); sonra kısa tekrar turları.
                 let stream = try await DataClient.connect(to: targets, retryUntil: Date().addingTimeInterval(4))
                 await self.report(.tcpOk, item: item)
                 await self.run(item, stream: stream, peer: peer)
             } catch {
                 if Task.isCancelled { return }
                 await self.report(.tcpFail, item: item)
+                if let dataError = error as? DataClientError, dataError == .localNetworkDenied {
+                    self.fail(item, LocalNetworkPermission.deniedMessage)
+                    return
+                }
                 self.awaitNextPath(item)
             }
         }

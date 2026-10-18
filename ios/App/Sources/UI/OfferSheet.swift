@@ -58,7 +58,6 @@ struct OfferSheet: View {
             .controlSize(.large)
         }
         .padding(24)
-        .themedBackground()
         .presentationDetents([.medium, .large])
     }
 }

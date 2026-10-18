@@ -99,6 +99,8 @@ final class AppModel {
         audio.start()   // yalnız okur; ses oturumunu etkinleştirmez
         // İzin zaten verilmişse (ve tanıdık PC varsa) merkez kurulur; izin istemi çıkarmaz.
         hub.startIfAlreadyAuthorized()
+        // PROTOCOL §3a: Paylaşım uzantısı açıkken BLE bağlantıları bırakılır, kapanınca yeniden kurulur.
+        ShareActivitySignal.observe { [weak hub] active in hub?.central.setYielding(active) }
     }
 
     #if PUSH_ENABLED

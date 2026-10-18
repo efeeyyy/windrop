@@ -74,6 +74,19 @@ public interface IBleLink
 
     /// <summary>Sıradaki GATT yükü; bağlantı koptuysa null.</summary>
     ValueTask<byte[]?> ReceiveAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// PROTOCOL §3a: oturum protokol hatasıyla bittiğinde istemciye tek bildirim olarak <see cref="BleResync.Marker"/> gönderir.
+    /// Gerçek bağlantı, abone yoksa sessizce atlar; varsayılan uygulama düz <see cref="SendAsync"/>'tir.
+    /// </summary>
+    ValueTask SendResetAsync(CancellationToken cancellationToken) => SendAsync(BleResync.Marker, cancellationToken);
+}
+
+/// <summary>PROTOCOL §3a: BLE oturum sıfırlama işareti.</summary>
+public static class BleResync
+{
+    /// <summary>ASCII <c>WDR</c> (3 bayt): PC → iPhone, parçalama başlığı yok.</summary>
+    public static readonly byte[] Marker = "WDR"u8.ToArray();
 }
 
 /// <summary>BLE oturumu: Noise mesajı <see cref="BleFragmenter"/> ile parçalanır, §9a gereği sıra no mesaj başınadır.</summary>

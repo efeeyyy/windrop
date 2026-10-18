@@ -95,6 +95,7 @@ public sealed class TransferService : ITransferService
         var snap = _coord.Send(deviceId, paths);
         AppLog.Write($"gönder: {paths.Count} dosya → {snap.PeerName} ({snap.Id})");
         Apply(snap);
+        if (paths.Count > 0 && _items.TryGetValue(snap.Id.ToString(), out var sent)) sent.PreviewPath = paths[0];
         return Task.CompletedTask;
     }
 
@@ -134,6 +135,8 @@ public sealed class TransferService : ITransferService
         item.ErrorMessage = s.Error;
         item.PushPending = s.Note == TransferNote.PushSent;
         if (s.SavedPath is not null) item.SavedPath = s.SavedPath;
+        if (s.FirstFilePath is not null) item.PreviewPath = s.FirstFilePath;
+        else if (item.PreviewPath is null && s.SavedPath is not null) item.PreviewPath = s.SavedPath;
         item.Status = s.Phase switch
         {
             TransferPhase.Active => TransferStatus.Active,

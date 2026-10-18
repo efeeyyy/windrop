@@ -35,6 +35,9 @@ enum ProtocolIds {
     /// arka plan görevi ve bildirim yok (ana uygulamanın durum geri yüklemesiyle çakışmaz).
     static let isExtension: Bool = Bundle.main.bundlePath.hasSuffix(".appex")
 
+    /// PROTOCOL §3a: PC'nin oturumu kapattığını bildiren, `p2c` üzerinden tek bildirim olarak gelen 3 bayt ASCII `WDR`.
+    static let resetMarker = Data("WDR".utf8)
+
     /// PROTOCOL §5: PC'nin dinlediği veri portu.
     static let tcpPort: UInt16 = 53600
 

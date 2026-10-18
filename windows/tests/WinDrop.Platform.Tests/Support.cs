@@ -210,10 +210,10 @@ internal sealed class Harness : IAsyncDisposable
     public string PcId => DeviceId.HexFromPublicKey(PcPublicKey);
 
     /// <summary>iPhone IK ile BLE'ye bağlanır, PC hello'sunu okur, kendi hello'sunu yollar.</summary>
-    public async Task<Phone> ConnectPhoneAsync(string? wifi, NoiseKeyPair? key = null, bool xx = false, bool btAudio = false)
+    public async Task<Phone> ConnectPhoneAsync(string? wifi, NoiseKeyPair? key = null, bool xx = false, bool btAudio = false, bool resync = false)
     {
         var (phoneLink, pcLink) = MemoryBleLink.CreatePair();
-        LinkTasks.Add(Acceptor.RunLinkAsync(pcLink, CancellationToken.None));
+        LinkTasks.Add(resync ? Acceptor.RunLinkWithResyncAsync(pcLink, CancellationToken.None) : Acceptor.RunLinkAsync(pcLink, CancellationToken.None));
         var transport = new BleMessageTransport(phoneLink);
         var channel = await (xx
                 ? SecureChannel.ConnectXxAsync(transport, Prefix.CreateBle(), key ?? PhoneKey, k => k.Span.SequenceEqual(PcPublicKey))
@@ -244,6 +244,7 @@ internal sealed class Harness : IAsyncDisposable
 internal sealed class Phone(Harness h, SecureChannel channel, MemoryBleLink link) : IDisposable
 {
     public SecureChannel Channel { get; } = channel;
+    public MemoryBleLink Link => link;
     public string Sas => WinDrop.Platform.Sas.Compute(Channel.HandshakeHash);
     public Harness Harness { get; } = h;
 

@@ -87,6 +87,16 @@ belge düzeltilir.
 - Parça kaybı, sıra no atlaması veya bağlantı kopması **oturumu düşürür**; yeni el sıkışma
   gerekir (Noise sayaçları kayar).
 
+### 3a. BLE oturum sıfırlama (2026-10-18, cihaz testinde senkron kaybı görüldü)
+- PC bir BLE oturumunu herhangi bir protokol hatasıyla (sıra no atlaması, şifre çözme hatası, beklenmeyen
+  ham yük) kapattığında, aynı istemciye `p2c` üzerinden **tek bildirim olarak 3 bayt ASCII `WDR`** gönderir
+  (parçalama başlığı yok; el sıkışma/oturum dışı işaret). Ardından o istemciden gelen yazmaları, yeni bir
+  20 baytlık ön ek gelene kadar yok sayar (hata vermez).
+- iPhone `WDR` aldığında veya kendi tarafında herhangi bir BLE protokol/şifre hatası olduğunda oturumu
+  kapatır, GATT bağlantısını keser ve 1 sn sonra yeniden bağlanıp ön ek + yeni el sıkışma yapar.
+- Aynı iPhone'da ana uygulama ve paylaşım uzantısı aynı anda bağlanırsa PC ikisini aynı cihaz olarak görür;
+  bu yüzden uzantı açıkken ana uygulama BLE bağlantılarını bırakır (uzantı kapanınca yeniden kurar).
+
 ## 4. Sinyal mesajları (BLE oturumu içinde)
 Gövde: UTF-8 JSON `{"t": "<tür>", ...}`. Bilinmeyen alanlar yok sayılır; bilinmeyen `t` hatadır.
 | t | Yön | Alanlar |

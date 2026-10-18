@@ -204,7 +204,7 @@ public sealed class BleSignalServer : IAsyncDisposable
             PlatformLog.Write($"BLE: yeni istemci bağlantısı (MaxPduSize={session.MaxPduSize})");
             conn.Run = Task.Run(async () =>
             {
-                try { await _acceptor.RunLinkAsync(conn, _stop.Token); }
+                try { await _acceptor.RunLinkWithResyncAsync(conn, _stop.Token); }
                 finally
                 {
                     conn.Close();
@@ -287,6 +287,19 @@ public sealed class BleSignalServer : IAsyncDisposable
                 await Task.Delay(30 * (attempt + 1), cts.Token).ConfigureAwait(false);
             }
             throw new IOException($"BLE bildirimi gönderilemedi ({status}).");
+        }
+
+        /// <summary>PROTOCOL §3a: <c>WDR</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>
+        public async ValueTask SendResetAsync(CancellationToken cancellationToken)
+        {
+            var host = server._host;
+            var client = FindClient();
+            if (host is null || client is null) return;
+            var writer = new DataWriter();
+            writer.WriteBytes(BleResync.Marker);
+            var result = await host.P2c.NotifyValueAsync(writer.DetachBuffer(), client);
+            if (result.Status != GattCommunicationStatus.Success)
+                throw new IOException($"WDR bildirimi gönderilemedi ({result.Status}).");
         }
 
         public async ValueTask<byte[]?> ReceiveAsync(CancellationToken cancellationToken)

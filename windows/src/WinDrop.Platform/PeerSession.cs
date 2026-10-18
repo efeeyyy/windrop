@@ -60,6 +60,9 @@ public sealed class PeerSession : IDisposable
 
     public volatile bool BtAudio;
 
+    /// <summary>Oturum protokol/şifre hatasıyla bitti (PROTOCOL §3a: iPhone'a sıfırlama işareti gider).</summary>
+    public volatile bool Faulted;
+
     public volatile IReadOnlyList<string> Caps = [];
 
     /// <summary>Oturum kapatıldı (yerine yenisi geldi, eşleştirme kaldırıldı, bağlantı koptu).</summary>

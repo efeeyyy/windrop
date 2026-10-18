@@ -76,6 +76,7 @@ final class ShareModel {
         network.start()
         audio.start()   // yalnız okur
         hub.startNearby()
+        LocalNetworkPermission.shared.trigger()
         guard !providers.isEmpty else {
             phase = .failed("Paylaşılacak dosya bulunamadı.")
             return

@@ -38,9 +38,26 @@ public sealed class TransferRow : ObservableObject
     {
         Item = item;
         item.PropertyChanged += OnItemChanged;
+        UpdateThumbnail();
     }
 
     public TransferItem Item { get; }
+
+    private string? _thumbPath;
+
+    /// <summary>Önizleme; aktarım sürerken (yol yokken) null → yer tutucu simge.</summary>
+    public System.Windows.Media.ImageSource? Thumbnail { get; private set; }
+
+    private async void UpdateThumbnail()
+    {
+        var path = Item.PreviewPath;
+        if (string.IsNullOrEmpty(path) || string.Equals(path, _thumbPath, StringComparison.Ordinal)) return;
+        _thumbPath = path;
+        var img = await Thumbnails.GetAsync(path);
+        if (!string.Equals(_thumbPath, path, StringComparison.Ordinal) || img is null) return;
+        Thumbnail = img;
+        OnPropertyChanged(nameof(Thumbnail));
+    }
 
     public void Detach() => Item.PropertyChanged -= OnItemChanged;
 
@@ -71,6 +88,7 @@ public sealed class TransferRow : ObservableObject
     private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
     {
         OnPropertyChanged(string.Empty);
+        UpdateThumbnail();
     }
 }
 

@@ -85,6 +85,7 @@ public sealed class FakeTransferService : ITransferService
             catch (IOException) { total += 1024; }
         }
         var item = new TransferItem(Guid.NewGuid().ToString("N"), TransferDirection.Send, name, paths.Count, total);
+        item.PreviewPath = paths.Count > 0 ? paths[0] : null;
         AppLog.Write($"[fake] gönder: {paths.Count} dosya → {name}");
         return Run(item, null);
     }
@@ -101,6 +102,7 @@ public sealed class FakeTransferService : ITransferService
             return;
         }
         var item = new TransferItem(offer.OfferId, TransferDirection.Receive, offer.SenderName, offer.FileCount, offer.TotalBytes);
+        item.PreviewPath = Environment.GetEnvironmentVariable("WINDROP_FAKE_PREVIEW");
         _ = Run(item, _downloadFolder());
     }
 

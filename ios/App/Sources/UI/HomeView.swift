@@ -11,7 +11,7 @@ struct HomeView: View {
     @State private var showSourceDialog = false
     @State private var showPhotoPicker = false
     @State private var showImporter = false
-    /// Aynı `.fileImporter` hem dosya hem klasör seçer (bir görünümde tek `fileImporter` güvenilir çalışır).
+    /// Tek `.fileImporter` hem dosya hem klasör seçer; `allowedContentTypes` bu duruma göre değişir.
     @State private var importingFolders = false
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var isLoading = false
@@ -21,6 +21,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
+                ShareGuideCard()   // küçük, kapatılabilir; kapatılınca bir daha çıkmaz
                 Spacer()
                 Button {
                     showSourceDialog = true
@@ -55,6 +56,7 @@ struct HomeView: View {
                 } else if needsBluetoothPrompt {
                     Button {
                         model.hub.startNearby()   // kullanıcı dokunuşu: Bluetooth izni burada istenir
+                        LocalNetworkPermission.shared.trigger()
                     } label: {
                         Label("Bluetooth izni vermek için dokunun", systemImage: "dot.radiowaves.left.and.right")
                             .font(.footnote)
@@ -67,12 +69,11 @@ struct HomeView: View {
                 Spacer()
             }
             .padding()
-            .themedBackground()
             .navigationTitle("WinDrop")
             .confirmationDialog("Ne göndermek istersiniz?", isPresented: $showSourceDialog, titleVisibility: .visible) {
-                Button("Fotoğraf veya video") { showPhotoPicker = true }
-                Button("Dosya") { importingFolders = false; showImporter = true }
-                Button("Klasör") { importingFolders = true; showImporter = true }
+                Button("Fotoğraf veya video") { presentAfterDialog { showPhotoPicker = true } }
+                Button("Dosya") { presentAfterDialog { importingFolders = false; showImporter = true } }
+                Button("Klasör") { presentAfterDialog { importingFolders = true; showImporter = true } }
                 Button("Vazgeç", role: .cancel) {}
             }
             .photosPicker(
@@ -96,6 +97,15 @@ struct HomeView: View {
             .sheet(item: $session) { session in
                 NearbyView(session: session)
             }
+        }
+    }
+
+    /// `confirmationDialog` kapanırken aynı anda başka sunum açmak iOS'ta sessizce yok sayılır; dialog'un kapanma
+    /// animasyonu bitince aç.
+    private func presentAfterDialog(_ action: @escaping @MainActor () -> Void) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            action()
         }
     }
 

@@ -45,7 +45,6 @@ struct NearbyView: View {
                 }
                 .padding()
             }
-            .themedBackground()
             .navigationTitle("Gönder")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -56,6 +55,7 @@ struct NearbyView: View {
         }
         .task {
             model.hub.startNearby()
+            LocalNetworkPermission.shared.trigger()   // Dosya gönder: Bluetooth ile birlikte yerel ağ izni
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             showHint = true
         }

@@ -134,9 +134,7 @@ struct SettingsView: View {
                     Text("Hakkında")
                 }
             }
-            .themedList()
             .scrollDismissesKeyboard(.interactively)
-            .simultaneousGesture(TapGesture().onEnded { fieldFocused = false })
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()

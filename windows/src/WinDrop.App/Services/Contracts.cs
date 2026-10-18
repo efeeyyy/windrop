@@ -74,6 +74,9 @@ public sealed partial class TransferItem : ObservableObject
     [ObservableProperty] public partial double BytesPerSecond { get; set; }
     [ObservableProperty] public partial TransferStatus Status { get; set; } = TransferStatus.Waiting;
 
+    /// <summary>Satır önizlemesi için ilk dosya/klasör yolu (gönderen: seçilen ilk öğe; alıcı: kaydedilen ilk dosya).</summary>
+    [ObservableProperty] public partial string? PreviewPath { get; set; }
+
     /// <summary>Alınan dosya/klasör yolu (tamamlanınca; "Klasörde göster" için).</summary>
     [ObservableProperty] public partial string? SavedPath { get; set; }
 

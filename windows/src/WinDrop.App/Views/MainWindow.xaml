@@ -77,17 +77,41 @@
                             <Border Padding="12" Margin="0,0,0,8" CornerRadius="6" Background="#10808080">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel>
+                                    <Border Width="48" Height="48" CornerRadius="8" Margin="0,0,12,0" VerticalAlignment="Top"
+                                            Background="#18808080" ClipToBounds="True">
+                                        <Grid>
+                                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="22" Opacity="0.55"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Thumbnail}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                                        </Grid>
+                                        <Border.Clip>
+                                            <RectangleGeometry Rect="0,0,48,48" RadiusX="8" RadiusY="8" />
+                                        </Border.Clip>
+                                    </Border>
+                                    <StackPanel Grid.Column="1">
                                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                                         <TextBlock Text="{Binding Detail}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
                                         <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,6,0,2"
                                                      Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}" />
                                         <TextBlock Text="{Binding StatusText}" FontSize="12" />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
                                         <Button Content="{infra:T Main.Cancel}"
                                                 Command="{Binding DataContext.CancelTransferCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"

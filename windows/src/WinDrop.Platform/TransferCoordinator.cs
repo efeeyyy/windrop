@@ -43,7 +43,8 @@ public sealed record TransferSnapshot(
     double BytesPerSecond,
     string? SavedPath,
     string? Error,
-    TransferNote Note = TransferNote.None)
+    TransferNote Note = TransferNote.None,
+    string? FirstFilePath = null)
 {
     public bool IsTerminal => Phase >= TransferPhase.Completed;
 }
@@ -279,6 +280,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                     // §9a: düz metnin ilk baytı 1–8 → §5 çerçevesi; yalnız izin verilen BLE aktarımına ait olabilir (§6.4).
                     if (RouteBleFrame(session, frame)) continue;
                     PlatformLog.Write("BLE oturumunda beklenmeyen veri çerçevesi geldi; oturum kapatılıyor.");
+                    session.Faulted = true;
                     break;
                 }
                 Dispatch(session, msg.Signal!);
@@ -288,6 +290,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                                        or ObjectDisposedException or InvalidOperationException)
         {
             PlatformLog.Write($"BLE oturumu sonlandı: {ex.GetType().Name}: {ex.Message}");
+            if (ex is ProtocolException or NoiseException) session.Faulted = true;
         }
         finally
         {
@@ -1142,6 +1145,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
 
     private void FinishFromResult(State s, TransferResult r)
     {
+        if (s.Role == TransferRole.Receiver && r.ReceivedFiles.Count > 0) s.FirstFilePath = r.ReceivedFiles[0].StoredPath;
         switch (r.Outcome)
         {
             case TransferOutcome.Completed:
@@ -1342,7 +1346,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         lock (s.Gate)
         {
-            return new TransferSnapshot(s.Id, s.Role, s.PeerId, s.PeerName, s.Count, s.Total, s.Phase, s.Progress, s.Speed, s.SavedPath, s.Error, s.Note);
+            return new TransferSnapshot(s.Id, s.Role, s.PeerId, s.PeerName, s.Count, s.Total, s.Phase, s.Progress, s.Speed, s.SavedPath, s.Error, s.Note, s.FirstFilePath);
         }
     }
 
@@ -1442,6 +1446,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         public double Progress;
         public double Speed;
         public string? SavedPath;
+        public string? FirstFilePath;
         public string? Error;
 
         public bool IsTerminal

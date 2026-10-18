@@ -12,6 +12,7 @@ enum DataClientError: Error, LocalizedError {
     case invalidEndpoint
     case timeout
     case allFailed
+    case localNetworkDenied
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +20,7 @@ enum DataClientError: Error, LocalizedError {
         case .invalidEndpoint: return "Geçersiz adres veya port."
         case .timeout: return "Bağlantı zaman aşımına uğradı."
         case .allFailed: return "Hiçbir adrese bağlanılamadı."
+        case .localNetworkDenied: return LocalNetworkPermission.deniedMessage
         }
     }
 }
@@ -88,6 +90,10 @@ private final class NWConnectAttempt: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<NWByteStream, Error>?
     private var finished = false
+    private var waiting = false
+    private var connectionStart = Date()
+    /// Yerel ağ izin sorusu açıkken (.waiting) bağlantı en çok bu kadar beklenir.
+    static let permissionWait: TimeInterval = 30
 
     init(candidate: HostPort) throws {
         guard let port = NWEndpoint.Port(rawValue: candidate.port), !candidate.host.isEmpty else {
@@ -113,9 +119,10 @@ private final class NWConnectAttempt: @unchecked Sendable {
                 connection.stateUpdateHandler = { [weak self] state in
                     self?.handle(state)
                 }
+                connectionStart = Date()
                 connection.start(queue: queue)
                 queue.asyncAfter(deadline: .now() + timeout) { [weak self] in
-                    self?.finish(.failure(DataClientError.timeout))
+                    self?.expire()
                 }
             }
         } onCancel: {
@@ -131,9 +138,33 @@ private final class NWConnectAttempt: @unchecked Sendable {
             finish(.failure(error))
         case .cancelled:
             finish(.failure(CancellationError()))
+        case .waiting(let error):
+            // Yerel ağ izin sorusu açıkken bağlantı .waiting'de kalır: başarısız sayılmaz, yanıt beklenir.
+            if LocalNetworkPermission.isPolicyDenied(error) {
+                LocalNetworkPermission.shared.markDenied()
+                finish(.failure(DataClientError.localNetworkDenied))
+                return
+            }
+            lock.lock(); waiting = true; lock.unlock()
         default:
-            // .waiting (yol yok / yerel ağ izni bekliyor) zaman aşımı ile elenir.
             break
+        }
+    }
+
+    /// Aday zaman aşımı: izin sorusu yanıtlanmamışsa (bağlantı .waiting, izin durumu bilinmiyor) 30 sn'ye kadar bekler.
+    private func expire() {
+        lock.lock()
+        let isWaiting = waiting
+        let done = finished
+        lock.unlock()
+        if done { return }
+        switch LocalNetworkPermission.shared.state {
+        case .denied:
+            finish(.failure(DataClientError.localNetworkDenied))
+        case .unknown where isWaiting && connectionStart.timeIntervalSinceNow > -Self.permissionWait:
+            queue.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.expire() }
+        default:
+            finish(.failure(DataClientError.timeout))
         }
     }
 
@@ -206,6 +237,7 @@ enum DataClient {
                 return try await connect(to: candidates, perAttemptTimeout: perAttemptTimeout)
             } catch {
                 lastError = error
+                if LocalNetworkPermission.shared.state == .denied { throw DataClientError.localNetworkDenied }
             }
             try await Task.sleep(nanoseconds: 500_000_000)
         } while Date() < deadline

@@ -53,6 +53,7 @@ targets:
     sources:
       - path: Sources
       - path: Shared
+      - path: Assets.xcassets
     dependencies:
       - package: WinDropKit
       - target: WinDropShare   # PlugIns/WinDropShare.appex olarak gömülür
@@ -76,6 +77,8 @@ targets:
         NSBluetoothAlwaysUsageDescription: WinDrop, yakındaki bilgisayarları Bluetooth ile bulmak ve dosya aktarımı için onlara sinyal göndermek üzere Bluetooth kullanır.
         NSCameraUsageDescription: İsteğe bağlı otomatik kabul eşleştirmesi için bilgisayarınızın ekranındaki QR kodu okumak üzere kamera gerekir.
         NSLocalNetworkUsageDescription: Aynı ağdaki bilgisayarınıza dosya göndermek veya ondan dosya almak için yerel ağa erişim gerekir.
+        NSBonjourServices:
+          - _windrop._tcp
         NSPhotoLibraryAddUsageDescription: Bilgisayardan aldığınız fotoğraf ve videoları Fotoğraflar'a kaydetmek için izin gerekir.
         UIBackgroundModes:
           - bluetooth-central
@@ -86,6 +89,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WINDROP_BUNDLE_ID)
         PRODUCT_NAME: WinDrop
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_ENTITLEMENTS: WinDrop.entitlements
         ENABLE_USER_SCRIPT_SANDBOXING: NO
@@ -104,6 +108,7 @@ targets:
     sources:
       - path: ShareExtension
       - path: Shared
+      - path: Assets.xcassets   # paylaşım uzantısı da aynı simgeyi gösterir
     dependencies:
       - package: WinDropKit
     info:
@@ -114,6 +119,8 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSBluetoothAlwaysUsageDescription: WinDrop, paylaştığınız dosyaları göndermek için yakındaki bilgisayarları Bluetooth ile bulur.
         NSLocalNetworkUsageDescription: Aynı ağdaki bilgisayarınıza dosya göndermek için yerel ağa erişim gerekir.
+        NSBonjourServices:
+          - _windrop._tcp
         AppIdentifierPrefix: $(AppIdentifierPrefix)   # Keychain.swift APP_GROUP kipi okur
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
@@ -127,6 +134,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(WINDROP_BUNDLE_ID).share
         PRODUCT_NAME: WinDropShare
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES

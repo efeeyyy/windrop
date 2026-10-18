@@ -28,7 +28,7 @@ public sealed record AppOptions(bool Hidden, IReadOnlyList<string> SendPaths)
 /// <summary>Tek örnek: Mutex + adlı boru. İkinci örnek isteğini ilkine iletir.</summary>
 public sealed class SingleInstance : IDisposable
 {
-    private static readonly string Suffix = Environment.UserName;
+    private static readonly string Suffix = Environment.UserName + Environment.GetEnvironmentVariable("WINDROP_INSTANCE");   // WINDROP_INSTANCE: yalnız deneme için ayrı örnek
     private readonly Mutex _mutex;
     private readonly CancellationTokenSource _cts = new();
     private bool _owned;
