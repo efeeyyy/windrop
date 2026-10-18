@@ -45,6 +45,10 @@ private struct TransferRow: View {
                 }
             }
 
+            if item.showsVerificationCode {
+                VerificationCodeBanner(code: item.code)
+            }
+
             if item.state == .transferring {
                 ProgressView(value: Double(item.bytesDone), total: Double(max(item.totalBytes, 1)))
             }

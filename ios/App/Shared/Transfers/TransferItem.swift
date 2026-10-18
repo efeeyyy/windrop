@@ -51,6 +51,16 @@ final class TransferItem: Identifiable {
     /// Gönderirken: PC `accept` gönderdi. `addr`/`hotspot` bu olmadan işlenmez.
     var peerAccepted = false
 
+    /// Doğrulama kodu şimdi gösterilmeli mi? Kod yalnız XX oturumunda vardır (IK'da boş); gönderirken PC onaylayana
+    /// dek, alırken kullanıcı karar verene dek.
+    var showsVerificationCode: Bool {
+        guard !code.isEmpty, !isFinished else { return false }
+        switch direction {
+        case .send: return state == .awaitingPeer && !peerAccepted
+        case .receive: return state == .awaitingUser
+        }
+    }
+
     var totalBytes: Int64
     var state: State
     var bytesDone: Int64 = 0

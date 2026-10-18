@@ -36,7 +36,7 @@ public sealed class SignalSessionAcceptor
 
     /// <summary>Bir BLE bağlantısını baştan sona yürütür; bağlantı koptuğunda veya oturum bittiğinde döner. Hata fırlatmaz.
     /// Protokol hatasıyla biterse istemciye <c>WDR</c> gönderir (PROTOCOL §3a) ama yeniden senkron beklemez.</summary>
-    public Task RunLinkAsync(IBleLink link, CancellationToken ct) => RunOnceAsync(link, ct);
+    public async Task RunLinkAsync(IBleLink link, CancellationToken ct) => await RunOnceAsync(link, ct).ConfigureAwait(false);
 
     /// <summary>
     /// PROTOCOL §3a: <see cref="RunLinkAsync"/> gibi, ama oturum protokol hatasıyla bittiğinde (<c>WDR</c> gönderildikten sonra)
@@ -48,20 +48,29 @@ public sealed class SignalSessionAcceptor
         IBleLink current = link;
         while (!ct.IsCancellationRequested)
         {
-            if (!await RunOnceAsync(current, ct).ConfigureAwait(false)) return;
-
-            PlatformLog.Write("BLE: senkron bekleniyor (yeni ön ek gelene kadar eski oturum yazmaları yok sayılıyor).");
-            byte[]? prefix = null;
-            try
+            var (fault, restart) = await RunOnceAsync(current, ct).ConfigureAwait(false);
+            byte[]? prefix = restart;
+            if (prefix is not null)
             {
-                while ((prefix = await link.ReceiveAsync(ct).ConfigureAwait(false)) is not null)
-                {
-                    if (Prefix.TryDecode(prefix, out _)) break;
-                }
+                // Oturum ortasında yeni ön ek: WDR yok, senkron beklemeden aynı koddan yeniden kur.
+                PlatformLog.Write("BLE: istemci oturumu yeniden başlattı (yeni ön ek)");
             }
-            catch (OperationCanceledException) { return; }
-            if (prefix is null) return;
-            PlatformLog.Write("BLE: yeni ön ek geldi, oturum yeniden kuruluyor.");
+            else
+            {
+                if (!fault) return;
+
+                PlatformLog.Write("BLE: senkron bekleniyor (yeni ön ek gelene kadar eski oturum yazmaları yok sayılıyor).");
+                try
+                {
+                    while ((prefix = await link.ReceiveAsync(ct).ConfigureAwait(false)) is not null)
+                    {
+                        if (Prefix.TryDecode(prefix, out _)) break;
+                    }
+                }
+                catch (OperationCanceledException) { return; }
+                if (prefix is null) return;
+                PlatformLog.Write("BLE: yeni ön ek geldi, oturum yeniden kuruluyor.");
+            }
             current = new ReplayLink(link, prefix);
         }
     }
@@ -86,13 +95,14 @@ public sealed class SignalSessionAcceptor
     }
 
     /// <returns>Oturum protokol/şifre hatasıyla bittiyse true (<c>WDR</c> gönderilmiştir).</returns>
-    private async Task<bool> RunOnceAsync(IBleLink link, CancellationToken ct)
+    private async Task<(bool Fault, byte[]? Restart)> RunOnceAsync(IBleLink link, CancellationToken ct)
     {
         var fault = false;
         SecureChannel? channel = null;
+        BleMessageTransport? transport = null;
         try
         {
-            var transport = new BleMessageTransport(link);
+            transport = new BleMessageTransport(link);
             var key = _identity.LoadOrCreate();
             var mode = _pairing.Current;
             using var hs = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -112,7 +122,7 @@ public sealed class SignalSessionAcceptor
                     _ => true,                                                // XX: yakındaki herkes (§2b); onay teklifte
                     mode?.Psk, hs.Token).ConfigureAwait(false);
             }
-            catch (Exception ex) when (mode is not null && ex is NoiseException or ProtocolException)
+            catch (Exception ex) when (mode is not null && ex is (NoiseException or ProtocolException) and not BleSessionRestartException)
             {
                 _pairing.NoteFailure();
                 throw;
@@ -124,12 +134,12 @@ public sealed class SignalSessionAcceptor
                 if (!_pairing.TryConsume(mode!))
                 {
                     PlatformLog.Write("BLE: eşleştirme sırrı zaten tüketildi/geçersiz, bağlantı kapatıldı.");
-                    return false;
+                    return (false, null);
                 }
                 PlatformLog.Write("BLE: XXpsk3 el sıkışması tamam (eşleştirme).");
                 var paired = await _pairing.HandleChannelAsync(channel, mode!, ct).ConfigureAwait(false);
                 PlatformLog.Write(paired ? "BLE: eşleştirme tamamlandı." : "BLE: eşleştirme tamamlanmadı.");
-                return false;
+                return (false, null);
             }
 
             await channel.EnsureEstablishedAsync(hs.Token).ConfigureAwait(false);   // IK: 0-RTT yok
@@ -138,14 +148,14 @@ public sealed class SignalSessionAcceptor
             if (peer is null && channel.Kind == HandshakeKind.IK)
             {
                 PlatformLog.Write("BLE: eş el sıkışma sırasında listeden kaldırıldı, kapatıldı.");
-                return false;
+                return (false, null);
             }
 
             var handler = SessionHandler;
             if (handler is null)
             {
                 PlatformLog.Write("BLE: oturum işleyicisi yok, kapatıldı.");
-                return false;
+                return (false, null);
             }
             using var session = new PeerSession(remoteKey, peer?.Name, peer is not null, peer is { IsFamiliar: false }, channel);
             channel = null;   // sahipliği session aldı
@@ -177,6 +187,9 @@ public sealed class SignalSessionAcceptor
             channel?.Dispose();
         }
 
+        if (transport?.RestartPrefix is { } restartPrefix && !ct.IsCancellationRequested)
+            return (false, restartPrefix);   // istemci yeni oturum başlatıyor: sessizce kapat, WDR gönderme
+
         if (fault && !ct.IsCancellationRequested)
         {
             // PROTOCOL §3a: iPhone oturumun öldüğünü bilmez; tek bildirimle haber ver (en iyi çaba, abone yoksa atlanır).
@@ -192,6 +205,6 @@ public sealed class SignalSessionAcceptor
                 PlatformLog.Write($"BLE: sıfırlama işareti gönderilemedi ({ex.GetType().Name}).");
             }
         }
-        return fault;
+        return (fault, null);
     }
 }

@@ -105,9 +105,9 @@ private struct SendingView: View {
                 .foregroundStyle(item.state == .done ? .green : (item.isFinished ? .orange : Color.accentColor))
             Text(item.pcName).font(.headline)
             Text(item.statusText).multilineTextAlignment(.center).foregroundStyle(.secondary)
-            if item.state == .awaitingPeer, !item.peerIsKnown, !item.peerAccepted, !item.code.isEmpty {
-                Text("Bilgisayarda onaylayın. Kod: \(item.code)")
-                    .font(.subheadline.monospacedDigit())
+            if item.showsVerificationCode {
+                Text("Bilgisayarda onaylayın.").font(.subheadline)
+                VerificationCodeBanner(code: item.code)
             }
             if item.state == .awaitingRelayConsent {
                 HStack {

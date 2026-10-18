@@ -49,6 +49,32 @@ public class BleResyncTests
     }
 
     [Fact]
+    public async Task PrefixMidSession_RestartsSessionWithoutWdr()
+    {
+        await using var h = new Harness();
+        using var phone = await h.ConnectPhoneAsync("connected", resync: true);
+        var link = phone.Link;
+
+        // Oturum ortasında (taşıma aşaması) yeni ön ek: WDR yok, yeni el sıkışma kurulur.
+        var transport = new BleMessageTransport(link);
+        using var channel = await SecureChannel.ConnectIkAsync(transport, Prefix.CreateBle(), h.PhoneKey, h.PcPublicKey).WaitAsync(T.Wait);
+        var hello = await channel.ReceiveSignalAsync().AsTask().WaitAsync(T.Wait);
+        Assert.Equal("TestPC", Assert.IsType<HelloMessage>(hello).Name);
+        await AssertSilentAsync(link);   // WDR gelmedi
+    }
+
+    [Fact]
+    public async Task TwentyByteNonPrefixFragment_StillFailsNormally()
+    {
+        await using var h = new Harness();
+        using var phone = await h.ConnectPhoneAsync("connected", resync: true);
+        var bad = new byte[20];
+        bad[0] = 87 | 0x80;   // 'W' benzeri başlık ama "WD"+sıfır ön ek değil: sıra no atlaması
+        await phone.Link.SendAsync(bad, CancellationToken.None);
+        Assert.Equal(BleResync.Marker, await ReceiveAsync(phone.Link));
+    }
+
+    [Fact]
     public async Task HandshakeProtocolError_SendsWdr()
     {
         await using var h = new Harness();

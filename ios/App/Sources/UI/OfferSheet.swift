@@ -35,10 +35,9 @@ struct OfferSheet: View {
                 }
             }
             .frame(maxWidth: 320, alignment: .leading)
-            if !item.code.isEmpty {
-                Text("Doğrulama kodu \(item.code)")
-                    .font(.footnote.monospacedDigit())
-                    .foregroundStyle(.secondary)
+            if item.showsVerificationCode {
+                VerificationCodeBanner(code: item.code)
+                    .frame(maxWidth: 320)
             }
             Spacer()
             HStack(spacing: 12) {

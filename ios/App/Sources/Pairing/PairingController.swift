@@ -89,6 +89,7 @@ final class PairingController {
             if let existing = central.findConnectedPeripheral(preferred: target.match, excluding: target.others) {
                 peripheral = existing
                 phase = .connecting(invite.pcName)
+                await hub.claimForPairing(existing.identifier)   // hub oturumu iptal + bitmesi beklenir, sonra yeni oturum
                 link = try await central.reopenForPairing(existing, timeout: 15)
             } else {
                 do {
@@ -97,6 +98,7 @@ final class PairingController {
                     throw PairingError.pcNotFound
                 }
                 phase = .connecting(invite.pcName)
+                await hub.claimForPairing(peripheral.identifier)
                 link = try await central.openLink(to: peripheral, timeout: 15)
             }
             openedLink = link

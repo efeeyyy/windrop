@@ -92,6 +92,10 @@ belge düzeltilir.
   ham yük) kapattığında, aynı istemciye `p2c` üzerinden **tek bildirim olarak 3 bayt ASCII `WDR`** gönderir
   (parçalama başlığı yok; el sıkışma/oturum dışı işaret). Ardından o istemciden gelen yazmaları, yeni bir
   20 baytlık ön ek gelene kadar yok sayar (hata vermez).
+- Oturum ortasında (el sıkışma veya taşıma aşaması) gelen GATT yükü **tam 20 bayt ve geçerli BLE ön eki**
+  (`WD` + sürüm + taşıma=1 + 16 sıfır bayt) ise PC bunu "istemci oturumu yeniden başlattı" sayar: mevcut oturumu
+  sessizce kapatır (`WDR` göndermez) ve bu ön ekle yeni yanıtlayan el sıkışmasını başlatır. Normal parçayla
+  karışma olasılığı ihmal edilir: 16 sıfır bayt koşulu yeterli sayılır (Noise şifreli yükü 'WD' + 16 sıfırla başlamaz).
 - iPhone `WDR` aldığında veya kendi tarafında herhangi bir BLE protokol/şifre hatası olduğunda oturumu
   kapatır, GATT bağlantısını keser ve 1 sn sonra yeniden bağlanıp ön ek + yeni el sıkışma yapar.
 - Aynı iPhone'da ana uygulama ve paylaşım uzantısı aynı anda bağlanırsa PC ikisini aynı cihaz olarak görür;

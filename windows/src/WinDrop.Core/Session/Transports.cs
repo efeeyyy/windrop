@@ -89,6 +89,9 @@ public static class BleResync
     public static readonly byte[] Marker = "WDR"u8.ToArray();
 }
 
+/// <summary>Oturum ortasında yeni BLE ön eki alındı; ön ek <see cref="BleMessageTransport.RestartPrefix"/> içindedir.</summary>
+public sealed class BleSessionRestartException() : ProtocolException("BLE istemcisi oturumu yeniden başlattı (yeni ön ek).");
+
 /// <summary>BLE oturumu: Noise mesajı <see cref="BleFragmenter"/> ile parçalanır, §9a gereği sıra no mesaj başınadır.</summary>
 public sealed class BleMessageTransport : IMessageTransport
 {
@@ -105,6 +108,9 @@ public sealed class BleMessageTransport : IMessageTransport
     }
 
     public TransportKind Kind => TransportKind.Ble;
+
+    /// <summary>Oturum ortasında gelen yeni BLE ön eki (istemci oturumu yeniden başlattı); yoksa null.</summary>
+    public byte[]? RestartPrefix { get; private set; }
 
     public int MaxMessageSize => BleFragmenter.MaxMessageSize;
 
@@ -141,6 +147,12 @@ public sealed class BleMessageTransport : IMessageTransport
             {
                 if (_midMessage) throw new ProtocolException("BLE bağlantısı mesaj ortasında koptu.");
                 return null;
+            }
+            // PROTOCOL §3a: oturum ortasında tam 20 bayt geçerli BLE ön eki = istemci oturumu yeniden başlatıyor.
+            if (payload.Length == Prefix.Length && Prefix.TryDecode(payload, out var restart) && restart.Transport == TransportKind.Ble)
+            {
+                RestartPrefix = payload;
+                throw new BleSessionRestartException();
             }
             // Sürüm uyuşmazlığı yanıtı: tam 2 bayt, ilk bayt 0xFF. Geçerli bir ilk parça başlığı (sıra 0) 0x80/0x00 olur.
             if (handshakePhase && !_midMessage && payload.Length == 2 && payload[0] == Prefix.VersionMismatchMarker)

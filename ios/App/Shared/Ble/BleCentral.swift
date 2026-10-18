@@ -27,6 +27,11 @@ final class BleCentral: NSObject {
     private var pendingCharacteristics: [UUID: (c2p: CBCharacteristic, p2c: CBCharacteristic)] = [:]
     private var settingUp: Set<UUID> = []
     private var links: [UUID: BlePeripheralLink] = [:]
+    /// GATT bağlantısı bilerek kesilmekte olan çevre birimleri (`didDisconnect` gelene dek): bu aralıkta yeniden
+    /// bağlanma / servis keşfi başlatılmaz (aynı çevre birimine ikinci oturum açılmasın).
+    private var resetting: Set<UUID> = []
+    /// Çevre birimi başına en çok BİR bekleyen yeniden bağlanma (1 sn debounce); tekrarlı tetikler birleşir.
+    private var reconnectTasks: [UUID: Task<Void, Never>] = [:]
 
     private var linkWaiters: [UUID: CheckedContinuation<BlePeripheralLink, Error>] = [:]
     private var linkWaiterTokens: [UUID: Int] = [:]
@@ -56,6 +61,7 @@ final class BleCentral: NSObject {
         let removed = wanted.subtracting(ids)
         wanted = ids
         for id in removed {
+            reconnectTasks.removeValue(forKey: id)?.cancel()
             if let p = peripherals[id], p.state != .disconnected {
                 manager?.cancelPeripheralConnection(p)
             }
@@ -69,6 +75,9 @@ final class BleCentral: NSObject {
         for p in manager?.retrievePeripherals(withIdentifiers: Array(wanted)) ?? [] {
             peripherals[p.identifier] = p
             p.delegate = self
+            // Sıfırlanan / bekleyen yeniden bağlanması olan / bağlantısı açılmakta olan çevre birimine dokunulmaz.
+            if resetting.contains(p.identifier) || reconnectTasks[p.identifier] != nil
+                || linkWaiters[p.identifier] != nil { continue }
             switch p.state {
             case .disconnected:
                 manager?.connect(p, options: nil)
@@ -85,13 +94,22 @@ final class BleCentral: NSObject {
     }
 
     /// PROTOCOL §3a: oturumu kapat, GATT bağlantısını kes; `didDisconnect` 1 sn sonra yeniden bağlanmayı planlar.
+    /// Tek seferlik: sıfırlama sürerken (WDR / `didModifyServices` tekrarları) gelen yeni tetikler yok sayılır.
     private func resetSession(_ peripheral: CBPeripheral) {
-        links[peripheral.identifier]?.close()
+        let id = peripheral.identifier
+        links[id]?.close()
+        guard !resetting.contains(id) else { return }
         if peripheral.state != .disconnected {
+            resetting.insert(id)
             manager?.cancelPeripheralConnection(peripheral)
         } else {
-            scheduleReconnect(peripheral.identifier)
+            scheduleReconnect(id)
         }
+    }
+
+    /// Açılmakta olan (henüz `BlePeripheralLink` vermemiş) `openLink` beklemesini bağlantıyı kesmeden bitirir.
+    func abortPendingLink(_ id: UUID) {
+        failLinkWaiter(id, error: BleError.disconnected, cancelConnection: false)
     }
 
     /// Oturumu tazeler (teklif zaman aşımı): bağlantı kesilir; tanıdık PC'de 1 sn sonra bekleyen `connect`,
@@ -103,6 +121,7 @@ final class BleCentral: NSObject {
 
     func closeLink(_ id: UUID) {
         if let p = peripherals[id], p.state != .disconnected {
+            resetting.insert(id)
             manager?.cancelPeripheralConnection(p)
         }
     }
@@ -221,11 +240,13 @@ final class BleCentral: NSObject {
         let id = peripheral.identifier
         peripherals[id] = peripheral
         peripheral.delegate = self
+        reconnectTasks.removeValue(forKey: id)?.cancel()   // eşleştirme sırasında otomatik yeniden bağlanma yok
         var attempt = 0
         while true {
             attempt += 1
             links.removeValue(forKey: id)?.close()
             if peripheral.state != .disconnected {
+                resetting.insert(id)
                 manager?.cancelPeripheralConnection(peripheral)
                 let deadline = Date().addingTimeInterval(3)
                 while peripheral.state != .disconnected, Date() < deadline {
@@ -263,6 +284,10 @@ final class BleCentral: NSObject {
         peripheral.delegate = self
         tokenCounter += 1
         let token = tokenCounter
+        reconnectTasks.removeValue(forKey: id)?.cancel()
+        if linkWaiters[id] != nil {   // aynı çevre birimi için ikinci bekleme: eskisi bırakılır (süzülen continuation kalmasın)
+            failLinkWaiter(id, error: BleError.disconnected, cancelConnection: false)
+        }
         return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<BlePeripheralLink, Error>) in
             linkWaiters[id] = cont
             linkWaiterTokens[id] = token
@@ -306,20 +331,29 @@ final class BleCentral: NSObject {
         }
     }
 
+    /// 1 sn sonra TEK SEFERLİK yeniden bağlanma; bekleyen varsa yenisi eklenmez (didDisconnect / WDR /
+    /// didModifyServices / didFailToConnect art arda gelse de çevre birimi başına tek `connect`).
     private func scheduleReconnect(_ id: UUID) {
-        guard wanted.contains(id) else { return }
-        Task { [weak self] in
+        guard wanted.contains(id), reconnectTasks[id] == nil else { return }
+        reconnectTasks[id] = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            self?.reconnectNow(id)
+            guard let self, !Task.isCancelled else { return }
+            self.reconnectTasks[id] = nil
+            self.reconnectNow(id)
         }
     }
 
     private func reconnectNow(_ id: UUID) {
-        guard state == .poweredOn, !isYielding, wanted.contains(id), let p = peripherals[id], p.state == .disconnected else { return }
+        guard state == .poweredOn, !isPaused, !isYielding, wanted.contains(id), !resetting.contains(id),
+              links[id] == nil, linkWaiters[id] == nil,
+              let p = peripherals[id], p.state == .disconnected else { return }
         manager?.connect(p, options: nil)
     }
 
     private func tearDownAllLinks() {
+        resetting.removeAll()
+        reconnectTasks.values.forEach { $0.cancel() }
+        reconnectTasks.removeAll()
         for (id, link) in links {
             link.close()
             delegate?.bleCentral(self, didClose: id)
@@ -389,6 +423,7 @@ extension BleCentral: @preconcurrency CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         let id = peripheral.identifier
         settingUp.remove(id)
+        resetting.remove(id)
         if linkWaiters[id] != nil {
             failLinkWaiter(id, error: error ?? BleError.disconnected, cancelConnection: false)
         }
@@ -398,6 +433,7 @@ extension BleCentral: @preconcurrency CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         let id = peripheral.identifier
         settingUp.remove(id)
+        resetting.remove(id)
         pendingCharacteristics[id] = nil
         if let link = links.removeValue(forKey: id) {
             link.close()
