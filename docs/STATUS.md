@@ -62,6 +62,8 @@ Cihazda bulunup düzeltilenler: Windows GATT yanıtsız yazmaları düşürüyor
 oturum senkron kaybı (WDR + oturum ortasında ön ek = yeniden başlat); iOS'ta peripheral başına tek oturum;
 yerel ağ izni yarışı; WPF .ico biçimi; arayüzde koşulsuz otomatik kabul (güvenlik); uygulama ve uzantının
 ayrı kimlikleri (App Group ile tek kimlik — ücretsiz hesapta imza riski); iOS cihaz adı okunamıyor (ayar).
+2026-10-19 00:10: yol değişimi doğrulandı — iPhone Wi-Fi kapalı → "Wi-Fi'ı açın" notu; Wi-Fi açılıp eduroam'a
+bağlanınca aktarım etkin noktaya katılmadan doğrudan yoldan tamamlandı.
 Not: Claude kabuğu MSIX sanallaştırması altında; `%LOCALAPPDATA%` okuması/yazması için
 `Win32_Process.Create` ile sanallaştırma dışı süreç kullan (bkz. bu oturumun kurulum komutları).
 
