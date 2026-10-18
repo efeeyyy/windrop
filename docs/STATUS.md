@@ -53,6 +53,18 @@ Testleri çalıştırma:
   iOS CI run 39073625313 yeşil (Release + Release-Push), IPA `dist/WinDrop-unsigned.ipa` (958 KB),
   Windows `dist/WinDrop-win-x64.zip`.
 
+## 2026-10-18 akşam: ilk gerçek cihaz testleri (Efe, iPhone + bu PC)
+Çalışanlar: Sideloadly kurulumu (iTunes web sürümü + Apple Mobile Device Support gerekti); BLE keşif;
+iPhone→PC ve PC→iPhone aktarım (eduroam doğrudan TCP, ~10 MB/s); etkin nokta yolu (iPhone Wi-Fi'sız,
+ilk katılma elle; 2 dk sonra otomatik kapanma ve ayar geri yükleme doğrulandı); PC yeniden başlayınca
+iPhone'un kendiliğinden yeniden bağlanması; QR eşleştirme; Galeri'ye kaydetme; küçük resimler.
+Cihazda bulunup düzeltilenler: Windows GATT yanıtsız yazmaları düşürüyor (iOS tüm yazmalar onaylı);
+oturum senkron kaybı (WDR + oturum ortasında ön ek = yeniden başlat); iOS'ta peripheral başına tek oturum;
+yerel ağ izni yarışı; WPF .ico biçimi; arayüzde koşulsuz otomatik kabul (güvenlik); uygulama ve uzantının
+ayrı kimlikleri (App Group ile tek kimlik — ücretsiz hesapta imza riski); iOS cihaz adı okunamıyor (ayar).
+Not: Claude kabuğu MSIX sanallaştırması altında; `%LOCALAPPDATA%` okuması/yazması için
+`Win32_Process.Create` ile sanallaştırma dışı süreç kullan (bkz. bu oturumun kurulum komutları).
+
 ## Açık işler (öncelik sırası)
 1. Sabah testleri: `docs/MORNING-TESTS.md`.
 2. Aktarma sunucusunu Efe'nin Cloudflare hesabına kurmak (`relay/README.md`).
