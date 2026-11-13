@@ -33,7 +33,7 @@ yükseltmesinden önce HTTP 429 ile reddeder (istemci ayrımı kolay olsun diye)
 ```powershell
 cd relay
 npm install
-npm test                 # isteğe bağlı: 43 test
+npm test                 # isteğe bağlı: 52 test
 npx wrangler login       # tarayıcıda Cloudflare hesabına giriş
 npx wrangler deploy      # Worker + üç Durable Object sınıfını yükler
 ```
@@ -84,8 +84,7 @@ npx wrangler deploy
 ```
 
 Yerel deneme için aynı dört değeri `relay/.dev.vars` dosyasına `ANAHTAR=değer` yaz (`.gitignore` ile
-dışlanmış olmalı; `.p8` tek satırda `
-` ile yazılabilir).
+dışlanmış olmalı; `.p8` tek satırda `\n` ile yazılabilir).
 
 Davranış: cihaz belirteci yalnız `PushRegistry` Durable Object'inde (SQLite) durur; belirteç ve
 pushId loglanmaz. Aynı belirteçle yeniden kayıt eski pushId'yi siler. Bildirim metni sabittir
@@ -137,7 +136,7 @@ Bu değerler yazım anındaki bilgiden alınmıştır ve **doğrulanmamıştır*
 ## Geliştirme
 
 ```powershell
-npm test          # vitest + @cloudflare/vitest-plugin (eski adıyla vitest-pool-workers), 43 test
+npm test          # vitest + @cloudflare/vitest-plugin (eski adıyla vitest-pool-workers), 52 test
 npm run typecheck
 ```
 

@@ -162,10 +162,41 @@ export function sanitizeFrom(raw: unknown): string | null {
   return clipped.length > 0 ? clipped : null;
 }
 
-async function readJson(request: Request): Promise<Record<string, unknown> | null> {
+/** Gövde sınırı aşıldı (413). */
+const TOO_LARGE = Symbol("too-large");
+
+/** Gövdeyi en çok `maxBodyBytes` bayt okur: önce content-length, sonra akış okuma sınırı. */
+async function readBodyLimited(request: Request): Promise<string | typeof TOO_LARGE> {
+  const max = PUSH_LIMITS.maxBodyBytes;
+  const cl = request.headers.get("content-length");
+  if (cl !== null && (!/^[0-9]+$/.test(cl) || Number(cl) > max)) return TOO_LARGE;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel().catch(() => undefined);
+      return TOO_LARGE;
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) {
+    all.set(c, off);
+    off += c.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
+async function readJson(request: Request): Promise<Record<string, unknown> | null | typeof TOO_LARGE> {
   try {
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > PUSH_LIMITS.maxBodyBytes) return null;
+    const raw = await readBodyLimited(request);
+    if (raw === TOO_LARGE) return TOO_LARGE;
     const v: unknown = JSON.parse(raw);
     return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
   } catch {
@@ -198,6 +229,7 @@ export async function handlePush(request: Request, env: Env, url: URL, ipKey: st
   }
 
   const body = await readJson(request);
+  if (body === TOO_LARGE) return text(413, "payload too large");
   if (!body) return text(400, "bad request");
   const registry = env.PUSH_REGISTRY.get(env.PUSH_REGISTRY.idFromName("registry"));
 

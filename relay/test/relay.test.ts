@@ -342,3 +342,25 @@ describe("IP başına oda açma sınırı", () => {
     pc.ws.close(1000);
   });
 });
+
+describe("ölü oda depolama temizliği", () => {
+  it("oda kapanınca temizlik alarmı kurulur; alarm depolamayı siler", async () => {
+    const room = newRoom();
+    const pc = await connect(room, "pc");
+    const phone = await connect(room, "phone");
+    pc.ws.close(1000);
+    await pc.closed;
+    await phone.closed;
+    // closeRoom depolamaya waitUntil ile yazar; dead bayrağını bekle.
+    for (let i = 0; i < 50; i++) {
+      const dead = await runInDurableObject(stubFor(room), (_i, state) => state.storage.get<boolean>("dead"));
+      if (dead) break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const before = await runInDurableObject(stubFor(room), (_i, state) => state.storage.list().then((m) => m.size));
+    expect(before).toBeGreaterThan(0);
+    expect(await runDurableObjectAlarm(stubFor(room))).toBe(true);
+    const after = await runInDurableObject(stubFor(room), (_i, state) => state.storage.list().then((m) => m.size));
+    expect(after).toBe(0);
+  });
+});

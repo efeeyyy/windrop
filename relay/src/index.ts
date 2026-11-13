@@ -1,6 +1,7 @@
 // WinDrop aktarma sunucusu (docs/PROTOCOL.md §6.3).
 // Sunucu yalnız şifreli baytları iletir; içerik, roomId ve IP LOGLANMAZ (yalnız toplu sayaçlar).
 import { DurableObject } from "cloudflare:workers";
+import { rateLimitIp } from "./ip";
 import { PushRegistry, handlePush } from "./push";
 
 export { PushRegistry };
@@ -28,6 +29,8 @@ export const LIMITS = {
   idleMs: 60_000,
   roomsPerIpPerWindow: 10,
   ipWindowMs: 60_000,
+  /** Ölü odanın depolaması bu süre sonra alarmla silinir. */
+  deadRoomCleanupMs: 24 * 60 * 60 * 1000,
 };
 
 const ROOM_PATH = /^\/v1\/room\/([0-9a-f]{32})$/;
@@ -41,7 +44,7 @@ export default {
     }
     if (url.pathname.startsWith("/v1/push/")) {
       // Push için ayrı IP sayacı (oda açma sayacıyla karışmaz); IP yalnız karma olarak kullanılır.
-      const pushIp = request.headers.get("CF-Connecting-IP") ?? "unknown";
+      const pushIp = rateLimitIp(request.headers.get("CF-Connecting-IP") ?? "unknown");
       return handlePush(request, env, url, await sha256Hex(`WinDrop-ip-push|${pushIp}`));
     }
     const m = ROOM_PATH.exec(url.pathname);
@@ -54,7 +57,7 @@ export default {
     }
 
     // IP yalnız karma olarak (Durable Object adı) kullanılır; asla saklanmaz/loglanmaz.
-    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    const ip = rateLimitIp(request.headers.get("CF-Connecting-IP") ?? "unknown");
     const ipKey = await sha256Hex(`WinDrop-ip|${ip}`);
 
     const headers = new Headers(request.headers);
@@ -214,13 +217,18 @@ export class Room extends DurableObject<Env> {
     this.ctx.waitUntil(
       (async () => {
         await this.ctx.storage.put("dead", true);
-        await this.ctx.storage.deleteAlarm();
+        // Oda kimliği yeniden kullanılamasın diye "dead" bir süre kalır, sonra alarm deleteAll() yapar.
+        await this.ctx.storage.setAlarm(Date.now() + LIMITS.deadRoomCleanupMs);
       })(),
     );
   }
 
   async alarm(): Promise<void> {
-    if (this.dead) return;
+    if (this.dead) {
+      // Temizlik alarmı: roomId her oturumda yeni ve token tek kullanımlık; depolama büyümesin.
+      await this.ctx.storage.deleteAll();
+      return;
+    }
     const now = this.now();
     const paired = !!(this.sockets.pc && this.sockets.phone);
     const lifetimeEnd = this.createdAt + LIMITS.roomLifetimeMs;

@@ -107,12 +107,14 @@ describe("kayıt", () => {
       { deviceToken: 12345, env: "sandbox" },
       { deviceToken: TOKEN_A, env: "prod" },
       { deviceToken: TOKEN_A, env: 1 },
-      JSON.stringify({ deviceToken: TOKEN_A, env: "sandbox", pad: "x".repeat(PUSH_LIMITS.maxBodyBytes) }),
     ];
     for (const b of bad) {
       const res = await worker.fetch(post("/v1/push/register", b), pushEnv());
       expect(res.status, JSON.stringify(b)?.slice(0, 80)).toBe(400);
     }
+    // Sınırı aşan gövde 400 değil 413.
+    const big = JSON.stringify({ deviceToken: TOKEN_A, env: "sandbox", pad: "x".repeat(PUSH_LIMITS.maxBodyBytes) });
+    expect((await worker.fetch(post("/v1/push/register", big), pushEnv())).status).toBe(413);
   });
 
   it("GET 405; bilinmeyen push yolu 404; geçersiz pushId yolu 404", async () => {
@@ -327,5 +329,42 @@ describe("JWT (ES256)", () => {
     const res = await worker.fetch(post(`/v1/push/${id}`, { from: "PC" }), pushEnv({ APNS_KEY_P8: "garbage" }));
     expect(res.status).toBe(502);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("gövde boyut sınırı", () => {
+  it("content-length > sınır -> 413, gövde okunmadan", async () => {
+    const req = new Request("https://relay.test/v1/push/register", {
+      method: "POST",
+      headers: { "CF-Connecting-IP": newIp(), "content-length": "5000" },
+      body: JSON.stringify({ deviceToken: TOKEN_A, env: "sandbox" }),
+    });
+    expect((await worker.fetch(req, pushEnv())).status).toBe(413);
+  });
+
+  it("content-length yok, akış sınırı aşılırsa 413", async () => {
+    const chunk = new TextEncoder().encode("x".repeat(1024));
+    let sent = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (sent >= 10) return c.close();
+        sent++;
+        c.enqueue(chunk);
+      },
+    });
+    const req = new Request("https://relay.test/v1/push/register", {
+      method: "POST",
+      headers: { "CF-Connecting-IP": newIp() },
+      body: stream,
+      // @ts-expect-error duplex Workers türlerinde yok
+      duplex: "half",
+    });
+    expect((await worker.fetch(req, pushEnv())).status).toBe(413);
+    expect(sent).toBeLessThan(10);
+  });
+
+  it("sınır içindeki gövde kabul edilir", async () => {
+    const res = await worker.fetch(post("/v1/push/register", { deviceToken: TOKEN_A, env: "sandbox" }), pushEnv());
+    expect(res.status).toBe(200);
   });
 });
