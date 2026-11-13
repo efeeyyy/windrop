@@ -12,6 +12,10 @@ on:
       - '.github/workflows/interop.yml'
   workflow_dispatch:
 
+concurrency:
+  group: interop-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

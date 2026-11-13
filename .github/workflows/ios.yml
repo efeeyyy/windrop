@@ -2,7 +2,20 @@ name: iOS
 
 on:
   push:
+    paths:
+      - 'ios/**'
+      - 'protocol/**'
+      - '.github/workflows/ios.yml'
   workflow_dispatch:
+    inputs:
+      push_build:
+        description: 'Release-Push derlemesini de çalıştır'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -14,6 +27,11 @@ jobs:
     container: swift:6.0
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: ios/WinDropKit/.build
+          key: spm-linux-${{ hashFiles('ios/WinDropKit/Package.swift', 'ios/WinDropKit/Package.resolved') }}
+          restore-keys: spm-linux-
       - name: Swift sürümü
         run: swift --version
       - name: swift test
@@ -25,6 +43,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # push öncesi commit ile fark için
 
       - name: Araç zinciri sürümleri
         run: |
@@ -32,6 +52,12 @@ jobs:
           xcode-select -p
           xcodebuild -version
           swift --version
+
+      - uses: actions/cache@v4
+        with:
+          path: ios/WinDropKit/.build
+          key: spm-macos-${{ hashFiles('ios/WinDropKit/Package.swift', 'ios/WinDropKit/Package.resolved') }}
+          restore-keys: spm-macos-
 
       - name: WinDropKit swift test (CryptoKit yolu)
         working-directory: ios/WinDropKit
@@ -89,6 +115,7 @@ jobs:
           name: WinDrop-unsigned-ipa
           path: WinDrop-unsigned.ipa
           if-no-files-found: error
+          retention-days: 7
 
       - name: Derleme günlüğünü yükle
         if: always()
@@ -97,8 +124,23 @@ jobs:
           name: xcodebuild-log
           path: ${{ runner.temp }}/xcodebuild.log
           if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Push ile ilgili dosyalar değişti mi?
+        id: pushchanged
+        run: |
+          # push olayında önceki commit ile karşılaştır; ilk push/dispatch'te değişti sayılmaz.
+          BEFORE="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" = push ] && [ -n "$BEFORE" ] && ! echo "$BEFORE" | grep -qE '^0+$' &&
+             git cat-file -e "$BEFORE" 2>/dev/null &&
+             ! git diff --quiet "$BEFORE" "${{ github.sha }}" -- ':(glob)ios/App/**/Push/**'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Release-Push derlemesi (PUSH_ENABLED, imzasız; archive değil)
+        if: ${{ inputs.push_build == true || steps.pushchanged.outputs.changed == 'true' }}
         run: |
           set -o pipefail
           xcodebuild \
@@ -114,7 +156,7 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/xcodebuild-push.log" | tail -n 60
 
       - name: Release-Push hata özeti
-        if: failure()
+        if: ${{ failure() && (inputs.push_build == true || steps.pushchanged.outputs.changed == 'true') }}
         run: |
           test -f "$RUNNER_TEMP/xcodebuild-push.log" || exit 0
           grep -E "error:" "$RUNNER_TEMP/xcodebuild-push.log" | sort -u | head -n 80 || true

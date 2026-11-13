@@ -26,3 +26,14 @@ ios/App/*.xcodeproj/
 
 # Yerel çıktılar
 dist/
+
+# Günlükler / Sideloadly (cihaz UDID'si içerebilir)
+*.log
+sideloadly*
+
+# Sırlar
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+.env*
