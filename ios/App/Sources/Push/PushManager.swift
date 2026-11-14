@@ -121,9 +121,11 @@ final class PushManager {
         return try? JSONDecoder().decode(Registration.self, from: data)
     }
 
-    /// DEBUG derlemesi APNs sandbox, aksi production (PROTOCOL §6.5).
+    /// APNs ortamı derleme yetkisine göre (DECISIONS 9): `aps-environment` development ise sandbox. Release-Push
+    /// yapılandırması varsayılan `PUSH_SANDBOX` bayrağını taşır (Sideloadly/geliştirici imzası); App Store/TestFlight
+    /// (production yetkisi) için project.yml'de bu bayrak kaldırılır. DEBUG de sandbox.
     nonisolated private static var apnsEnvironment: String {
-        #if DEBUG
+        #if PUSH_SANDBOX || DEBUG
         return "sandbox"
         #else
         return "production"

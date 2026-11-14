@@ -86,6 +86,8 @@ struct PairView: View {
             VStack(spacing: 12) {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 48)).foregroundStyle(.green)
                 Text("\(name) ile eşleşti.").font(.headline)
+                Text("Bu bilgisayardan gelen dosyalar sormadan kabul edilir. Ayarlar'dan kapatabilirsiniz.")
+                    .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 Button("Bitti") { dismiss() }.buttonStyle(.borderedProminent)
             }
         case .alreadyPaired(let name):

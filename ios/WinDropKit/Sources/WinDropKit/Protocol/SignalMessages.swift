@@ -1,7 +1,9 @@
 import Foundation
 
 // PROTOCOL §4 sinyal mesajları (BLE oturumu içinde): UTF-8 JSON `{"t": "<tür>", ...}`.
-// Bilinmeyen alanlar yok sayılır; bilinmeyen `t` hatadır.
+// Bilinmeyen alanlar yok sayılır. Spesifikasyonda "zorunlu" yazmayan alan çözümde isteğe bağlıdır (DECISIONS 1).
+// Bilinmeyen `t` / çözme hatası `decode`'da hata verir; ama `SecureChannel.receiveMessage` bunu oturumu düşürmeden
+// yalnız o mesajı atlayarak karşılar (ileri uyumluluk).
 //
 // Alan tipleri PROTOCOL §9a: `transferId` = 16 B base64url dolgusuz (22 karakter, bkz. `TransferId`; decode'da
 // katı doğrulanır); `wifi` dize (`none`/`connected`); `caps` [String]; `count`/`v`/`port` Int; `total` Int64; `btAudio` Bool.
@@ -18,9 +20,10 @@ public struct HelloMessage: Codable, Equatable {
 }
 
 public struct StatusMessage: Codable, Equatable {
-    public var wifi: String
+    /// PC göndermez (yalnız iPhone gönderir); alıcı için isteğe bağlı (DECISIONS 1).
+    public var wifi: String?
     public var btAudio: Bool
-    public init(wifi: String, btAudio: Bool) { self.wifi = wifi; self.btAudio = btAudio }
+    public init(wifi: String? = nil, btAudio: Bool) { self.wifi = wifi; self.btAudio = btAudio }
 }
 
 public struct OfferMessage: Codable, Equatable {

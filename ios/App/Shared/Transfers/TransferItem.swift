@@ -37,6 +37,8 @@ final class TransferItem: Identifiable {
         case photosDenied
         /// Fotoğraflar'a kaydedilemedi (izin dışı hata): dosya Dosyalar'da kaldı.
         case photosFailed
+        /// Arka planda alındı, Fotoğraflar izni henüz sorulmadı (arka planda istem gösterilemez): dosya Dosyalar'da, taşıma ön planda.
+        case photosPending
 
         var text: String {
             switch self {
@@ -45,6 +47,7 @@ final class TransferItem: Identifiable {
             case .photosAndFiles: return String(localized: "Medya Fotoğraflar'a, diğerleri Dosyalar › WinDrop'a kaydedildi")
             case .photosDenied: return String(localized: "Fotoğraflar izni yok — Dosyalar'a kaydedildi")
             case .photosFailed: return String(localized: "Fotoğraflar'a kaydedilemedi — Dosyalar'a kaydedildi")
+            case .photosPending: return String(localized: "Dosyalar'a kaydedildi — Fotoğraflar'a taşımak için \"Fotoğraflar'a kaydet\"e dokunun")
             }
         }
 
@@ -100,6 +103,10 @@ final class TransferItem: Identifiable {
     var previewImage: UIImage?
     /// Fotoğraflar'a kaydedilen ilk öğenin `PHAsset.localIdentifier`'ı (önizleme yoksa, okuma izni varsa yedek kaynak).
     var photoAssetID: String?
+    /// Son yol hatasının kullanıcı metni (ör. etkin noktaya katılma zaman aşımı): yol bekçisi dolarsa satırda gösterilir.
+    @ObservationIgnored var lastPathError: String?
+    /// PC'nin teklif/oturum anındaki anlık görüntüsü: tanıdık kaydı BLE oturumu düşmüş olsa da yapılabilsin.
+    @ObservationIgnored var peerSnapshot: NearbyPeer?
     /// Hotspot yolu beklenirken iPhone'un Wi-Fi'ı bir ağa bağlı değil: "Wi-Fi'ı açın" notu gösterilir.
     var wifiOffNotice = false
 

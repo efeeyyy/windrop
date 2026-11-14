@@ -5,7 +5,7 @@ struct SettingsView: View {
     @AppStorage(AppModel.deviceNameKey, store: SharedGroup.defaults) private var deviceName = ""
     @AppStorage(AutoAcceptSettings.enabledKey) private var autoAcceptPaired = true
     @AppStorage(AutoAcceptSettings.limitKey) private var autoAcceptLimit = AutoAcceptSettings.maxLimit
-    @AppStorage(RelaySettings.key) private var relayUrl = ""
+    @AppStorage(RelaySettings.key, store: SharedGroup.defaults) private var relayUrl = ""
     #if PUSH_ENABLED
     @AppStorage(PushManager.enabledKey) private var pushEnabled = false
     private var relayConfigured: Bool {
@@ -184,6 +184,14 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    LabeledContent("Ortak kimlik", value: model.identity.usesSharedStore ? String(localized: "Açık") : String(localized: "Kapalı"))
+                } header: {
+                    Text("Tanılama")
+                } footer: {
+                    Text("Kapalıysa paylaşım menüsü bilgisayarda ayrı bir iPhone olarak görünebilir (imzalama App Group yetkisini vermemiş olabilir).")
+                }
+
+                Section {
                     NavigationLink("Nasıl çalışır") { HowItWorksView() }
                     LabeledContent("Sürüm", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-")
                 } header: {
@@ -204,6 +212,7 @@ struct SettingsView: View {
             #endif
             .sheet(isPresented: $showPairing) {
                 PairView()
+                    .presentsIncomingOffers()   // eşleştirme sayfası açıkken gelen teklif de görünür
             }
             .confirmationDialog(
                 "Bilgisayar listeden kaldırılsın mı?",

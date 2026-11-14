@@ -38,6 +38,10 @@ enum ProtocolIds {
     /// PROTOCOL §3a: PC'nin oturumu kapattığını bildiren, `p2c` üzerinden tek bildirim olarak gelen 3 bayt ASCII `WDR`.
     static let resetMarker = Data("WDR".utf8)
 
+    /// DECISIONS 2: PC, IK ilk mesajındaki statik anahtar güvenilen listede yoksa bağlantıyı kapatmadan önce `p2c` üzerinden
+    /// tek bildirim olarak 3 bayt ASCII `WDU` ("unknown") yollar. iPhone eşleşme/tanıdık kaydını YALNIZ bunu alınca siler.
+    static let unknownMarker = Data("WDU".utf8)
+
     /// PROTOCOL §5: PC'nin dinlediği veri portu.
     static let tcpPort: UInt16 = 53600
 

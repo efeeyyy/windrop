@@ -29,21 +29,33 @@ enum HotspotJoiner {
         #endif
     }
 
-    static func join(_ credentials: HotspotCredentials) async throws -> HotspotJoinOutcome {
+    /// Etkin noktaya katılır (en çok `Timeouts.hotspotJoin` = 120 sn; aşılırsa `DeadlineError.timedOut` ve profil geri alınır).
+    /// - Parameter persistent: tanıdık/eşli PC (parola sabit) için true: ağ kalıcı kaydedilir (`joinOnce = false`), iOS
+    ///   katılma onayını yalnız ilk seferde sorar ve arka plana geçince ağı bırakmaz. Bilinmeyen PC için false: profil aktarımla biter.
+    static func join(_ credentials: HotspotCredentials, persistent: Bool) async throws -> HotspotJoinOutcome {
         #if HOTSPOT_ENTITLEMENT
-        let configuration = NEHotspotConfiguration(ssid: credentials.ssid, passphrase: credentials.pass, isWEP: false)
-        configuration.joinOnce = true   // aktarım bitince ağ profili silinir (kalıcı kayıt yok)
+        let ssid = credentials.ssid
+        let passphrase = credentials.pass
         do {
-            try await NEHotspotConfigurationManager.shared.apply(configuration)
-        } catch {
-            let nsError = error as NSError
-            if nsError.domain == NEHotspotConfigurationErrorDomain,
-               nsError.code == NEHotspotConfigurationError.alreadyAssociated.rawValue {
-                return .joined
+            return try await raceWithTimeout(seconds: Timeouts.hotspotJoin) {
+                let configuration = NEHotspotConfiguration(ssid: ssid, passphrase: passphrase, isWEP: false)
+                configuration.joinOnce = !persistent
+                do {
+                    try await NEHotspotConfigurationManager.shared.apply(configuration)
+                } catch {
+                    let nsError = error as NSError
+                    if nsError.domain == NEHotspotConfigurationErrorDomain,
+                       nsError.code == NEHotspotConfigurationError.alreadyAssociated.rawValue {
+                        return HotspotJoinOutcome.joined
+                    }
+                    throw error
+                }
+                return HotspotJoinOutcome.joined
             }
+        } catch let error as DeadlineError {
+            NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)   // geç tamamlansa da iPhone etkin noktaya geçmesin
             throw error
         }
-        return .joined
         #else
         return .manualRequired
         #endif

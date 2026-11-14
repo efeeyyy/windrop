@@ -88,7 +88,9 @@ public final class FileSender {
 
     private func sendAll(_ inbox: FrameInbox) async throws -> TransferResult {
         let manifest = items.map { ManifestFile(id: $0.id, name: $0.name, size: $0.size, mtime: $0.mtime, dir: $0.dir) }
-        let pages = try Self.paginate(manifest)
+        // MANIFEST çerçevesi taşımanın çerçeve gövdesi sınırına sığmalı (BLE'de 8192 − 16 − 1; DECISIONS 7).
+        let pages = try Self.paginate(
+            manifest, budget: min(FrameCodec.maxBody, channel.maxFrameBodySize) - Self.manifestEnvelope)
         for (i, page) in pages.enumerated() {
             let body = ManifestBody(files: page, more: i < pages.count - 1 ? true : nil)
             try await channel.sendEncodedFrame(try FrameCodec.encode(body))
@@ -193,9 +195,11 @@ public final class FileSender {
         }
     }
 
-    /// Her MANIFEST çerçevesi <= 65518 B olacak şekilde dosya listesini böler.
-    static func paginate(_ files: [ManifestFile]) throws -> [[ManifestFile]] {
-        let budget = FrameCodec.maxBody - 64   // {"files":[],"more":true} + pay
+    /// `{"files":[],"more":true}` + pay.
+    static let manifestEnvelope = 64
+
+    /// Her MANIFEST çerçevesi `budget` B (varsayılan <= 65518) olacak şekilde dosya listesini böler.
+    static func paginate(_ files: [ManifestFile], budget: Int = FrameCodec.maxBody - manifestEnvelope) throws -> [[ManifestFile]] {
         let enc = JSONEncoder()
         var pages: [[ManifestFile]] = [[]]
         var size = 0

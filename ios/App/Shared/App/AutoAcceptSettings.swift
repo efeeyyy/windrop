@@ -7,7 +7,7 @@ enum AutoAcceptSettings {
     static let limitKey = "autoAcceptLimitBytes"
 
     /// Protokol üst sınırı (PROTOCOL §5, §7): 2 GB.
-    static let maxLimit: Int = Int(TransferRunner.acceptAutoLimit)
+    static let maxLimit: Int = 2 * 1024 * 1024 * 1024
 
     struct Option: Identifiable, Sendable {
         let title: String

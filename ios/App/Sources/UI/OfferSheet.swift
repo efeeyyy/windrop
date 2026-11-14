@@ -1,5 +1,22 @@
 import SwiftUI
 
+/// Gelen teklif sayfasını sunar. Kökte VE alt sayfalarda (Gönder, QR eşleştirme) kullanılır: SwiftUI, açık bir sayfanın üstüne
+/// ikinci sayfayı kökten sunmaz; bu yüzden her sunum bağlamı kendi `sheet`'ini taşır (bekleyen teklif varsa en üstteki gösterir).
+private struct OfferPresenter: ViewModifier {
+    @Environment(AppModel.self) private var model
+
+    func body(content: Content) -> some View {
+        content.sheet(item: Binding(get: { model.transfers.pendingOffer }, set: { _ in })) { item in
+            OfferSheet(item: item)
+                .interactiveDismissDisabled()
+        }
+    }
+}
+
+extension View {
+    func presentsIncomingOffers() -> some View { modifier(OfferPresenter()) }
+}
+
 /// Gelen teklif onay sayfası (AirDrop tarzı): gönderen, dosya sayısı, boyut, kod, Kabul/Reddet.
 struct OfferSheet: View {
     let item: TransferItem

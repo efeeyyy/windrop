@@ -26,6 +26,8 @@ final class PairingController {
     @ObservationIgnored private let hub: SignalHub
     @ObservationIgnored private let helloInfo: @MainActor () -> HelloInfo
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// Eşleştirme başarıyla bitti (ön plan etkileşimi): bildirim izni gibi tembel adımlar için.
+    @ObservationIgnored var onSucceeded: (@MainActor () -> Void)?
 
     init(
         identity: IdentityStore, hub: SignalHub,
@@ -83,6 +85,7 @@ final class PairingController {
 
     private func run(_ invite: PairingInvite) async {
         var openedLink: BlePeripheralLink?
+        var gotHello = false
         let central = hub.beginPairing()
         defer { hub.endPairing() }
         do {
@@ -121,7 +124,10 @@ final class PairingController {
             var credentials: HotspotCredentials?
             func absorb(_ message: SignalMessage) {
                 switch message {
+                case .hello:
+                    gotHello = true
                 case .pairInfo(let p):   // PROTOCOL §2.7/§4: eşleştirmede etkin nokta bilgisi
+                    gotHello = true
                     credentials = HotspotCredentials(ssid: p.ssid, pass: p.pass)
                 case .hotspot(let h):
                     if let ssid = h.ssid, let pass = h.pass { credentials = HotspotCredentials(ssid: ssid, pass: pass) }
@@ -133,6 +139,9 @@ final class PairingController {
                 throw PairingError.rejectedByPC   // süre doldu / PC kapattı
             }
             absorb(first)
+            // Başarı yalnız PC'nin `hello` ya da `pairInfo` yollamasıyla sayılır; ilk sinyal başka bir şeyse (ör. ileride bir
+            // `reject`) kayıt `autoAccept` ile YAPILMAZ.
+            guard gotHello else { throw PairingError.rejectedByPC }
             if credentials == nil {
                 while credentials == nil, let next = try? await receive(channel, link: link, timeout: 3) {
                     absorb(next)
@@ -151,6 +160,7 @@ final class PairingController {
             // Eşleştirme oturumu (XXpsk3) kapatılır; IK bağlantısı otomatik yeniden kurulur.
             central.closeLink(peripheral.identifier)
             phase = .succeeded(invite.pcName)
+            onSucceeded?()
         } catch {
             if let openedLink, openedLink.isOpen { central.closeLink(openedLink.peripheralID) }
             if Task.isCancelled { return }
@@ -161,7 +171,7 @@ final class PairingController {
             } else if let session = error as? SessionError, case .versionMismatch = session {
                 phase = .failed(String(localized: "Bilgisayardaki WinDrop sürümü uyumsuz. Güncelleme gerekli."))
             } else {
-                phase = .failed(error.localizedDescription)
+                phase = .failed(UserFacingError.message(for: error))
             }
         }
         task = nil

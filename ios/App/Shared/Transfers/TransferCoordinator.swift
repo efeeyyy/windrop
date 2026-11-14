@@ -47,11 +47,20 @@ final class TransferCoordinator {
     @ObservationIgnored var isBluetoothAudioActive: @MainActor () -> Bool = { true }
     /// Ayardaki aktarma sunucusu adresi (`relayUrl`); boş/okunamıyorsa nil = aktarma yolu kapalı. Uzantı kendi ayarını okur.
     @ObservationIgnored var relayUrl: () -> String? = { RelaySettings.configuredURL() }
-    @ObservationIgnored private var offerTimes: [String: [Date]] = [:]
+    /// Gelen teklif hız sınırı (PROTOCOL §2b, §5): kimlik başına tanıdık 5/dk; bilinmeyenler için TOPLAM 3/dk (anahtar üreterek aşılamaz).
+    @ObservationIgnored private var knownOfferTimes: [String: [Date]] = [:]
+    @ObservationIgnored private var unknownOfferTimes: [Date] = []
+    /// Reddedilen bilinmeyen anahtardan sonra 2 dk sessizlik (PROTOCOL §2b).
+    @ObservationIgnored private var silencedUntil: [String: Date] = [:]
+    static let rejectSilence: TimeInterval = 120
     @ObservationIgnored private var offerWatchers: [String: Task<Void, Never>] = [:]
-    /// Teklife yanıt bekleme süreleri: ilki oturum tazelemeden önce, ikincisi PC onay penceresi (30 sn) için.
-    static let offerFirstWait: UInt64 = 20_000_000_000
-    static let offerSecondWait: UInt64 = 35_000_000_000
+    /// Onaydan sonra yol bilgisi bekçileri (satır süresiz "Bağlantı hazırlanıyor…" kalmasın; DECISIONS 6).
+    @ObservationIgnored private var pathWatchers: [String: Task<Void, Never>] = [:]
+    /// Gelen teklifte kullanıcı onay süresi bekçileri (DECISIONS 3).
+    @ObservationIgnored private var approvalWatchers: [String: Task<Void, Never>] = [:]
+    /// Teklife yanıt bekleme süreleri (DECISIONS 3): ilki oturum tazelemeden önce (20 sn), ikincisi PC onay penceresi (60 sn) için.
+    static let offerFirstWait = UInt64(Timeouts.offerFirstWait * 1_000_000_000)
+    static let offerSecondWait = UInt64(Timeouts.offerSecondWait * 1_000_000_000)
 
     static let infoCardShownKey = "infoCardShown"
 
@@ -104,6 +113,7 @@ final class TransferCoordinator {
         item.sendPreviewURL = numbered.first?.url
         item.code = peer.code
         item.peerIsKnown = peer.isKnown
+        item.peerSnapshot = peer
         items.insert(item, at: 0)
         Task { await notifications.requestAuthorizationIfNeeded() }   // tembel: ilk Gönder
 
@@ -114,7 +124,7 @@ final class TransferCoordinator {
             do {
                 try await signals.send(.offer(offer), to: peer.id)
             } catch {
-                fail(item, error.localizedDescription)
+                fail(item, UserFacingError.message(for: error))
             }
         }
         watchOffer(item, offer: offer)
@@ -127,7 +137,7 @@ final class TransferCoordinator {
 
     /// `offer` sonrası 20 sn içinde `accept`/`reject` gelmezse oturumu tazeler; oturum yenilendiyse teklifi aynı
     /// transferId ile bir kez yeniden gönderir (yenilenmediyse ilk teklif PC'de bekliyor olabilir: yeniden gönderilmez).
-    /// Yine yanıt yoksa 35 sn sonra aktarım hatayla biter.
+    /// Yine yanıt yoksa 60 sn sonra (toplam 80 sn; PC onay penceresi 60 sn) aktarım hatayla biter ve PC'ye `cancel` gider.
     private func watchOffer(_ item: TransferItem, offer: OfferMessage) {
         let pcID = item.pcID
         let id = item.id
@@ -142,13 +152,16 @@ final class TransferCoordinator {
                 do {
                     try await self.signals.send(.offer(offer), to: pcID)
                 } catch {
-                    self.fail(item, error.localizedDescription)
+                    self.fail(item, UserFacingError.message(for: error))
                     return
                 }
             }
             try? await Task.sleep(nanoseconds: Self.offerSecondWait)
             guard !Task.isCancelled, self.isAwaitingReply(item) else { return }
             self.fail(item, String(localized: "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun."))
+            // PC onay penceresi açık kalmasın (U3): vazgeçtiğimizi bildir (en iyi çaba).
+            // (`fail` bu bekçiyi de iptal eder: gönderim ayrı, iptal edilmemiş bir görevde yapılır.)
+            Task { try? await self.signals.send(.cancel(SignalCancelMessage(transferId: id)), to: pcID) }
         }
     }
 
@@ -163,10 +176,18 @@ final class TransferCoordinator {
                 // Tanıdık kaydı burada yapılmaz: yalnız `DONE ok=true` ile biten aktarımdan sonra (run).
                 item.peerAccepted = true
                 item.state = .awaitingPeer   // PC şimdi `addr` veya `hotspot` gönderir
+                watchPath(item)
             }
         case .reject(let reply):
-            if let item = item(withID: reply.transferId), item.pcID == peer.id, item.direction == .send {
-                item.state = .rejected
+            // Geç gelen `reject` bitmiş aktarımı değiştirmez; aktarım sürerken gelen `reject` iptal gibi ele alınır.
+            if let item = item(withID: reply.transferId), item.pcID == peer.id, item.direction == .send, !item.isFinished {
+                if item.state == .transferring {
+                    item.cancelPaths()
+                    item.state = .cancelled
+                } else {
+                    item.cancelPaths()
+                    item.state = .rejected
+                }
                 finishCleanup(item)
             }
         case .addr(let addr):
@@ -187,7 +208,10 @@ final class TransferCoordinator {
             }
         case .bleData(let message):
             // Yolu PC seçer (PROTOCOL §6.4a): gönderen MANIFEST'i BLE'den başlatır, alıcı BLE'den MANIFEST bekler.
-            if let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), canUseBle(item) {
+            if let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), !item.isFinished,
+               !item.pathWon, canUseBle(item) {
+                // PC `addr`/`hotspot` yollarını bıraktı: açık yol beklemeleri kapatılır (DECISIONS 5), sonra BLE.
+                abandonPendingAttempts(item)
                 beginBle(item, peer: peer)
             }
         case .relay(let relay):
@@ -206,35 +230,76 @@ final class TransferCoordinator {
     }
 
     func peerGone(_ pcID: String) {
-        for item in items where item.pcID == pcID && item.state == .awaitingUser {
-            item.state = .cancelled   // gönderen gitti; onay beklenen teklif anlamsız
-            notifications.clear(transferId: item.id)
+        for item in items where item.pcID == pcID && !item.isFinished {
+            switch item.state {
+            case .awaitingUser:
+                item.state = .cancelled   // gönderen gitti; onay beklenen teklif anlamsız
+                notifications.clear(transferId: item.id)
+                cancelWatchers(item)
+            case .awaitingPeer where hasConsent(item) && !item.hasActivePath,
+                 .awaitingRelayConsent where !item.hasActivePath:
+                // Onaylanmış ama yolu olmayan satır: PC gitti, yol bilgisi hiç gelmeyecek (DECISIONS 6). Yanıt bekleyen
+                // (henüz kabul edilmemiş) giden teklifler `watchOffer`'a bırakılır: oturum tazelenip teklif yeniden gidebilir.
+                fail(item, String(localized: "Bilgisayarla bağlantı koptu."))
+            default:
+                break
+            }
         }
     }
 
-    /// Cihaz başına teklif hız sınırı (PROTOCOL §2b, §5): tanıdık 5/dk, bilinmeyen 3/dk.
+    /// Gelen teklif hız sınırı (PROTOCOL §2b, §5): tanıdık kimlik başına 5/dk; bilinmeyen cihazlar için TOPLAM 3/dk.
     private func allowOffer(from peer: NearbyPeer) -> Bool {
         let now = Date()
-        var times = (offerTimes[peer.id] ?? []).filter { now.timeIntervalSince($0) < 60 }
-        let limit = peer.isKnown ? 5 : 3
-        guard times.count < limit else { return false }
-        times.append(now)
-        offerTimes[peer.id] = times
+        if peer.isKnown {
+            var times = (knownOfferTimes[peer.id] ?? []).filter { now.timeIntervalSince($0) < 60 }
+            guard times.count < 5 else { return false }
+            times.append(now)
+            knownOfferTimes[peer.id] = times
+            return true
+        }
+        unknownOfferTimes = unknownOfferTimes.filter { now.timeIntervalSince($0) < 60 }
+        guard unknownOfferTimes.count < 3 else { return false }
+        unknownOfferTimes.append(now)
         return true
+    }
+
+    /// Bilinmeyen anahtardan ret sonrası 2 dk sessizlik (süresi dolanlar temizlenir).
+    private func isSilenced(_ peer: NearbyPeer) -> Bool {
+        let now = Date()
+        silencedUntil = silencedUntil.filter { $0.value > now }
+        return silencedUntil[peer.id] != nil
+    }
+
+    /// Aynı anda en çok 1 bekleyen (onay bekleyen) bilinmeyen teklif.
+    private var hasPendingUnknownOffer: Bool {
+        items.contains { $0.direction == .receive && $0.state == .awaitingUser && !$0.peerIsKnown }
+    }
+
+    private func sendReject(_ transferId: String, to pcID: String, reason: String) {
+        Task { try? await signals.send(.reject(ReplyMessage(transferId: transferId, reason: reason)), to: pcID) }
     }
 
     private func handleOffer(_ offer: OfferMessage, from peer: NearbyPeer) {
         if rejectsIncomingOffers {
-            if let tid = TransferId.parse(offer.transferId) {
-                Task { try? await signals.send(.reject(ReplyMessage(transferId: tid.description, reason: "busy")), to: peer.id) }
-            }
+            if let tid = TransferId.parse(offer.transferId) { sendReject(tid.description, to: peer.id, reason: "busy") }
             return
         }
         guard item(withID: offer.transferId) == nil,
               let tid = TransferId.parse(offer.transferId),
               offer.count > 0, offer.count <= TransferLimits.maxFiles, offer.total >= 0 else { return }
+        if !peer.isKnown {
+            // Bilinmeyen: reddedilen anahtardan 2 dk sessizlik; aynı anda en çok 1 bekleyen teklif (PROTOCOL §2b).
+            if isSilenced(peer) {
+                sendReject(tid.description, to: peer.id, reason: "silenced")
+                return
+            }
+            if hasPendingUnknownOffer {
+                sendReject(tid.description, to: peer.id, reason: "busy")
+                return
+            }
+        }
         guard allowOffer(from: peer) else {
-            Task { try? await signals.send(.reject(ReplyMessage(transferId: tid.description, reason: "rate")), to: peer.id) }
+            sendReject(tid.description, to: peer.id, reason: "rate_limited")
             return
         }
         // Önizlemede sonda "/" klasör demektir (PROTOCOL §5a); ad yine temizlenir, "/" arayüz için korunur.
@@ -250,14 +315,25 @@ final class TransferCoordinator {
             state: auto ? .awaitingPeer : .awaitingUser)
         item.code = peer.code
         item.peerIsKnown = peer.isKnown
+        item.peerSnapshot = peer
         items.insert(item, at: 0)
+
+        // Kabulden önce boş alan (PROTOCOL §5): yetmiyorsa teklifi sorgusuz reddet (`no_space`).
+        if !hasEnoughSpace(for: offer.total) {
+            item.state = .failed
+            item.errorMessage = String(localized: "Yeterli boş alan yok.")
+            sendReject(offer.transferId, to: peer.id, reason: "no_space")
+            return
+        }
 
         if auto {
             item.userAccepted = true   // QR ile eşleştirilmiş PC için kullanıcının önceden verdiği otomatik kabul
             // Arka plandayken teklif bildirimi YOK; yalnız aktarım bitince `notifyFinished` bildirir (izin tembel istenir).
             Task { await notifications.requestAuthorizationIfNeeded() }
             sendAccept(item)
+            watchPath(item)
         } else {
+            watchApproval(item)
             // Bildirim izni tembel: ilk teklifte (ya da ilk Gönder'de) istenir, açılışta değil.
             // Arka plandayken istem görünmez; ön plana gelince gösterilir.
             Task { await notifications.requestAuthorizationIfNeeded() }
@@ -276,11 +352,15 @@ final class TransferCoordinator {
         item.state = .awaitingPeer
         item.userAccepted = true   // bildirimdeki Kabul de buradan geçer (acceptFromNotification)
         notifications.clear(transferId: item.id)
-        signals.remember(item.pcID)   // kullanıcı onayladı -> tanıdık (reddedilen saklanmaz)
+        approvalWatchers.removeValue(forKey: item.id)?.cancel()
+        if let snapshot = signals.peer(item.pcID) ?? item.peerSnapshot {
+            signals.remember(snapshot)   // kullanıcı onayladı -> tanıdık (reddedilen saklanmaz)
+        }
         item.peerIsKnown = true
         Task { await notifications.requestAuthorizationIfNeeded() }   // tembel: ilk teklifin kabulü
         LocalNetworkPermission.shared.trigger()   // yerel ağ izni sorusunu TCP'den önce çıkar
         sendAccept(item)
+        watchPath(item)
     }
 
     private func sendAccept(_ item: TransferItem) {
@@ -289,7 +369,7 @@ final class TransferCoordinator {
             do {
                 try await signals.send(.accept(ReplyMessage(transferId: item.id)), to: pcID)
             } catch {
-                fail(item, error.localizedDescription)
+                fail(item, UserFacingError.message(for: error))
             }
         }
     }
@@ -324,6 +404,8 @@ final class TransferCoordinator {
         guard item.state == .awaitingUser, item.direction == .receive else { return false }
         item.state = .rejected
         notifications.clear(transferId: item.id)
+        cancelWatchers(item)
+        if !item.peerIsKnown { silencedUntil[item.pcID] = Date().addingTimeInterval(Self.rejectSilence) }
         return true
     }
 
@@ -347,6 +429,7 @@ final class TransferCoordinator {
             fail(item, TransferFailure.relayNotConfigured.localizedDescription)
             return
         }
+        pathWatchers.removeValue(forKey: item.id)?.cancel()   // kota onayı verildi
         item.state = .connecting
         item.task = Task { [weak self] in
             guard let self else { return }
@@ -356,7 +439,7 @@ final class TransferCoordinator {
             } catch {
                 if Task.isCancelled { return }
                 await self.report(.relayFail, item: item)
-                self.fail(item, error.localizedDescription)
+                self.fail(item, UserFacingError.message(for: error))
                 return
             }
             await self.report(.relayOk, item: item)
@@ -368,7 +451,9 @@ final class TransferCoordinator {
     /// (PROTOCOL §6 madde 3); ayar boş/geçersizse veya token bozuksa `relay_fail` gider. Kullanıcı onayı beklenir.
     private func handleRelay(_ message: RelayMessage, from peer: NearbyPeer) {
         guard let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), !item.isFinished,
-              !item.hasActivePath, item.state == .awaitingPeer, item.relayEndpoint == nil else { return }
+              !item.pathWon, item.task == nil, item.state == .awaitingPeer || !item.attempts.isEmpty,
+              item.relayEndpoint == nil else { return }
+        abandonPendingAttempts(item)   // PC diğer yolları bıraktı: açık yol beklemeleri kapatılır (DECISIONS 5)
         guard let base = relayUrl(), let token = RelayRoom.decodeToken(message.token),
               let endpoint = RelayRoom.endpoint(relayUrl: base, roomId: RelayRoom.roomId(token: token), role: .phone) else {
             Task { await report(.relayFail, item: item) }
@@ -376,6 +461,7 @@ final class TransferCoordinator {
         }
         item.relayEndpoint = endpoint
         item.state = .awaitingRelayConsent   // bağlantı, kullanıcı kota uyarısını onaylayana dek kurulmaz
+        watchRelayConsent(item)
     }
 
     func saveToPhotos(_ item: TransferItem) {
@@ -385,7 +471,7 @@ final class TransferCoordinator {
                 let count = try await PhotoSaver.save(files).count
                 item.photosSaveMessage = String(localized: "\(count) öğe Fotoğraflar'a kaydedildi.")
             } catch {
-                item.photosSaveMessage = error.localizedDescription
+                item.photosSaveMessage = UserFacingError.message(for: error)
             }
         }
     }
@@ -416,7 +502,8 @@ final class TransferCoordinator {
             } catch {
                 if Task.isCancelled { return }
                 await self.report(.tcpFail, item: item)
-                if let dataError = error as? DataClientError, dataError == .localNetworkDenied {
+                // Yerel ağ izni yoksa etkin nokta yolu da çalışmaz; ama o yol sürüyorsa aktarımı bitirme (DECISIONS 4).
+                if let dataError = error as? DataClientError, dataError == .localNetworkDenied, item.attempts[.hotspot] == nil {
                     self.fail(item, LocalNetworkPermission.deniedMessage)
                     return
                 }
@@ -428,11 +515,16 @@ final class TransferCoordinator {
     /// `hotspot` (wifi=none): etkin noktaya katıl, sonra TCP. Doğrudan deneme sürerken (Wi-Fi koptu) de kabul edilir.
     private func beginHotspot(_ item: TransferItem, message: HotspotMessage, peer: NearbyPeer) {
         guard item.task == nil, !item.isFinished, !item.pathWon, item.attempts[.hotspot] == nil else { return }
+        // Parola yalnız TANIDIK/eşli PC için Keychain'e yazılır (iOS ağı hatırlasın); bilinmeyen PC'nin parolası yalnız bellekte
+        // (satırda) tutulur, sahipsiz Keychain kaydı bırakılmaz (PC aktarım sonunda parolayı yeniler, DECISIONS 8).
+        var credentials: HotspotCredentials?
         if let ssid = message.ssid, let pass = message.pass {
-            identity.setHotspot(HotspotCredentials(ssid: ssid, pass: pass), for: peer.id)
+            let fresh = HotspotCredentials(ssid: ssid, pass: pass)
+            if peer.isKnown { identity.setHotspot(fresh, for: peer.id) }
+            credentials = fresh
         }
-        guard let credentials = identity.hotspot(for: peer.id) else {
-            // TODO(windows-sync): eşleştirmesiz ilk temasta PC `hotspot` mesajına ssid/pass koymalı (PROTOCOL §4, §6.2).
+        if credentials == nil { credentials = identity.hotspot(for: peer.id) }
+        guard let credentials else {
             Task { await report(.hotspotFail, item: item) }
             if item.attempts.isEmpty { awaitNextPath(item) }
             return
@@ -441,10 +533,11 @@ final class TransferCoordinator {
         item.hotspotCredentials = credentials
         item.wifiOffNotice = !isWifiConnected()   // Wi-Fi kapalı/bağlı değil: önce "Wi-Fi'ı açın" yönergesi
         item.state = .joiningHotspot
+        let persistent = peer.isKnown   // tanıdık/eşli PC: ağ hatırlansın (joinOnce=false); bilinmeyen: aktarımla biter
         item.attempts[.hotspot] = Task { [weak self] in
             guard let self else { return }
             do {
-                let outcome = try await HotspotJoiner.join(credentials)
+                let outcome = try await HotspotJoiner.join(credentials, persistent: persistent)
                 if Task.isCancelled {   // join iptal edilemez: doğrudan yol kazanmışsa profili geri al
                     HotspotJoiner.abandon(credentials)
                     return
@@ -453,7 +546,7 @@ final class TransferCoordinator {
                 if outcome == .manualRequired {
                     item.hotspotPrompt = credentials
                     item.state = .needsManualHotspot
-                    wait = 120   // kullanıcı Ayarlar'a gidip katılana (ya da Wi-Fi'ı açıp PC `addr` yollayana) kadar bekle
+                    wait = Timeouts.hotspotJoin   // kullanıcı Ayarlar'a gidip katılana (ya da Wi-Fi'ı açıp PC `addr` yollayana) kadar bekle
                 }
                 let stream = try await DataClient.connect(to: [target], retryUntil: Date().addingTimeInterval(wait))
                 guard self.claimPath(item, winner: .hotspot) else { stream.close(); return }
@@ -462,6 +555,12 @@ final class TransferCoordinator {
             } catch {
                 if Task.isCancelled { return }
                 await self.report(.hotspotFail, item: item)
+                if let dataError = error as? DataClientError, dataError == .localNetworkDenied, item.attempts[.direct] == nil {
+                    self.fail(item, LocalNetworkPermission.deniedMessage)
+                    return
+                }
+                // Katılma 120 sn içinde bitmedi: yalnız bu yol başarısız (doğrudan yol sürüyorsa aktarım bitmez).
+                if error is DeadlineError { item.lastPathError = String(localized: "Etkin noktaya katılma zaman aşımına uğradı.") }
                 self.attemptFailed(item, .hotspot)
             }
         }
@@ -506,10 +605,83 @@ final class TransferCoordinator {
     }
 
     /// Tüm denemeler başarısız: yolu PC seçer (`bleData` veya `relay`, §6.3/§6.4a). Kota uyarısı `relay` gelince gösterilir.
+    /// PC yeni yolu 30 sn içinde bildirmezse satır hatayla biter (`watchPath`).
     private func awaitNextPath(_ item: TransferItem) {
         guard !item.isFinished else { return }
         item.task = nil
         item.state = .awaitingPeer
+        watchPath(item)
+    }
+
+    /// Bekleyen (kazanmamış) `addr`/`hotspot` denemelerini kapatır: PC BLE veya aktarma yoluna geçti (DECISIONS 5).
+    private func abandonPendingAttempts(_ item: TransferItem) {
+        guard !item.pathWon else { return }
+        if item.attempts[.hotspot] != nil, let credentials = item.hotspotCredentials {
+            HotspotJoiner.abandon(credentials)
+        }
+        for attempt in item.attempts.values { attempt.cancel() }
+        item.attempts = [:]
+        item.hotspotPrompt = nil
+        item.wifiOffNotice = false
+    }
+
+    // MARK: Bekçiler (hiçbir satır süresiz bekleme durumunda kalmaz; DECISIONS 3, 6)
+
+    /// Onaydan sonra yol mesajı (`addr`/`hotspot`/`bleData`/`relay`) için bekçi: 30 sn içinde hiçbir yol başlamazsa
+    /// (kabul geç kaldı, PC çöktü, PC sonraki yolu seçemedi) satır hatayla biter ve PC'ye `cancel` gider.
+    private func watchPath(_ item: TransferItem) {
+        let id = item.id
+        let pcID = item.pcID
+        pathWatchers[id]?.cancel()
+        pathWatchers[id] = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Timeouts.pathInfo * 1_000_000_000))
+            guard let self, !Task.isCancelled, !item.isFinished else { return }
+            guard item.state == .awaitingPeer, !item.hasActivePath else { return }   // yol başladı ya da kota onayı bekleniyor
+            self.fail(item, item.lastPathError ?? String(localized: "Bilgisayar bağlantıyı başlatmadı."))
+            Task { try? await self.signals.send(.cancel(SignalCancelMessage(transferId: id)), to: pcID) }
+        }
+    }
+
+    /// Kota uyarısı (aktarma yolu) onayı süresiz beklemez: PC aktarma odasını ~60-75 sn bekler.
+    private func watchRelayConsent(_ item: TransferItem) {
+        let id = item.id
+        pathWatchers[id]?.cancel()
+        pathWatchers[id] = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Timeouts.relayConsent * 1_000_000_000))
+            guard let self, !Task.isCancelled, !item.isFinished, item.state == .awaitingRelayConsent else { return }
+            await self.report(.relayFail, item: item)
+            self.fail(item, String(localized: "Aktarma onayı zamanında verilmedi."))
+        }
+    }
+
+    /// PC'den gelen teklifte kullanıcı 60 sn içinde karar vermezse teklif zaman aşımına düşer; PC'ye `reject` gider
+    /// (PC gönderen 80 sn bekler, gereksiz yere açık kalmasın).
+    private func watchApproval(_ item: TransferItem) {
+        let id = item.id
+        let pcID = item.pcID
+        approvalWatchers[id]?.cancel()
+        approvalWatchers[id] = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(Timeouts.incomingApproval * 1_000_000_000))
+            guard let self, !Task.isCancelled, item.state == .awaitingUser else { return }
+            self.notifications.clear(transferId: id)
+            self.fail(item, String(localized: "Teklife zamanında yanıt verilmedi."))
+            self.sendReject(id, to: pcID, reason: "timeout")
+        }
+    }
+
+    private func cancelWatchers(_ item: TransferItem) {
+        offerWatchers.removeValue(forKey: item.id)?.cancel()
+        pathWatchers.removeValue(forKey: item.id)?.cancel()
+        approvalWatchers.removeValue(forKey: item.id)?.cancel()
+    }
+
+    /// PROTOCOL §5: kabulden önce `total` <= boş alan − pay.
+    private func hasEnoughSpace(for total: Int64) -> Bool {
+        guard total > 0 else { return true }
+        let url = URL(fileURLWithPath: NSHomeDirectory())
+        guard let free = (try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+            .volumeAvailableCapacityForImportantUsage else { return true }   // okunamıyorsa Kit alıcısı MANIFEST'ten sonra denetler
+        return total <= free - TransferLimits.defaultSpaceMarginBytes
     }
 
     /// Kit kanalını açıp FileSender/FileReceiver'ı çalıştırır (TCP açıldıktan sonra).
@@ -546,7 +718,7 @@ final class TransferCoordinator {
             await complete(item, summary: summary, peer: peer)
         } catch {
             if Task.isCancelled || item.state == .cancelled { return }
-            fail(item, error.localizedDescription)
+            fail(item, UserFacingError.message(for: error))
         }
     }
 
@@ -556,7 +728,7 @@ final class TransferCoordinator {
         item.receivedFiles = summary.received
         if summary.ok {
             if item.direction == .send {
-                signals.remember(peer.id)   // giden aktarım `DONE ok=true` ile bitti -> tanıdık (PROTOCOL §2b)
+                signals.remember(peer)   // giden aktarım `DONE ok=true` ile bitti -> tanıdık (anlık görüntü; BLE oturumu düşmüş olsa da)
                 item.peerIsKnown = true
             } else {
                 await storeReceived(item)
@@ -568,7 +740,8 @@ final class TransferCoordinator {
         } else if summary.canceledByRemote {
             item.state = .cancelled
         } else {
-            fail(item, summary.error ?? String(localized: "\(summary.failedFileIDs.count) dosya aktarılamadı."))
+            // `summary.error` Kit/karşı taraftan gelen ham metindir (dil/teknik içerik karışabilir): kullanıcıya yerel metin gösterilir.
+            fail(item, String(localized: "\(summary.failedFileIDs.count) dosya aktarılamadı."))
         }
         finishCleanup(item)
     }
@@ -579,6 +752,12 @@ final class TransferCoordinator {
         let media = item.receivedFiles.filter { $0.mediaKind != nil }
         guard !item.isFolderTransfer, IncomingMediaDestination.current == .photos, !media.isEmpty else {
             item.savedPlace = .files
+            return
+        }
+        // Arka plandayken ilk kullanımda `.addOnly` izin istemi gösterilemez: taşıma ertelenir (dosya Dosyalar'da kalır,
+        // satırdaki "Fotoğraflar'a kaydet" düğmesiyle ön planda yapılır). `photosDenied` YAZILMAZ: kullanıcı reddetmedi.
+        if isAppInBackground(), PhotoSaver.needsPermissionPrompt {
+            item.savedPlace = .photosPending
             return
         }
         // Taşıma dosyayı Documents'tan kaldırır: satır küçük resmi KAYDETMEDEN önce dosyadan üretilir (okuma izni istenmez).
@@ -640,6 +819,7 @@ final class TransferCoordinator {
     private func beginBle(_ item: TransferItem, peer: NearbyPeer) -> Bool {
         guard !item.hasActivePath, item.state == .awaitingPeer || item.state == .awaitingRelayConsent,
               let session = signals.beginBleTransfer(peer.id) else { return false }
+        pathWatchers.removeValue(forKey: item.id)?.cancel()
         item.state = .transferring
         let pcID = peer.id
         item.task = Task { [weak self] in
@@ -663,7 +843,7 @@ final class TransferCoordinator {
                 await self.complete(item, summary: summary, peer: peer)
             } catch {
                 if Task.isCancelled || item.state == .cancelled { return }
-                self.fail(item, error.localizedDescription)
+                self.fail(item, UserFacingError.message(for: error))
             }
         }
         return true
@@ -687,6 +867,7 @@ final class TransferCoordinator {
 
     private func finishCleanup(_ item: TransferItem) {
         notifications.clear(transferId: item.id)
+        cancelWatchers(item)
         if !item.outgoing.isEmpty {
             FilePreparer.release(item.outgoing)
             item.outgoing = []

@@ -26,15 +26,13 @@ struct RootView: View {
                 model.didResignActive()
             }
         }
-        // Gelen teklif: AirDrop tarzı onay sayfası (kabul/ret dışında kapatılamaz).
-        .sheet(item: Binding(get: { model.transfers.pendingOffer }, set: { _ in })) { item in
-            OfferSheet(item: item)
-                .interactiveDismissDisabled()
-        }
-        // İlk başarılı aktarımdan sonra bir kez gösterilen bilgi kartı (açılışta gösterilmez).
+        // Gelen teklif: AirDrop tarzı onay sayfası (kabul/ret dışında kapatılamaz). Alt sayfalar da aynısını taşır.
+        .presentsIncomingOffers()
+        // İlk başarılı aktarımdan sonra bir kez gösterilen bilgi kartı (açılışta gösterilmez). Teklif gelince kart
+        // kendiliğinden kapanır ama "gösterildi" SAYILMAZ: yalnız kullanıcı kapatınca işaretlenir.
         .sheet(isPresented: Binding(
             get: { model.transfers.firstSuccessCardPending && model.transfers.pendingOffer == nil },
-            set: { if !$0 { model.transfers.dismissInfoCard() } })
+            set: { if !$0, model.transfers.pendingOffer == nil { model.transfers.dismissInfoCard() } })
         ) {
             InfoCardSheet()
         }

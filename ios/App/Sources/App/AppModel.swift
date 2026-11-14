@@ -37,8 +37,10 @@ final class AppModel {
     #endif
 
     init() {
-        SharedGroup.migrateSettings(keys: [DeviceInfo.nameKey])   // grup öncesi ad ayarı gruba taşınır
+        SharedGroup.migrateSettings(keys: [DeviceInfo.nameKey, RelaySettings.key])   // grup öncesi ayarlar gruba taşınır
         let identity = IdentityStore()
+        // Ortak alan varken ortak cihaz anahtarı açılışta üretilir (izin istemez): uzantı ilk açılışta ayrı kimlikle başlamasın.
+        if identity.usesSharedStore { _ = try? identity.deviceKey() }
         let network = NetworkMonitor()
         let audio = BluetoothAudioMonitor()
         let notifications = NotificationManager()   // delegate atanır, izin istemi çıkmaz
@@ -102,6 +104,10 @@ final class AppModel {
         notifications.onReject = { [weak transfers] transferId in
             await transfers?.rejectFromNotification(transferId: transferId)
         }
+        // QR eşleştirme bitince bildirim izni (ilk ön plan etkileşimi): arka planda gelen ilk teklif görünmez kalmasın.
+        pairing.onSucceeded = { [weak notifications] in
+            Task { await notifications?.requestAuthorizationIfNeeded() }
+        }
         network.start()
         audio.start()   // yalnız okur; ses oturumunu etkinleştirmez
         // İzin zaten verilmişse (ve tanıdık PC varsa) merkez kurulur; izin istemi çıkarmaz.
@@ -139,6 +145,11 @@ final class AppModel {
     }
 
     func didBecomeActive() {
+        // Uygulama öndeyken başka bir uygulamanın paylaşım sayfası açık olamaz: "inactive" sinyali kaçırılmış (askıdayken
+        // Darwin bildirimi ulaşmaz) olsa da bırakma kalkar; aksi halde yakındaki listesi 120 sn boş kalırdı.
+        shareYieldTimeout?.cancel()
+        shareYieldTimeout = nil
+        hub.central.setYielding(false)
         identity.reload()   // uzantı değişikliklerini al (ortak depo)
         #if PUSH_ENABLED
         push.refresh()   // APNs kaydını tazele (belirteç değişmiş olabilir)

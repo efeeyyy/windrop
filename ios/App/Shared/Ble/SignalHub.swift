@@ -54,8 +54,9 @@ protocol SignalSending: AnyObject {
     func isReady(_ keyID: String) -> Bool
     func peer(_ keyID: String) -> NearbyPeer?
     func send(_ message: SignalMessage, to keyID: String) async throws
-    /// Bilinmeyen PC'yi (kullanıcı onayından sonra) "tanıdık" olarak saklar. Reddedilen saklanmaz.
-    func remember(_ keyID: String)
+    /// Bilinmeyen PC'yi (kullanıcı onayından sonra) "tanıdık" olarak saklar. Reddedilen saklanmaz. Anlık görüntüyle kaydeder:
+    /// uzun (TCP) aktarımın sonunda BLE oturumu düşmüş olsa da kayıt yapılır.
+    func remember(_ peer: NearbyPeer)
     /// BLE veri aktarımı başlatır: sonraki çerçeveler `BleDataSession.nextFrame`'e yönlenir. Oturum yoksa nil.
     func beginBleTransfer(_ keyID: String) -> BleDataSession?
     func endBleTransfer(_ keyID: String)
@@ -126,7 +127,6 @@ final class SignalHub: BleCentralDelegate, SignalSending {
     @ObservationIgnored private var deferredLinks: [UUID: BlePeripheralLink] = [:]
     /// Çevre birimi başına tek `refreshSession` (teklif zaman aşımları birleşir).
     @ObservationIgnored private var refreshTasks: [String: Task<Bool, Never>] = [:]
-    @ObservationIgnored private var forceXX: Set<UUID> = []
     @ObservationIgnored private var pairingDepth = 0
     @ObservationIgnored private let identity: IdentityStore
     @ObservationIgnored private let helloInfo: @MainActor () -> HelloInfo
@@ -277,14 +277,18 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         return false
     }
 
-    func remember(_ keyID: String) {
-        guard var peer = peers[keyID], !peer.isKnown else { return }
+    func remember(_ snapshot: NearbyPeer) {
+        let keyID = snapshot.id
+        identity.reload()
+        guard identity.pc(withKeyID: keyID) == nil else { return }   // zaten kayıtlı
         let pc = KnownPC(
-            id: keyID, name: peer.name, publicKey: peer.publicKey, peripheralID: peer.peripheralID,
+            id: keyID, name: snapshot.name, publicKey: snapshot.publicKey, peripheralID: snapshot.peripheralID,
             addedAt: Date(), autoAccept: false)
         guard (try? identity.upsert(pc)) != nil else { return }
-        peer.isKnown = true
-        peers[keyID] = peer
+        if var live = peers[keyID] {
+            live.isKnown = true
+            peers[keyID] = live
+        }
         syncWanted()
         #if PUSH_ENABLED
         sendPushId(to: keyID)   // yeni tanıdık oldu
@@ -296,7 +300,13 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         let mailbox = AsyncMailbox<Frame>()
         pc.frames = mailbox
         let reader: FrameReader = {
-            do { return try await mailbox.pop(timeout: nil) } catch { return nil }   // kopma/bitiş = temiz kapanış
+            do {
+                return try await mailbox.pop(timeout: Timeouts.dataIdle)
+            } catch MailboxError.timeout {
+                throw TransferError.timeout   // 30 sn çerçeve gelmedi (DECISIONS 6): aktarım anlaşılır hatayla biter
+            } catch {
+                return nil   // kopma/bitiş = temiz kapanış
+            }
         }
         return BleDataSession(channel: pc.channel, nextFrame: reader)
     }
@@ -424,21 +434,27 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         var link = initialLink
         var peripheral = initialPeripheral
         var xxRetried = false
+        var extensionRetried = false
         while true {
             if link == nil, let p = peripheral, slot.phase != .closing {
                 link = try? await central.openLink(to: p, timeout: 10)
                 slot.link = link
             }
             peripheral = nil
-            var retryWithXX = false
-            if let l = link { retryWithXX = await runSession(link: l, slot: slot) }
+            var end = SessionEnd.normal
+            if let l = link { end = await runSession(link: l, slot: slot) }
             link = nil
             slot.link = nil
-            // IK'yı PC kapattı (eşleşme PC'de kaldırılmış): kayıt silindi; tek sefer, aynı çevre birimine XX ile yeniden bağlan.
-            if retryWithXX, !xxRetried, slot.phase != .closing, slot.nextLink == nil, !isPairing,
+            // (a) PC `WDU` yolladı (eşleşme PC'de kaldırılmış): kayıt silindi; tek sefer, aynı çevre birimine XX ile yeniden bağlan.
+            // (b) Paylaşım uzantısı: el sıkışma başka bir oturum yüzünden düştüyse (ana uygulama askıdayken Darwin sinyali
+            //     ulaşmamış olabilir; PC aynı BLE kimliğinden gelen yeni oturumu tutar) bir kez yeniden dene (DECISIONS 10).
+            let retry = (end == .ikRejected && !xxRetried)
+                || (end == .handshakeFailed && ProtocolIds.isExtension && !extensionRetried)
+            if retry, slot.phase != .closing, slot.nextLink == nil, !isPairing,
                let p = central.knownPeripheral(pid) {
-                xxRetried = true
+                if end == .ikRejected { xxRetried = true } else { extensionRetried = true }
                 for _ in 0..<20 where p.state != .disconnected { try? await Task.sleep(nanoseconds: 150_000_000) }
+                if end == .handshakeFailed { try? await Task.sleep(nanoseconds: 500_000_000) }
                 slot.phase = .connecting
                 peripheral = p
                 continue
@@ -493,89 +509,104 @@ final class SignalHub: BleCentralDelegate, SignalSending {
 
     // MARK: Oturum
 
-    /// Dönüş: true = tanıdık PC'nin IK el sıkışması reddedildi ve kayıt silindi (çağıran XX ile bir kez yeniden dener).
-    private func runSession(link: BlePeripheralLink, slot: SessionSlot) async -> Bool {
+    /// Oturumun nasıl bittiği (`drive` buna göre yeniden dener).
+    private enum SessionEnd {
+        case normal
+        /// PC `WDU` yolladı (güvenilmeyen anahtar): kayıt silindi; çağıran XX ile bir kez yeniden dener.
+        case ikRejected
+        /// El sıkışma (veya ilk `hello`) tamamlanamadı: kopma, zaman aşımı, sıra hatası, başka oturum. Kayıt SİLİNMEZ.
+        case handshakeFailed
+    }
+
+    private func runSession(link: BlePeripheralLink, slot: SessionSlot) async -> SessionEnd {
         let pid = link.peripheralID
         // Kapatma isteği bağlantı beklenirken geldiyse oturum hiç başlamaz.
         guard slot.phase == .connecting else {
             link.close()
-            return false
+            return .normal
         }
         slot.phase = .handshaking
+        central.clearUnknownPeerMarker(pid)
         // Arka planda uyandırıldıysak IK/XX + hello bitene kadar süre iste (uzantıda yok sayılır).
         let endHandshakeTask = beginBackgroundTask("com.efe.windrop.handshake")
         var keyID: String?
         var ikRejected = false
+        var handshakeDone = false
+        var timedOut = false
         do {
-            let localKey = try identity.deviceKey()
-            let transport = BleMessageTransport(link: BleLinkAdapter(link: link))
-            let channel: SecureChannel
-            var usedIK = false
-            if let known = identity.pc(withPeripheral: pid), !forceXX.contains(pid) {
-                do {
-                    channel = try await SecureChannel.connectIK(
-                        transport: transport, prefix: Prefix.ble(), localKey: localKey, remoteStaticKey: known.publicKey)
-                    usedIK = true
-                } catch {
-                    // Bu taraf bağlantıyı kendi kesmişse (paylaşım uzantısı açıldı, Bluetooth kapandı) PC reddi sayılmaz:
-                    // eşleşme silinmez, IK sonraki bağlantıda yeniden denenir.
-                    let droppedLocally = central.wasDroppedLocally(pid)
-                    if !droppedLocally { forceXX.insert(pid) }   // bağlantı yeniden kurulunca XX denenir (PC anahtarı değişmiş olabilir)
-                    if !droppedLocally, !Task.isCancelled, slot.phase == .handshaking {
-                        // PC IK'yı kapattı ("güvenilmeyen anahtar": eşleşme PC'de kaldırılmış): yerelde tanıdık/eşli kaydı sil.
-                        identity.remove(known)   // eşli bayrağı (autoAccept) ve etkin nokta bilgisi de gider
-                        syncWanted()
-                        forceXX.remove(pid)
-                        ikRejected = true
+            // El sıkışma + ilk `hello` en çok 10 sn (DECISIONS 6): PC ön eki alıp yanıt vermezse oturum yuvası asılı kalmaz.
+            let established: SecureChannel = try await withDeadline(seconds: Timeouts.bleHandshake, onTimeout: {
+                timedOut = true
+                link.close(error: BleError.timeout)
+            }) {
+                let localKey = try identity.deviceKey()
+                let transport = BleMessageTransport(link: BleLinkAdapter(link: link))
+                let channel: SecureChannel
+                var usedIK = false
+                if let known = identity.pc(withPeripheral: pid) {
+                    do {
+                        channel = try await SecureChannel.connectIK(
+                            transport: transport, prefix: Prefix.ble(), localKey: localKey, remoteStaticKey: known.publicKey)
+                        usedIK = true
+                    } catch {
+                        // Eşleşme/tanıdık kaydı YALNIZ PC `WDU` ("güvenilmeyen anahtar") yolladıysa silinir (DECISIONS 2).
+                        // Kopma, zaman aşımı, WDR, sıra hatası ya da yerel kesme kaydı silmez; IK sonraki bağlantıda yeniden denenir.
+                        if central.consumeUnknownPeerMarker(pid), !Task.isCancelled, slot.phase == .handshaking {
+                            identity.remove(known)   // eşli bayrağı (autoAccept) ve etkin nokta bilgisi de gider
+                            syncWanted()
+                            ikRejected = true
+                        }
+                        throw error
                     }
-                    throw error
+                } else {
+                    channel = try await SecureChannel.connectXX(transport: transport, prefix: Prefix.ble(), localKey: localKey)
                 }
-            } else {
-                forceXX.remove(pid)
-                channel = try await SecureChannel.connectXX(transport: transport, prefix: Prefix.ble(), localKey: localKey)
-            }
 
-            guard slot.phase == .handshaking else { throw BleError.disconnected }   // el sıkışma sırasında kapatma istendi
-            let kid = DeviceId.hex(publicKey: channel.remoteStaticKey)
-            keyID = kid
-            let known = identity.pc(withKeyID: kid)
-            if let known, known.peripheralID != pid {
-                var updated = known
-                updated.peripheralID = pid
-                try? identity.upsert(updated)
-                syncWanted()
+                guard slot.phase == .handshaking else { throw BleError.disconnected }   // el sıkışma sırasında kapatma istendi
+                let kid = DeviceId.hex(publicKey: channel.remoteStaticKey)
+                keyID = kid
+                let known = identity.pc(withKeyID: kid)
+                if let known, known.peripheralID != pid {
+                    var updated = known
+                    updated.peripheralID = pid
+                    try? identity.upsert(updated)
+                    syncWanted()
+                }
+                let peer = NearbyPeer(
+                    id: kid, name: known?.name ?? String(localized: "Bilgisayar"), publicKey: channel.remoteStaticKey,
+                    peripheralID: pid, isKnown: known != nil, autoAccept: known?.autoAccept ?? false, usedIK: usedIK,
+                    // Doğrulama kodu yalnız XX özetinden (PROTOCOL §2b); IK (tanıdık/eşli) oturumda kod gösterilmez.
+                    code: usedIK ? "" : channel.verificationCode)
+                if let stale = channels[kid], stale.link !== link {
+                    stale.link.close()   // aynı PC için eski oturum: yeni oturum tek yazıcı olsun
+                    stale.frames?.fail(BleError.disconnected)
+                }
+                channels[kid] = PeerChannel(channel: channel, link: link)
+                slot.phase = .established
+                peers[kid] = peer
+                try await send(.hello(helloInfo().helloMessage), to: kid)
+                handshakeDone = true
+                return channel
             }
-            let peer = NearbyPeer(
-                id: kid, name: known?.name ?? "Bilgisayar", publicKey: channel.remoteStaticKey, peripheralID: pid,
-                isKnown: known != nil, autoAccept: known?.autoAccept ?? false, usedIK: usedIK,
-                // Doğrulama kodu yalnız XX özetinden (PROTOCOL §2b); IK (tanıdık/eşli) oturumda kod gösterilmez.
-                code: usedIK ? "" : channel.verificationCode)
-            if let stale = channels[kid], stale.link !== link {
-                stale.link.close()   // aynı PC için eski oturum: yeni oturum tek yazıcı olsun
-                stale.frames?.fail(BleError.disconnected)
-            }
-            channels[kid] = PeerChannel(channel: channel, link: link)
-            slot.phase = .established
-            peers[kid] = peer
-            try await send(.hello(helloInfo().helloMessage), to: kid)
             endHandshakeTask()   // el sıkışma + hello bitti; okuma döngüsü arka plan görevi tutmaz
+            guard let kid = keyID else { throw BleError.disconnected }
             #if PUSH_ENABLED
             sendPushId(to: kid)
             #endif
 
-            while let message = try await channel.receiveMessage() {
+            while let message = try await established.receiveMessage() {
                 try Task.checkCancellation()
                 guard case .signal(let signal) = message else {
                     // BLE çerçevesi (PROTOCOL §6.4a): yalnız `bleData` ile başlayan aktarım kuyruğa alınır, başıboş atılır.
-                    if case .frame(let frame) = message, let pc = channels[kid], pc.channel === channel {
+                    if case .frame(let frame) = message, let pc = channels[kid], pc.channel === established {
                         pc.frames?.push(frame)
                     }
                     continue
                 }
                 if case .hello(let hello) = signal, var current = peers[kid], !current.isKnown {
-                    let name = hello.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let name = PeerName.sanitize(hello.name)
                     if !name.isEmpty {
-                        current.name = String(name.prefix(64))
+                        current.name = name
                         peers[kid] = current
                     }
                 }
@@ -597,11 +628,28 @@ final class SignalHub: BleCentralDelegate, SignalSending {
             onPeerGone?(keyID)
         }
         // Bu oturumun yazıcıları dursun (bağlantı nesnesi kapanınca bekleyen yazmalar hata ile döner); GATT bağlantısı
-        // yalnız oturum hata ile bittiyse ve sırada daha yeni bir bağlantı yoksa kesilir (tanıdık PC'lerde merkez
-        // 1 sn sonra tek seferlik yeniden bağlanır).
+        // yalnız oturum hata ile bittiyse (ya da el sıkışma zaman aşımına uğradıysa: PC takılmış olabilir) ve sırada daha
+        // yeni bir bağlantı yoksa kesilir (tanıdık PC'lerde merkez 1 sn sonra tek seferlik yeniden bağlanır).
         let wasOpen = link.isOpen
         link.close()
-        if wasOpen, slot.nextLink == nil { central.closeLink(pid) }
-        return ikRejected
+        if wasOpen || timedOut, slot.nextLink == nil { central.closeLink(pid) }
+        if ikRejected { return .ikRejected }
+        return handshakeDone || Task.isCancelled || slot.phase == .closing ? .normal : .handshakeFailed
+    }
+}
+
+/// Karşı PC'nin bildirdiği ad: yalnız kontrol (Cc) ve biçim (Cf: bidi vb.) karakterleri atılır, kırpılır, en çok 64 karakter.
+/// Ad sahteciliği (RLO) engellenir; PC tarafındaki ayıklamayla (PROTOCOL §2.8) aynı kural.
+enum PeerName {
+    static func sanitize(_ raw: String) -> String {
+        var scalars = String.UnicodeScalarView()
+        for scalar in raw.unicodeScalars {
+            switch scalar.properties.generalCategory {
+            case .control, .format, .lineSeparator, .paragraphSeparator: continue
+            default: scalars.append(scalar)
+            }
+        }
+        let trimmed = String(scalars).trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(trimmed.prefix(64))
     }
 }

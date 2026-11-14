@@ -38,11 +38,15 @@ struct StoredFile: Sendable, Identifiable, Hashable {
 
     var id: URL { url }
 
-    /// Fotoğraflar'a kaydedilebilir mi (görüntü/video)?
+    /// Fotoğraflar'ın kabul ettiği türler (SVG, PSD, ICO gibi `.image` alt türleri toplu kaydı bozmasın).
+    private static let photoExtensions: Set<String> = ["jpg", "jpeg", "heic", "heif", "png", "gif", "tif", "tiff", "dng"]
+    private static let videoExtensions: Set<String> = ["mov", "mp4", "m4v"]
+
+    /// Fotoğraflar'a kaydedilebilir mi (desteklenen görüntü/video)?
     var mediaKind: MediaKind? {
-        guard let type = UTType(filenameExtension: url.pathExtension) else { return nil }
-        if type.conforms(to: .movie) { return .video }
-        if type.conforms(to: .image) { return .photo }
+        let ext = url.pathExtension.lowercased()
+        if Self.videoExtensions.contains(ext) { return .video }
+        if Self.photoExtensions.contains(ext) { return .photo }
         return nil
     }
 
@@ -82,8 +86,6 @@ enum TransferFailure: Error, LocalizedError {
 }
 
 enum TransferRunner {
-    static let acceptAutoLimit: Int64 = 2 * 1024 * 1024 * 1024
-
     /// Taşıma (TCP veya aktarma sunucusu WebSocket'i) üstünde Noise kanalı (iPhone her zaman başlatan). Ön ekteki taşıma
     /// türü `transport.kind` olur (2 = TCP, 3 = aktarma).
     static func openChannel(transport: MessageTransport, transferId: TransferId, crypto: ChannelCrypto) async throws -> SecureChannel {

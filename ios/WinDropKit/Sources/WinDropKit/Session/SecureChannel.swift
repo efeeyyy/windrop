@@ -58,6 +58,23 @@ final class SendGate {
     }
 }
 
+/// Atlanan (bilinmeyen/çözülemeyen) sinyallerin sayacı ve son nedeni (günlük/tanılama; sınama için). İş parçacığı güvenli.
+public final class IgnoredSignals: @unchecked Sendable {
+    public static let shared = IgnoredSignals()
+    private let lock = NSLock()
+    private var storedCount = 0
+    private var storedLast: String?
+
+    func record(_ reason: String) {
+        lock.lock(); defer { lock.unlock() }
+        storedCount += 1
+        storedLast = reason
+    }
+
+    public var count: Int { lock.lock(); defer { lock.unlock() }; return storedCount }
+    public var last: String? { lock.lock(); defer { lock.unlock() }; return storedLast }
+}
+
 /// Kanaldan gelen tek mesaj: §5 çerçevesi veya §4 sinyali (BLE oturumunda ayrım: düz metnin ilk baytı `{` ise sinyal,
 /// 1–8 ise çerçeve; PROTOCOL §9a).
 public enum SecureMessage: Equatable {
@@ -141,16 +158,21 @@ public final class SecureChannel {
     }
 
     /// Sıradaki çerçeve veya sinyal; karşı taraf temiz kapattıysa nil.
+    ///
+    /// Çözülemeyen / bilinmeyen `t` içeren sinyal oturumu DÜŞÜRMEZ: o mesaj atlanır, sıradakine geçilir (DECISIONS 1,
+    /// ileri uyumluluk). Çerçeve (§5) çözme hataları ve Noise hataları eskisi gibi hata verir.
     public func receiveMessage() async throws -> SecureMessage? {
-        let plaintext: Data
-        if let p = pending {
-            plaintext = p
-            pending = nil
-        } else {
-            guard let p = try await receivePlaintext(swallowEmpty: true) else { return nil }
-            plaintext = p
+        while true {
+            let plaintext: Data
+            if let p = pending {
+                plaintext = p
+                pending = nil
+            } else {
+                guard let p = try await receivePlaintext(swallowEmpty: true) else { return nil }
+                plaintext = p
+            }
+            if let message = try Self.classify(plaintext) { return message }
         }
-        return try Self.classify(plaintext)
     }
 
     /// Yalnız çerçeve bekler; sinyal gelirse hata.
@@ -176,10 +198,16 @@ public final class SecureChannel {
         }
     }
 
-    private static func classify(_ plaintext: Data) throws -> SecureMessage {
+    /// nil = çözülemeyen sinyal (atlanır).
+    private static func classify(_ plaintext: Data) throws -> SecureMessage? {
         guard let first = plaintext.first else { throw SessionError.protocolViolation("boş düz metin") }
         if first == 0x7B {   // '{'
-            return .signal(try SignalMessage.decode(plaintext))
+            do {
+                return .signal(try SignalMessage.decode(plaintext))
+            } catch let error as ProtocolError {
+                IgnoredSignals.shared.record("\(error)")
+                return nil
+            }
         }
         return .frame(try FrameCodec.decode(plaintext))
     }

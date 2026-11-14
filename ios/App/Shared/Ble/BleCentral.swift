@@ -54,21 +54,33 @@ final class BleCentral: NSObject {
         manager = CBCentralManager(delegate: self, queue: .main, options: options)
     }
 
-    // MARK: Yerel kesmeler ve kapatma
+    // MARK: Kapatma ve IK ret işareti
 
-    /// Bu tarafın bilerek kestiği bağlantılar (yield, kapatma, listeden çıkarma): `SignalHub` bir IK hatasını
-    /// "PC eşleşmeyi kaldırdı" diye yorumlamadan önce bakar (yerel kesme eşleşmeyi silmemeli).
-    private var localDrops: [UUID: Date] = [:]
     /// Uzantı kapandı: bir daha bağlanılmaz, taranmaz.
     private var isShutDown = false
 
-    func wasDroppedLocally(_ id: UUID, within seconds: TimeInterval = 10) -> Bool {
-        guard let date = localDrops[id] else { return false }
+    /// PC'nin `WDU` ("güvenilmeyen anahtar", DECISIONS 2) bildirimini aldığı çevre birimleri ve zamanı. Eşleşme/tanıdık kaydı
+    /// YALNIZ bu işaretle silinir; `SignalHub` IK hatasında `consumeUnknownPeerMarker` ile bakar.
+    private var unknownPeerMarkers: [UUID: Date] = [:]
+
+    /// Yakın zamanda (≤ `seconds`) `WDU` alındıysa true döner ve işareti tüketir.
+    func consumeUnknownPeerMarker(_ id: UUID, within seconds: TimeInterval = 15) -> Bool {
+        guard let date = unknownPeerMarkers.removeValue(forKey: id) else { return false }
         return Date().timeIntervalSince(date) < seconds
     }
 
+    /// Eski (süren oturumdan önceki) işareti yeni oturumdan önce temizler.
+    func clearUnknownPeerMarker(_ id: UUID) {
+        unknownPeerMarkers[id] = nil
+    }
+
+    /// Açık (kapatılmamış) bağlantı nesnesi; kapatılmış ama `links` içinde kalmış girdi yok sayılır (bkz. bulgu 23).
+    private func openLinkEntry(_ id: UUID) -> BlePeripheralLink? {
+        guard let link = links[id], link.isOpen else { return nil }
+        return link
+    }
+
     private func dropConnection(_ peripheral: CBPeripheral) {
-        localDrops[peripheral.identifier] = Date()
         manager?.cancelPeripheralConnection(peripheral)
     }
 
@@ -131,7 +143,7 @@ final class BleCentral: NSObject {
                 manager?.connect(p, options: nil)
             case .connected:
                 // Durum geri yüklemesinden geldi: servis keşfini baştan yap.
-                if links[p.identifier] == nil, !settingUp.contains(p.identifier) {
+                if openLinkEntry(p.identifier) == nil, !settingUp.contains(p.identifier) {
                     settingUp.insert(p.identifier)
                     p.discoverServices(ProtocolIds.discoveryServices)
                 }
@@ -400,13 +412,12 @@ final class BleCentral: NSObject {
 
     private func reconnectNow(_ id: UUID) {
         guard state == .poweredOn, !isPaused, !isYielding, wanted.contains(id), !resetting.contains(id),
-              links[id] == nil, linkWaiters[id] == nil,
+              openLinkEntry(id) == nil, linkWaiters[id] == nil,
               let p = peripherals[id], p.state == .disconnected else { return }
         manager?.connect(p, options: nil)
     }
 
     private func tearDownAllLinks() {
-        for id in links.keys { localDrops[id] = Date() }   // Bluetooth kapandı: PC reddi sayılmaz
         resetting.removeAll()
         reconnectTasks.values.forEach { $0.cancel() }
         reconnectTasks.removeAll()
@@ -556,7 +567,7 @@ extension BleCentral: @preconcurrency CBPeripheralDelegate {
             return
         }
         guard characteristic.uuid == ProtocolIds.p2cUUID, characteristic.isNotifying,
-              links[id] == nil, let pending = pendingCharacteristics[id] else { return }
+              openLinkEntry(id) == nil, let pending = pendingCharacteristics[id] else { return }
         pendingCharacteristics[id] = nil
         settingUp.remove(id)
         let link = BlePeripheralLink(peripheral: peripheral, c2p: pending.c2p)
@@ -571,7 +582,14 @@ extension BleCentral: @preconcurrency CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard error == nil, characteristic.uuid == ProtocolIds.p2cUUID, let value = characteristic.value else { return }
-        // `WDR` (tam 3 bayt) parçalama başlığından önce denetlenir.
+        // `WDU` / `WDR` (tam 3 bayt ASCII) parçalama başlığından önce denetlenir.
+        if value == ProtocolIds.unknownMarker {
+            // PC IK'daki statik anahtarımızı tanımıyor (DECISIONS 2): işaret kaydedilir, bekleyen el sıkışma hata ile
+            // uyandırılır (GATT bağlantısını PC kapatır); `SignalHub` kaydı siler ve XX ile bir kez yeniden dener.
+            unknownPeerMarkers[peripheral.identifier] = Date()
+            links[peripheral.identifier]?.close()
+            return
+        }
         if value == ProtocolIds.resetMarker {
             resetSession(peripheral)
             return
@@ -584,7 +602,4 @@ extension BleCentral: @preconcurrency CBPeripheralDelegate {
         links[peripheral.identifier]?.didWrite(error: error)
     }
 
-    func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral) {
-        links[peripheral.identifier]?.peripheralIsReadyToWrite()
-    }
 }

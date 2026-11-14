@@ -48,6 +48,21 @@ final class QRScannerViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         previewLayer?.frame = view.bounds
+        applyPreviewRotation()
+    }
+
+    /// iPad / yatay tutuşta önizleme yan durmasın: önizleme yönü arayüz yönüne bağlanır (iOS 17 `videoRotationAngle`).
+    private func applyPreviewRotation() {
+        guard let connection = previewLayer?.connection,
+              let orientation = view.window?.windowScene?.interfaceOrientation else { return }
+        let angle: CGFloat
+        switch orientation {
+        case .landscapeRight: angle = 0
+        case .portraitUpsideDown: angle = 270
+        case .landscapeLeft: angle = 180
+        default: angle = 90
+        }
+        if connection.isVideoRotationAngleSupported(angle) { connection.videoRotationAngle = angle }
     }
 
     private func prepare() async {

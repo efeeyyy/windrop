@@ -2,12 +2,13 @@ import Foundation
 @preconcurrency import WinDropKit
 
 /// Aktarma sunucusu adresi (Ayarlar > Aktarma sunucusu). Adres yalnız burada tutulur; eşten gelen mesajla ASLA değişmez
-/// (PROTOCOL §6 madde 3). Uzantı kendi `UserDefaults`'unu görür (App Groups yok): boşsa/okunamıyorsa aktarma yolu kapalıdır.
+/// (PROTOCOL §6 madde 3). App Group varsa uzantı ortak ayarı görür; grup yoksa uzantı kendi `UserDefaults`'unu görür: boşsa aktarma yolu kapalıdır.
 enum RelaySettings {
     static let key = "relayUrl"
 
     /// Kayıtlı adres (kırpılmış); boşsa nil.
-    static func configuredURL(defaults: UserDefaults = .standard) -> String? {
+    /// Varsayılan depo `SharedGroup.defaults`: App Group varsa uzantı da aynı adresi görür (aktarma yolu uzantıda da çalışır).
+    static func configuredURL(defaults: UserDefaults = SharedGroup.defaults) -> String? {
         let text = defaults.string(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return text.isEmpty ? nil : text
     }
@@ -36,6 +37,13 @@ enum RelaySocketError: Error, LocalizedError {
         case .failed(let text): return String(localized: "Aktarma sunucusuna bağlanılamadı: \(text)")
         }
     }
+}
+
+private final class IdleFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+    func fire() { lock.lock(); value = true; lock.unlock() }
+    var fired: Bool { lock.lock(); defer { lock.unlock() }; return value }
 }
 
 /// `URLSessionWebSocketTask` -> WinDropKit `WebSocketLike`. Her ikili mesaj = bir Noise mesajı (PROTOCOL §6.3).
@@ -111,6 +119,15 @@ final class RelaySocket: NSObject, WebSocketLike, URLSessionWebSocketDelegate, @
 
     func receive() async throws -> WebSocketMessage? {
         guard let task = currentTask() else { return nil }
+        // Boşta kalma: 30 sn mesaj gelmezse aktarım odası bağlantısı kapatılır (DECISIONS 6).
+        let idle = IdleFlag()
+        let timer = Task {
+            try? await Task.sleep(nanoseconds: UInt64(Timeouts.dataIdle * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            idle.fire()
+            task.cancel(with: .goingAway, reason: nil)
+        }
+        defer { timer.cancel() }
         do {
             switch try await task.receive() {
             case .data(let data): return .binary(data)
@@ -119,6 +136,7 @@ final class RelaySocket: NSObject, WebSocketLike, URLSessionWebSocketDelegate, @
             }
         } catch {
             if Task.isCancelled { throw error }
+            if idle.fired { throw RelaySocketError.timeout }
             lock.lock()
             let code = closeCode
             lock.unlock()

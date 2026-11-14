@@ -116,7 +116,9 @@ targets:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) HOTSPOT_ENTITLEMENT"
         Release-Push:
           CODE_SIGN_ENTITLEMENTS: WinDrop-Push.entitlements
-          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) PUSH_ENABLED"
+          # PUSH_SANDBOX: APNs sandbox ortamı (aps-environment = development; Sideloadly/geliştirici imzası). Production
+          # yetkisiyle (App Store/TestFlight) dağıtılacaksa yalnız bu bayrak kaldırılır.
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) PUSH_ENABLED PUSH_SANDBOX"
 
   WinDropShare:
     type: app-extension

@@ -33,6 +33,11 @@ enum IncomingMediaDestination: String, CaseIterable, Identifiable {
 
 /// Alınan fotoğraf/videoları Fotoğraflar'a ekler (yalnız ekleme izni: `.addOnly`; ilk kullanımda sorulur).
 enum PhotoSaver {
+    /// Fotoğraflar "yalnız ekleme" izni henüz sorulmadı mı? (Arka planda istem gösterilemez: taşıma ertelenir.)
+    static var needsPermissionPrompt: Bool {
+        PHPhotoLibrary.authorizationStatus(for: .addOnly) == .notDetermined
+    }
+
     /// Medya dosyalarını Fotoğraflar'a ekler; kaydedilenleri döndürür (kalan dosyalar yerinde durur).
     /// - Parameter move: true ise dosya Fotoğraflar'a taşınır (Documents'tan kalkar); false ise kopyalanır.
     /// Tarih "şimdi" yapılır: EXIF tarihi ne olursa olsun galeride en sonda görünür.

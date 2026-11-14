@@ -26,17 +26,22 @@ enum BleError: Error, LocalizedError {
     }
 }
 
-/// Bir PC ile açık GATT bağlantısı: `c2p` (Write Without Response) ve `p2c` (Notify).
-/// Akış kontrolü: `canSendWriteWithoutResponse` / `peripheralIsReady(toSendWriteWithoutResponse:)`.
+/// Bir PC ile açık GATT bağlantısı: `c2p` (onaylı yazma, Write With Response) ve `p2c` (Notify).
+/// Tüm yazmalar onaylıdır ve sıralıdır (FIFO kuyruk); her onay en çok `writeTimeout` beklenir.
 @MainActor
 final class BlePeripheralLink {
+    /// DECISIONS 6: onaylı BLE yazması zaman aşımı.
+    static let writeTimeout: TimeInterval = 5
+
     let peripheral: CBPeripheral
     private let c2p: CBCharacteristic
     /// Gelen `p2c` bildirimleri (ham GATT yükleri).
     let inbox = AsyncMailbox<Data>()
     private(set) var isOpen = true
-    private var readyWaiter: CheckedContinuation<Void, Error>?
     private var writeWaiter: CheckedContinuation<Void, Error>?
+    private var writeToken = 0
+    /// Yazmaları sıraya koyar: ikinci çağrı birincinin onayını bekler (`writeWaiter` asla üzerine yazılmaz).
+    private let writeLock = AsyncLock()
 
     init(peripheral: CBPeripheral, c2p: CBCharacteristic) {
         self.peripheral = peripheral
@@ -48,41 +53,30 @@ final class BlePeripheralLink {
     /// ATT MTU = en çok yazılabilir bayt + 3 (PROTOCOL §9a: parça yükü ≤ MTU − 3 − 1).
     var mtu: Int { peripheral.maximumWriteValueLength(for: .withoutResponse) + 3 }
 
-    /// Yükleri sırayla yazar; kuyruk doluysa `peripheralIsReady` gelene kadar bekler.
-    /// Aynı anda tek gönderici olmalı (çağıran `AsyncLock` ile sıralar).
-    func send(_ chunks: [Data]) async throws {
-        for chunk in chunks {
-            while !peripheral.canSendWriteWithoutResponse {
-                guard isOpen else { throw BleError.disconnected }
-                try await waitUntilReady()
-            }
-            guard isOpen else { throw BleError.disconnected }
-            peripheral.writeValue(chunk, for: c2p, type: .withoutResponse)
-        }
-    }
-
-    /// Onaylı yazma (Write With Response): karşı taraf aldığını bildirene kadar bekler.
+    /// Onaylı yazma (Write With Response): karşı taraf aldığını bildirene kadar bekler. Eşzamanlı çağrılar sıraya girer.
+    /// Onay `writeTimeout` içinde gelmezse bağlantı `BleError.timeout` ile kapatılır (oturum düşer, kilit tutulmaz).
     func sendReliable(_ payload: Data) async throws {
-        guard isOpen else { throw BleError.disconnected }
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            writeWaiter = cont
-            peripheral.writeValue(payload, for: c2p, type: .withResponse)
+        try await writeLock.withLock {
+            guard isOpen else { throw BleError.disconnected }
+            writeToken += 1
+            let token = writeToken
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                writeWaiter = cont
+                peripheral.writeValue(payload, for: c2p, type: .withResponse)
+                Task { [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(Self.writeTimeout * 1_000_000_000))
+                    self?.expireWrite(token)
+                }
+            }
         }
     }
 
-    private func waitUntilReady() async throws {
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            readyWaiter = cont
-        }
+    private func expireWrite(_ token: Int) {
+        guard token == writeToken, writeWaiter != nil else { return }
+        close(error: BleError.timeout)   // bekleyen yazıcıyı hata ile uyandırır
     }
 
     // MARK: BleCentral tarafından çağrılır
-
-    func peripheralIsReadyToWrite() {
-        let waiter = readyWaiter
-        readyWaiter = nil
-        waiter?.resume()
-    }
 
     func receive(_ payload: Data) {
         inbox.push(payload)
@@ -98,9 +92,6 @@ final class BlePeripheralLink {
         guard isOpen else { return }
         isOpen = false
         inbox.fail(error)
-        let waiter = readyWaiter
-        readyWaiter = nil
-        waiter?.resume(throwing: error)
         let writer = writeWaiter
         writeWaiter = nil
         writer?.resume(throwing: error)
@@ -139,7 +130,7 @@ final class BleLinkAdapter: BleLink, @unchecked Sendable {
     }
 
     func writeReliable(_ payload: Data) async throws {
-        try await link.sendReliable(payload)
+        try await write(payload)
     }
 
     func read() async throws -> Data? {

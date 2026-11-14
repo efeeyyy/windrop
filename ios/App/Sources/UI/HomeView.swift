@@ -89,6 +89,7 @@ struct HomeView: View {
             }
             .sheet(item: $session) { session in
                 NearbyView(session: session)
+                    .presentsIncomingOffers()   // Gönder sayfası açıkken gelen teklif de görünür
             }
         }
     }

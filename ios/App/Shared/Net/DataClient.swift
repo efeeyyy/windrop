@@ -13,6 +13,8 @@ enum DataClientError: Error, LocalizedError {
     case timeout
     case allFailed
     case localNetworkDenied
+    /// TCP veri oturumunda 30 sn boyunca hiç veri akmadı (DECISIONS 6).
+    case idleTimeout
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +23,7 @@ enum DataClientError: Error, LocalizedError {
         case .timeout: return String(localized: "Bağlantı zaman aşımına uğradı.")
         case .allFailed: return String(localized: "Hiçbir adrese bağlanılamadı.")
         case .localNetworkDenied: return LocalNetworkPermission.deniedMessage
+        case .idleTimeout: return String(localized: "Bağlantı zaman aşımına uğradı: bilgisayardan veri gelmiyor.")
         }
     }
 }
@@ -29,9 +32,29 @@ enum DataClientError: Error, LocalizedError {
 /// `read(exactly:)` tam istenen kadar okur (fazla okumaz), bu yüzden ara tampon gerekmez.
 final class NWByteStream: ByteStream, @unchecked Sendable {
     private let connection: NWConnection
+    private let lock = NSLock()
+    private var idleExpired = false
+    /// Okuma/yazma bu süre ilerlemezse bağlantı kesilir (DECISIONS 6: TCP veri oturumunda boşta kalma 30 sn).
+    static let idleTimeout: TimeInterval = Timeouts.dataIdle
 
     init(connection: NWConnection) {
         self.connection = connection
+    }
+
+    /// Bekleyen bir okuma/yazma için boşta kalma zamanlayıcısı; süre dolarsa bağlantı iptal edilir (bekleyen çağrı hata ile döner).
+    private func armIdleTimer() -> DispatchWorkItem {
+        let item = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.lock.lock(); self.idleExpired = true; self.lock.unlock()
+            self.connection.cancel()
+        }
+        DispatchQueue.global().asyncAfter(deadline: .now() + Self.idleTimeout, execute: item)
+        return item
+    }
+
+    private func mapIdle(_ error: Error) -> Error {
+        lock.lock(); defer { lock.unlock() }
+        return idleExpired ? DataClientError.idleTimeout : error
     }
 
     func read(exactly count: Int) async throws -> Data {
@@ -47,18 +70,24 @@ final class NWByteStream: ByteStream, @unchecked Sendable {
     }
 
     func write(_ data: Data) async throws {
-        try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                connection.send(content: data, completion: .contentProcessed { error in
-                    if let error {
-                        cont.resume(throwing: error)
-                    } else {
-                        cont.resume()
-                    }
-                })
+        let timer = armIdleTimer()
+        defer { timer.cancel() }
+        do {
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                    connection.send(content: data, completion: .contentProcessed { error in
+                        if let error {
+                            cont.resume(throwing: error)
+                        } else {
+                            cont.resume()
+                        }
+                    })
+                }
+            } onCancel: {
+                self.connection.cancel()
             }
-        } onCancel: {
-            self.connection.cancel()
+        } catch {
+            throw mapIdle(error)
         }
     }
 
@@ -67,18 +96,24 @@ final class NWByteStream: ByteStream, @unchecked Sendable {
     }
 
     private func receiveChunk(maxLength: Int) async throws -> (Data, Bool) {
-        try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<(Data, Bool), Error>) in
-                connection.receive(minimumIncompleteLength: 1, maximumLength: maxLength) { data, _, isComplete, error in
-                    if let error {
-                        cont.resume(throwing: error)
-                    } else {
-                        cont.resume(returning: (data ?? Data(), isComplete))
+        let timer = armIdleTimer()
+        defer { timer.cancel() }
+        do {
+            return try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (cont: CheckedContinuation<(Data, Bool), Error>) in
+                    connection.receive(minimumIncompleteLength: 1, maximumLength: maxLength) { data, _, isComplete, error in
+                        if let error {
+                            cont.resume(throwing: error)
+                        } else {
+                            cont.resume(returning: (data ?? Data(), isComplete))
+                        }
                     }
                 }
+            } onCancel: {
+                self.connection.cancel()
             }
-        } onCancel: {
-            self.connection.cancel()
+        } catch {
+            throw mapIdle(error)
         }
     }
 }
@@ -101,6 +136,11 @@ private final class NWConnectAttempt: @unchecked Sendable {
         }
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
+        // TCP keepalive (DECISIONS 6): PC uyursa / menzil dışına çıkılırsa RST gelmese de ölü bağlantı fark edilir.
+        tcp.enableKeepalive = true
+        tcp.keepaliveIdle = 10
+        tcp.keepaliveInterval = 5
+        tcp.keepaliveCount = 4
         connection = NWConnection(
             host: NWEndpoint.Host(candidate.host), port: port, using: NWParameters(tls: nil, tcp: tcp))
     }

@@ -290,6 +290,23 @@
         }
       }
     },
+    "%@, %@, doğrulama kodu %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, verification code %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@, doğrulama kodu %@"
+          }
+        }
+      }
+    },
     "%lld dosya" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -649,6 +666,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aktarma odası kapandı."
+          }
+        }
+      }
+    },
+    "Aktarma onayı zamanında verilmedi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relay confirmation wasn't given in time."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktarma onayı zamanında verilmedi."
           }
         }
       }
@@ -1044,6 +1078,23 @@
         }
       }
     },
+    "Bağlantı koptu, tekrar deneyin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection was lost. Please try again."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantı koptu, tekrar deneyin."
+          }
+        }
+      }
+    },
     "Bağlantı zaman aşımına uğradı." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1057,6 +1108,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bağlantı zaman aşımına uğradı."
+          }
+        }
+      }
+    },
+    "Bağlantı zaman aşımına uğradı: bilgisayardan veri gelmiyor." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection timed out: no data is arriving from the computer."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantı zaman aşımına uğradı: bilgisayardan veri gelmiyor."
           }
         }
       }
@@ -1163,6 +1231,40 @@
         }
       }
     },
+    "Bilgisayar bağlantıyı başlatmadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer didn't start the connection."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar bağlantıyı başlatmadı."
+          }
+        }
+      }
+    },
+    "Bilgisayar bu iPhone'u tanımıyor. Eşleştirmeyi yeniden yapın." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer doesn't recognize this iPhone. Pair again."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar bu iPhone'u tanımıyor. Eşleştirmeyi yeniden yapın."
+          }
+        }
+      }
+    },
     "Bilgisayar bulunamadı veya yanıt vermedi." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1244,6 +1346,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bilgisayar yanıt vermedi. Bilgisayarda WinDrop'un açık olduğundan emin olun."
+          }
+        }
+      }
+    },
+    "Bilgisayar zamanında yanıt vermedi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer didn't respond in time."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayar zamanında yanıt vermedi."
           }
         }
       }
@@ -1486,6 +1605,40 @@
         }
       }
     },
+    "Bilgisayarla bağlantı koptu." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection to the computer was lost."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarla bağlantı koptu."
+          }
+        }
+      }
+    },
+    "Bilgisayarla iletişim kurulamadı (protokol hatası)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't communicate with the computer (protocol error)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarla iletişim kurulamadı (protokol hatası)."
+          }
+        }
+      }
+    },
     "Bilgisayarlar" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1550,6 +1703,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bilgisayarın etkin noktasına katılınıyor…"
+          }
+        }
+      }
+    },
+    "Bilgisayarın kimliği doğrulanamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The computer's identity couldn't be verified."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilgisayarın kimliği doğrulanamadı."
           }
         }
       }
@@ -1703,6 +1873,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bluetooth kapalı. Bilgisayarınızı bulmak için açın."
+          }
+        }
+      }
+    },
+    "Bu bilgisayardan gelen dosyalar sormadan kabul edilir. Ayarlar'dan kapatabilirsiniz." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files from this computer are accepted without asking. You can turn this off in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu bilgisayardan gelen dosyalar sormadan kabul edilir. Ayarlar'dan kapatabilirsiniz."
           }
         }
       }
@@ -1979,6 +2166,23 @@
         }
       }
     },
+    "Dosyalar'a kaydedildi — Fotoğraflar'a taşımak için \"Fotoğraflar'a kaydet\"e dokunun" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Files — tap \"Save to Photos\" to move it to Photos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dosyalar'a kaydedildi — Fotoğraflar'a taşımak için \"Fotoğraflar'a kaydet\"e dokunun"
+          }
+        }
+      }
+    },
     "Doğrulama kodu" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2094,6 +2298,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Etkin noktaya elle katılmanız gerekiyor"
+          }
+        }
+      }
+    },
+    "Etkin noktaya katılma zaman aşımına uğradı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joining the hotspot timed out."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin noktaya katılma zaman aşımına uğradı."
           }
         }
       }
@@ -2557,6 +2778,23 @@
         }
       }
     },
+    "Güvenli bağlantı kurulamadı." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't establish a secure connection."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Güvenli bağlantı kurulamadı."
+          }
+        }
+      }
+    },
     "Hakkında" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2774,6 +3012,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kamera kullanılamıyor."
+          }
+        }
+      }
+    },
+    "Kapalı" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapalı"
+          }
+        }
+      }
+    },
+    "Kapalıysa paylaşım menüsü bilgisayarda ayrı bir iPhone olarak görünebilir (imzalama App Group yetkisini vermemiş olabilir)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If off, the share menu may appear as a separate iPhone on the computer (signing may not have granted the App Group entitlement)."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapalıysa paylaşım menüsü bilgisayarda ayrı bir iPhone olarak görünebilir (imzalama App Group yetkisini vermemiş olabilir)."
           }
         }
       }
@@ -3029,6 +3301,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne göndermek istersiniz?"
+          }
+        }
+      }
+    },
+    "Ortak kimlik" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared identity"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ortak kimlik"
           }
         }
       }
@@ -3318,6 +3607,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tanıdık olmayan bilgisayarda gönderimi onaylamanız gerekir; ekrandaki kod iki yerde aynı olmalı."
+          }
+        }
+      }
+    },
+    "Tanılama" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tanılama"
+          }
+        }
+      }
+    },
+    "Teklife zamanında yanıt verilmedi." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The offer wasn't answered in time."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teklife zamanında yanıt verilmedi."
           }
         }
       }
@@ -3798,6 +4121,23 @@
         }
       }
     },
+    "Yeterli boş alan yok." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough free space."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeterli boş alan yok."
+          }
+        }
+      }
+    },
     "bağlantı kapandı" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3811,6 +4151,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "bağlantı kapandı"
+          }
+        }
+      }
+    },
+    "tanıdık bilgisayar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "known computer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tanıdık bilgisayar"
           }
         }
       }
@@ -3857,6 +4214,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "veya WinDrop penceresine sürükleyip bırakın"
+          }
+        }
+      }
+    },
+    "yeni bilgisayar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "new computer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yeni bilgisayar"
           }
         }
       }
@@ -4078,6 +4452,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "İsteğe bağlı. Windows'taki WinDrop'ta gösterilen QR kodu okutursanız o bilgisayardan gelen dosyalar (üst sınıra kadar) sormadan kabul edilir. Yalnız QR ile eşli bilgisayarlar için geçerlidir; \"Tanıdık\" bilgisayarlardan gelenler her zaman sorulur. Uygulama arka plandayken otomatik kabul edilen aktarımda bildirim yalnız bittiğinde gelir."
+          }
+        }
+      }
+    },
+    "İşlem tamamlanamadı, tekrar deneyin." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The operation couldn't be completed. Please try again."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İşlem tamamlanamadı, tekrar deneyin."
           }
         }
       }

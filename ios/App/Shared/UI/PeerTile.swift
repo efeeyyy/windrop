@@ -5,6 +5,14 @@ struct PeerTile: View {
     let peer: NearbyPeer
     let action: () -> Void
 
+    /// VoiceOver: "‹ad›, tanıdık bilgisayar, doğrulama kodu 1 2 3 4" (simge/rozet/kod ayrı ayrı okunmaz).
+    private var accessibilityText: String {
+        let kind = peer.isKnown ? String(localized: "tanıdık bilgisayar") : String(localized: "yeni bilgisayar")
+        guard !peer.code.isEmpty else { return "\(peer.name), \(kind)" }
+        let spaced = peer.code.map(String.init).joined(separator: " ")
+        return String(localized: "\(peer.name), \(kind), doğrulama kodu \(spaced)")
+    }
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
@@ -21,9 +29,12 @@ struct PeerTile: View {
                         .foregroundStyle(.green)
                 }
                 Text(peer.code)
-                    .font(.caption2.monospacedDigit()).foregroundStyle(.tertiary)
+                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityAddTraits(.isButton)
     }
 }
