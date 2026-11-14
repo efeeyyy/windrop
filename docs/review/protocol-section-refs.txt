@@ -1,0 +1,352 @@
+docs/APP-WINDOWS.md:22:  ile yeniden dener (PROTOCOL §9). Eşleştirme modu yalnız QR ekrandayken açıktır.
+docs/APP-WINDOWS.md:38:  listesi → `offer` (p2c) → `accept` → yol seçimi (§6) → aktarım ilerlemesi.
+docs/ARCHITECTURE.md:16:   sonraki bağlantılar `IK`; ayrıntı `PROTOCOL.md` §1), iki tarafta da resmi test vektörleriyle doğrulanır.
+docs/ARCHITECTURE.md:54:- Bu nedenle QR eşleştirme **zorunlu değil**; ilk temas "yakındaki herkes" modunda (PROTOCOL §2b):
+docs/ARCHITECTURE.md:110:  `offer` anında, doğrudan yol denenmeden açılır (PROTOCOL §6).
+docs/INTEROP.md:40:| (d3) BLE oturumu IK iken TCP'de XX | el sıkışma bitti, C# "el sıkışma deseni XX, BLE oturumu IK; kapatıldı" (§9a), Swift `connectionLost` |
+docs/INTEROP.md:49:   engelledi. Düzeltme: Noise §4.3 HKDF'i `HMACSHA256` ile elle yapmak (temp = HMAC(ck, ""), out1 = HMAC(temp, 0x01), out2 = HMAC(temp, out1‖0x02)).
+docs/INTEROP.md:51:2. **Swift `SignalMessage`'ta `pairInfo` yoktu** (PROTOCOL §4/§2.7; `PairingController` `.pairInfo` kullanıyordu). Eklendi: `PairInfo {ssid, pass}`,
+docs/INTEROP.md:54:3. SAS: **uyuşmazlık yok.** İki taraf da PROTOCOL §2b/§9a'ya uyuyor (ilk 4 bayt big-endian uint32 mod 10000, 4 hane sıfır dolgulu).
+docs/INTEROP.md:66:## Aktarma sunucusu (relay) yolu — PROTOCOL §6.3
+docs/review/ios-app.md:17:- **Öneri:** Kaydı hemen silme. Önce XX ile yeniden bağlan. XX aynı PC anahtarıyla başarılı olursa PC canlıdır ve yalnız IK'yı reddetmiştir; kayıt ancak o zama
+docs/review/ios-app.md:33:- **Sorun:** Uzantı çoğunlukla ana uygulama arka planda ve askıdayken açılır. Askıdaki süreç Darwin bildirimini işleyemez (doğrulanmadı: bildirimler sürdürmede
+docs/review/ios-app.md:34:- **Öneri:** `didBecomeActive` içinde `setYielding(false)` yap (uygulama öndeyken başka uygulamanın paylaşım sayfası açık olamaz). Uzantı tarafında PC'ye bağlanm
+docs/review/ios-app.md:44:- **Sorun:** `NWConnection.receive` süresiz bekliyor ve TCP keepalive kapalı. BLE alımında PROTOCOL §6.3/4'teki "eş 30 sn çerçeve göndermezse düşer" kuralı iOS'ta
+docs/review/ios-app.md:67:- **Sorun:** PROTOCOL §7 (`PROTOCOL.md:246-247`): "Eşli cihazdan gelen offer varsayılan olarak onay ister". Kodda QR eşleştirmesi `autoAccept = true` yazıyor ve ayar va
+docs/review/ios-app.md:71:### 11. [Orta] Teklif hız sınırı §2b'den sapıyor
+docs/review/ios-app.md:100:- **Sorun:** `setHotspot` PC tanıdık olmasa da Keychain'e yazıyor. `reload`/`remove` yalnız tanıdık listesindeki kimlikleri biliyor, bu kayıtlar hiç silinmiyor. PC z
+docs/review/ios-app.md:115:- **Sorun:** PROTOCOL §5 (`PROTOCOL.md:142`): "kabulden önce `total` ≤ boş alan − pay". Kullanıcı 5 GB'ı kabul ediyor; etkin nokta açılıp bağlantı kurulduktan
+docs/review/ios-app.md:125:- **Sorun:** İngilizce arayüzde "Bilgisayar" görünüyor. Bilinmeyen PC'nin `hello.name` değerinde RLO/kontrol karakterleri ayıklanmadan onay sayfasında ve bildirimde 
+docs/review/ios-app.md:159:2. **PROTOCOL §3a'ya açık "güvenilmeyen anahtar" işareti** ekle (ör. `WDU`). iPhone eşleşmeyi yalnız bu işaret gelince silsin (bulgu 1). Windows ile birlikte deği
+docs/review/windows-core-fixes.md:22:| 11 hello.name kaydı değiştiriyor | düzeltildi | Güncelleme kaldırıldı (PROTOCOL §0 korunur). Test `DuplicateIdentityTests` tersine çevrildi. Ad uzunlu�
+docs/review/windows-core.md:32:  reddeder. Bu kural yalnız ilk yol yarışı için gerekli. Ancak aktarım boyunca geçerli kalıyor. PROTOCOL §6'ya göre
+docs/review/windows-core.md:45:- **Senaryo (§6 yol değişimi):** addr gönderildi, kullanıcı iPhone'da Wi-Fi'ı kapattı. `status wifi=none` gelince ek etkin nokta
+docs/review/windows-core.md:68:    hiç yenilenmiyor (PROTOCOL §6.2 ihlali).
+docs/review/windows-core.md:101:- **Sorun:** `ProtocolException` (ör. §5a geçersiz `dir`, yanlış `FILE_START`) ve yerel disk/kaynak `IOException`'ı
+docs/review/windows-core.md:136:  parolayla açık kalıyor ve bilinmeyen cihaz PC'nin 192.168.137.0/24 ağında kalmaya devam ediyor. Bu PROTOCOL §6.2'ye uygun,
+docs/review/windows-core.md:152:### 11. Spesifikasyondan sapma: kayıtlı ad `hello.name` ile değiştiriliyor (§0)
+docs/review/windows-core.md:154:- **Sorun:** PROTOCOL §0: "Kayıtta eşleştirme anındaki ad tutulur; arayüzde her zaman bu ad gösterilir (`hello.name` değil)."
+docs/review/windows-core.md:158:- **Düzeltme:** Ya PROTOCOL §0 bilinçli bir kararla güncellenmeli ya da güncelleme kaldırılmalı. Ara çözüm olarak kayıtlı ad
+docs/review/windows-core.md:161:### 12. BLE veri yolunda "eş 30 sn çerçeve göndermezse düşer" yalnız ilk çerçeve için uygulanıyor (§6.4)
+docs/review/windows-core.md:260:   listesinin PROTOCOL §4'e yazılmasını da kolaylaştırır.
+docs/STATUS.md:42:   `DECISIONS.md` maddeleri spesifikasyona işlenecek; eskimiş §9 açık sorular, §2/§2b çelişkisi temizlenecek.
+windows/src/WinDrop.App/App.xaml.cs:269:        // Otomatik kabul kararı TransferCoordinator'da verilir (yalnız QR ile eşli cihaz, PROTOCOL §7/§2b);
+windows/src/WinDrop.App/Services/Contracts.cs:7:/// <param name="CanPush">PROTOCOL §6.5: yakında değil ama push bildirimiyle uyandırılabilir (pushId kayıtlı + aktarma sunucusu adresi dolu).</pa
+windows/src/WinDrop.App/Services/Contracts.cs:109:    /// <summary>Telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor (PROTOCOL §6.5).</summary>
+windows/src/WinDrop.App/Services/Contracts.cs:114:/// <param name="VerificationCode">Eşleştirmesiz (XX) oturumda 4 haneli doğrulama kodu (PROTOCOL §2b); yoksa null.</param>
+windows/src/WinDrop.App/Services/Contracts.cs:118:/// <summary>Aktarma sunucusu (internet/hücresel veri) yolu için kullanıcı onayı (PROTOCOL §6.3).</summary>
+windows/src/WinDrop.App/Services/RealServices.cs:24:    /// <summary>Eşli + tanıdık cihazlar ve (PROTOCOL §2b) yakındaki bilinmeyen iPhone'lar (iPhone'un kurduğu BLE bağlantısı + hello).</sum
+windows/src/WinDrop.App/ViewModels/MainViewModel.cs:32:    /// <summary>Gönderilebilir: yakında ya da push bildirimiyle ulaşılabilir (§6.5).</summary>
+windows/src/WinDrop.App/Views/IncomingOfferWindow.xaml.cs:29:        // PROTOCOL §5a: preview girdisi "/" ile bitiyorsa klasör adıdır. Adlar karşı cihazdan geldiği için temizlenerek gösterili
+windows/src/WinDrop.App/Views/RelayApprovalWindow.xaml.cs:9:/// Aktarma sunucusu (internet/hücresel veri) kullanımı için onay (PROTOCOL §6.3). 60 sn içinde yanıt yoksa iptal;
+windows/src/WinDrop.Core/Protocol/BleFragmenter.cs:4:/// PROTOCOL §3 BLE parçalama: bir Noise mesajı (en çok 8192 bayt) GATT yazma/bildirim yüklerine bölünür.
+windows/src/WinDrop.Core/Protocol/BleFragmenter.cs:6:/// <para>PROTOCOL §9a: "mesaj sıra no" harfi harfine okundu: <b>bir mesajın tüm parçaları aynı sıra no'yu taşır</b>,
+windows/src/WinDrop.Core/Protocol/BleFragmenter.cs:10:/// <para>PROTOCOL §9a: <c>mtu</c> ATT MTU'dur (en az 23); tek GATT yükü en çok <c>mtu − 3</c> bayt, dolayısıyla parça
+windows/src/WinDrop.Core/Protocol/BleFragmenter.cs:72:/// Herhangi bir hata sonrası nesne kalıcı olarak bozulur: PROTOCOL §3 gereği oturum düşer, yeni el sıkışma gerekir.
+windows/src/WinDrop.Core/Protocol/FileNameSanitizer.cs:13:/// PROTOCOL §5 "Dosya adı (alıcı)" kuralları: yalnız son yol bileşeni; <c>..</c>, <c>/</c>, <c>\</c>,
+windows/src/WinDrop.Core/Protocol/FileNameSanitizer.cs:16:/// <para>PROTOCOL §9a: Spesifikasyon "reddedilir veya değiştirilir" der; burada her zaman değiştirilir (adı bozuk
+windows/src/WinDrop.Core/Protocol/FileNameSanitizer.cs:18:/// <para>PROTOCOL §9a: Spesifikasyonda olmayan ek sertleştirmeler: Windows'ta geçersiz <c>&lt; &gt; " | ? *</c>, C1 denetim
+windows/src/WinDrop.Core/Protocol/Frames.cs:8:/// Veri kanalı çerçeve türü (PROTOCOL §5). PROTOCOL §9a: Spesifikasyon tür baytının sayısal değerlerini vermiyor;
+windows/src/WinDrop.Core/Protocol/Frames.cs:9:/// aşağıdaki değerler 1'den başlayıp §5'teki sıra ile atandı. iOS tarafı aynı tabloyu kullanmalı.
+windows/src/WinDrop.Core/Protocol/Frames.cs:23:// JSON kontrol gövdeleri (§5). PROTOCOL §9a: alan tipleri belirtilmedi — id: tamsayı (int), size: bayt (long),
+windows/src/WinDrop.Core/Protocol/Frames.cs:28:/// <summary>MANIFEST.files[] öğesi. <paramref name="Dir"/> (PROTOCOL §5a): isteğe bağlı, gönderilen kökten göreli klasör yolu
+windows/src/WinDrop.Core/Protocol/Frames.cs:54:/// <summary>CANCEL. PROTOCOL §9a: alan listelenmedi; gövde boş nesne <c>{}</c> olabilir, isteğe bağlı <c>reason</c> taşır.</summary>
+windows/src/WinDrop.Core/Protocol/Frames.cs:77:/// §5 düz metin çerçeve kodlaması: <c>tür (1 B) || gövde</c>, en çok 65519 B; Noise şifrelemesi
+windows/src/WinDrop.Core/Protocol/Prefix.cs:9:/// <summary>Taşıma türü (PROTOCOL §1 ön ek, 4. bayt).</summary>
+windows/src/WinDrop.Core/Protocol/Prefix.cs:18:/// PROTOCOL §1 açık ön ek (20 bayt, şifresiz): <c>"WD" || sürüm (1) || taşıma (1) || transferId (16)</c>.
+windows/src/WinDrop.Core/Protocol/Prefix.cs:20:/// <para>PROTOCOL §9a: Ön ek BLE'de parçalanmaz, <c>c2p</c>'ye tek (20 bayt = en küçük ATT yükü, MTU 23) ham yazma
+windows/src/WinDrop.Core/Protocol/Prefix.cs:22:/// <para>PROTOCOL §9a: Sürüm uyuşmazlığı yanıtı <c>0xFF || sürüm</c> iki bayttır ("tek bayt 0xFF || sürüm" ifadesi
+windows/src/WinDrop.Core/Protocol/RelativeDirectory.cs:4:/// PROTOCOL §5a <c>dir</c> alanı: gönderilen kökten göreli klasör yolu, ayırıcı <c>/</c>, en çok 16 seviye, toplam ≤ 1024 karakter
+windows/src/WinDrop.Core/Protocol/RelativeDirectory.cs:5:/// Alıcı her bileşeni ayrı ayrı §5 ad kurallarıyla temizler; <c>.</c>, <c>..</c>, boş bileşen, <c>\</c> ve mutlak yol
+windows/src/WinDrop.Core/Protocol/SignalMessages.cs:7:/// PROTOCOL §4 sinyal mesajları. Gövde UTF-8 JSON <c>{"t": "&lt;tür&gt;", ...}</c>, alanlar camelCase.
+windows/src/WinDrop.Core/Protocol/SignalMessages.cs:63:/// <summary>pairInfo (PC→iPhone, yalnız eşleştirme kanalında, PC onayından sonra): etkin nokta SSID/parolası (§2.7, §6.2).</summary>
+windows/src/WinDrop.Core/Protocol/SignalMessages.cs:84:/// <summary>bleData (PC→iPhone, PROTOCOL §6.4a): aktarım BLE oturumu üstünden §5 çerçeveleriyle yapılacak; gönderen taraf MANIFEST il
+windows/src/WinDrop.Core/Protocol/SignalMessages.cs:88:/// pushId (iPhone→PC, yalnız tanıdık/eşli cihazın şifreli BLE kanalında, PROTOCOL §6.5): aktarma sunucusundaki push kaydı kimliği.
+windows/src/WinDrop.Core/Protocol/SignalMessages.cs:93:/// <summary>§6.5 pushId biçimi.</summary>
+windows/src/WinDrop.Core/Protocol/SignalMessages.cs:133:/// <summary>§4 sinyal mesajı kodlama/çözme. Düz metin üst sınırı: 8192 − 16 (etiket) = 8176 bayt (BLE Noise mesajı ≤ 8192).</summ
+windows/src/WinDrop.Core/Protocol/TcpFraming.cs:4:/// PROTOCOL §5 TCP çerçevesi: <c>uzunluk (2 B big-endian) || Noise mesajı</c> (1..65535 bayt).
+windows/src/WinDrop.Core/Protocol/TcpFraming.cs:6:/// <para>PROTOCOL §9a: Sıfır uzunluklu çerçeve geçersiz sayılır (en küçük Noise mesajı bir etiket/anahtar taşır).</para>
+windows/src/WinDrop.Core/Protocol/TcpFraming.cs:38:    /// El sıkışma aşamasındaki okuma: ilk bayt 0xFF ise bu bir uzunluk öneki değil, §1 sürüm uyuşmazlığı yanıtıdır
+windows/src/WinDrop.Core/Protocol/TransferId.cs:9:/// 16 baytlık aktarım kimliği (PROTOCOL §1 ön ek, §4 JSON'da 16 B base64url, dolgusuz).
+windows/src/WinDrop.Core/Protocol/VersionMismatchException.cs:4:/// PROTOCOL §1 sürüm uyuşmazlığı: yanıtlayan <c>0xFF || desteklenen sürüm</c> gönderip kapatır;
+windows/src/WinDrop.Core/Session/IFrameChannel.cs:6:/// §5 çerçevelerini yollayıp alan kanal: <c>FileSender</c>/<c>FileReceiver</c> yalnız buna dayanır.
+windows/src/WinDrop.Core/Session/IFrameChannel.cs:8:/// uyarlayıcı (PROTOCOL §6.4) bunu uygular.
+windows/src/WinDrop.Core/Session/IFrameChannel.cs:15:    /// <summary>Yanıtlayanda ilk geçerli taşıma mesajı gelene kadar bekler (§1 0-RTT yok).</summary>
+windows/src/WinDrop.Core/Session/RelayRoom.cs:11:/// PROTOCOL §6.3 aktarma sunucusu odası: token, oda kimliği ve adres. Token JSON'da (<c>relay</c> sinyali) 32 baytın
+windows/src/WinDrop.Core/Session/RelayRoom.cs:132:/// PC tarafı (PROTOCOL §6.3 "Sırası"): odaya <c>role=pc</c> olarak bağlanır; iPhone (başlatan) bağlanınca ön ek + el sıkışma
+windows/src/WinDrop.Core/Session/RelayRoom.cs:166:            await channel.EnsureEstablishedAsync(timeout.Token).ConfigureAwait(false);   // PROTOCOL §1: 0-RTT yok
+windows/src/WinDrop.Core/Session/SecureChannel.cs:7:/// <summary>Cihaz kimliği = açık anahtarın SHA-256'sının ilk 16 baytı (PROTOCOL §0).</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:20:/// <summary>Güvenilen listede olmayan bir başlatan (IK) — bağlantı kesilir (PROTOCOL §1).</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:27:/// <summary>Kanalın kurulduğu Noise deseni (PROTOCOL §1, §2, §2b).</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:30:/// <summary>Kanaldan gelen tek mesaj: ya §5 çerçevesi ya §4 sinyali.</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:36:/// <para><b>Kurulmuş sayma kuralı (PROTOCOL §1):</b> IK'de el sıkışmayı yanıtlayan bitirir (msg2), yani başlatanın
+windows/src/WinDrop.Core/Session/SecureChannel.cs:75:    /// <summary>Kurulumda kullanılan el sıkışma deseni (PROTOCOL §1, §2b).</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:100:            throw new InvalidOperationException("Oturum kurulmadı: önce EnsureEstablishedAsync (PROTOCOL §1, 0-RTT yok).");
+windows/src/WinDrop.Core/Session/SecureChannel.cs:161:    /// <summary>Yalnız §5 çerçevesi bekler; sinyal gelirse <see cref="ProtocolException"/>.</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:169:    /// <summary>Yalnız §4 sinyali bekler; çerçeve gelirse <see cref="ProtocolException"/>.</summary>
+windows/src/WinDrop.Core/Session/SecureChannel.cs:266:    /// <summary>Yanıtlayan (PC), eşleştirme: XXpsk3. Başlatanın anahtarı <see cref="RemoteStaticPublicKey"/>'dedir; PC onayı (§2.4) çağ
+windows/src/WinDrop.Core/Session/SecureChannel.cs:284:    // ---------------------------------------------------------------- PROTOCOL §2b: yakındaki herkes (XX) ve otomatik yanıtlayan
+windows/src/WinDrop.Core/Session/Transports.cs:31:/// <summary>TCP (doğrudan, etkin nokta) veya aktarma (<see cref="TransportKind.Relay"/>) akışı üstünde §5 çerçevelemesi.</summary>
+windows/src/WinDrop.Core/Session/Transports.cs:82:    /// PROTOCOL §3a: oturum protokol hatasıyla bittiğinde istemciye tek bildirim olarak <see cref="BleResync.Marker"/> gönderir.
+windows/src/WinDrop.Core/Session/Transports.cs:94:/// <summary>PROTOCOL §3a: BLE oturum sıfırlama işareti.</summary>
+windows/src/WinDrop.Core/Session/Transports.cs:107:/// <summary>BLE oturumu: Noise mesajı <see cref="BleFragmenter"/> ile parçalanır, §9a gereği sıra no mesaj başınadır.</summary>
+windows/src/WinDrop.Core/Session/Transports.cs:163:            // PROTOCOL §3a: oturum ortasında tam 20 bayt geçerli BLE ön eki = istemci oturumu yeniden başlatıyor.
+windows/src/WinDrop.Core/Session/WebSocketMessageTransport.cs:7:/// Aktarma sunucusu (PROTOCOL §6.3) WebSocket'i üstünde Noise taşıması: <b>her ikili WebSocket mesajı bir Noise mesajıdır</b>
+windows/src/WinDrop.Core/Transfer/FileReceiver.cs:7:/// <summary>Alıcı ayarları (PROTOCOL §5 sınırları). <see cref="PeerId"/> = <see cref="DeviceId.HexFromPublicKey"/>.</summary>
+windows/src/WinDrop.Core/Transfer/FileReceiver.cs:18:/// PROTOCOL §5 alıcı. MANIFEST'i sınırlara karşı doğrular; her dosya için kısmi depodan devam ofsetini bulur
+windows/src/WinDrop.Core/Transfer/FileReceiver.cs:140:            RelativeDirectory.Parse(f.Dir);   // §5a: geçersiz dir → ProtocolException (hiçbir dosya yazılmadan)
+windows/src/WinDrop.Core/Transfer/FileSender.cs:10:/// PROTOCOL §5 gönderen: MANIFEST → (alıcıdan RESUME → FILE_START → DATA… → FILE_END) her dosya için → DONE bekler.
+windows/src/WinDrop.Core/Transfer/FileSender.cs:40:        await _channel.EnsureEstablishedAsync(cancellationToken).ConfigureAwait(false);   // yanıtlayan isek: §1 0-RTT yok
+windows/src/WinDrop.Core/Transfer/FileSender.cs:73:        // PROTOCOL §9a MANIFEST sayfalama: her çerçevenin JSON gövdesi ≤ limit; son sayfa more=false.
+windows/src/WinDrop.Core/Transfer/FolderScanner.cs:18:/// PROTOCOL §5a gönderen: verilen yollar arasındaki klasörleri özyinelemeli tarar. Symlink/junction (reparse point) izlenmez
+windows/src/WinDrop.Core/Transfer/Storage.cs:12:    /// <summary>Unix epoch milisaniye (PROTOCOL §9a).</summary>
+windows/src/WinDrop.Core/Transfer/Storage.cs:14:    /// <summary>PROTOCOL §5a: seçilen klasörün adı + göreli alt yol ('/' ayırıcı); klasör dışı dosyada null.</summary>
+windows/src/WinDrop.Core/Transfer/Storage.cs:20:/// <summary>Kısmi dosya anahtarı: <c>(eş kimliği, transferId, dosya id)</c> (PROTOCOL §5).</summary>
+windows/src/WinDrop.Core/Transfer/Storage.cs:69:    /// tamamlanma kaydını yazar. Saklanan yolu döndürür. <paramref name="safeDir"/> (§5a, <see cref="RelativeDirectory.Parse"/> çıktısı)
+windows/src/WinDrop.Core/Transfer/Storage.cs:95:    /// <param name="dir">PROTOCOL §5a göreli klasör yolu (null: klasör dışı dosya).</param>
+windows/src/WinDrop.Core/Transfer/Storage.cs:251:    /// §5a: <paramref name="safeDir"/> için hedef dizini oluşturur ve döndürür. En üst klasör çakışmasında "ad (2)" yalnız bir kez
+windows/src/WinDrop.Core/Transfer/TransferTypes.cs:5:/// <summary>PROTOCOL §5 sabitleri.</summary>
+windows/src/WinDrop.Platform/AppSettings.cs:37:    /// Aktarma sunucusu adresi (PROTOCOL §6.3; kendi Cloudflare sunucunuz, <c>relay\README.md</c>): <c>host</c> veya <c>wss://host</c>.
+windows/src/WinDrop.Platform/BleDataChannel.cs:8:/// PROTOCOL §6.4: küçük dosyalar için BLE sinyal oturumu üstünde §5 çerçeveleri. Oturumun tek okuyucusu
+windows/src/WinDrop.Platform/BleDataChannel.cs:44:    /// <summary>PROTOCOL §6.4a: BLE DATA parçası ≤ 2048 B (iOS seçimi); MANIFEST sayfaları da bu sınıra göre bölünür.</summary>
+windows/src/WinDrop.Platform/BleSignalServer.cs:20:/// PROTOCOL §3: PC = GATT sunucusu (<c>c2p</c>: WriteWithoutResponse + Write, <c>p2c</c>: Notify). Her istemci için bir
+windows/src/WinDrop.Platform/BleSignalServer.cs:25:/// iPhone zaten bekleyen bağlantıyla gelir (PROTOCOL §3), ilk keşif yerel ad + bu UUID'dir.</para>
+windows/src/WinDrop.Platform/BleSignalServer.cs:94:    /// Yerel ad işareti (PROTOCOL §3): <c>GattServiceProvider</c> reklamına yerel ad koyamaz (Windows bilgisayar adını kullanır) ve
+windows/src/WinDrop.Platform/BleSignalServer.cs:293:        /// <summary>PROTOCOL §3a: <c>WDR</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>
+windows/src/WinDrop.Platform/BluetoothAudioMonitor.cs:6:/// Bluetooth ses çıkışının anlık durumu (PROTOCOL §4 <c>btAudio</c>).
+windows/src/WinDrop.Platform/DataListener.cs:13:/// Veri kanalında beklenen aktarımlar (PROTOCOL §5): <c>transferId → (eşin açık anahtarı, işleyici)</c>.
+windows/src/WinDrop.Platform/DataListener.cs:109:/// TCP veri kanalı dinleyicisi (PROTOCOL §5; port 53600, IPv4+IPv6). Ön ek → <c>transferId</c> bekleyen aktarımlarda yoksa kapat →
+windows/src/WinDrop.Platform/DataListener.cs:216:            // IK (tanıdık/eşli) veya XX (bilinmeyen, §2b): her ikisinde karşı anahtar, aktarımın BLE oturumundaki eşle aynı olmalı.
+windows/src/WinDrop.Platform/DataListener.cs:227:                await channel.EnsureEstablishedAsync(hs.Token).ConfigureAwait(false);   // PROTOCOL §1: 0-RTT yok
+windows/src/WinDrop.Platform/HotspotConfigStore.cs:13:/// PROTOCOL §6.2: ilk çağrıda rastgele SSID (<c>WinDrop-</c> + 32 bit base32) ve parola (128 bit base32, 26 karakter)
+windows/src/WinDrop.Platform/HotspotConfigStore.cs:41:    /// Parolayı yeniler (SSID aynı kalır) ve saklar. PROTOCOL §6.2: eşli/tanıdık olmayan bir eşe etkin nokta bilgisi
+windows/src/WinDrop.Platform/HotspotManager.cs:27:/// Mobil etkin nokta (PROTOCOL §6.2). <see cref="StartAsync"/> kullanıcının mevcut ayarını kaydeder, WinDrop SSID/parolasını
+windows/src/WinDrop.Platform/HotspotManager.cs:115:                // Parola yenilendi (PROTOCOL §6.2): açık kalan etkin nokta eski parolayla çalışıyor; yenisiyle yeniden başlat.
+windows/src/WinDrop.Platform/IdentityStore.cs:7:/// Kalıcı X25519 cihaz anahtarı (PROTOCOL §0). <c>identity.bin</c>: DPAPI(CurrentUser) ile korunan
+windows/src/WinDrop.Platform/MarkOfTheWeb.cs:5:/// <summary>Alınan dosyaya <c>Zone.Identifier</c> NTFS akışı (ZoneId=3, İnternet bölgesi) yazar (PROTOCOL §5).</summary>
+windows/src/WinDrop.Platform/MotwCommitHook.cs:5:/// <summary>Alınan her dosyaya Mark-of-the-Web (Zone.Identifier) yazar (PROTOCOL §5).</summary>
+windows/src/WinDrop.Platform/NetworkInfo.cs:8:/// <summary>Yerel adres adayı (PROTOCOL §6.1 <c>addr</c> için).</summary>
+windows/src/WinDrop.Platform/PairingService.cs:8:/// <summary>Açık eşleştirme modu (QR ekranda): tek kullanımlık 32 baytlık sır + süre (PROTOCOL §2).</summary>
+windows/src/WinDrop.Platform/PairingService.cs:39:/// PROTOCOL §2: QR yükü, 2 dk eşleştirme modu, XXpsk3 sonrası UI onayı → <see cref="TrustedDevices"/> →
+windows/src/WinDrop.Platform/PeerSession.cs:6:/// Kurulmuş BLE sinyal oturumu: iPhone ile IK (tanıdık/eşli) veya XX (bilinmeyen, PROTOCOL §2b) kanalı (PROTOCOL §3, §4).
+windows/src/WinDrop.Platform/PeerSession.cs:43:    /// <summary>Arayüzde gösterilen ad: kayıtlıysa kayıttaki ad (PROTOCOL §0), değilse temizlenmiş <c>hello.name</c>.</summary>
+windows/src/WinDrop.Platform/PeerSession.cs:58:    /// <summary>XX oturumunda 4 haneli doğrulama kodu (PROTOCOL §2b); IK/XXpsk3 oturumunda null.</summary>
+windows/src/WinDrop.Platform/PeerSession.cs:73:    /// <summary>Oturum protokol/şifre hatasıyla bitti (PROTOCOL §3a: iPhone'a sıfırlama işareti gider).</summary>
+windows/src/WinDrop.Platform/ProtocolIds.cs:4:/// PROTOCOL §3 BLE UUID'leri (2026-10-17'de rastgele üretildi; ölçüm aracının <c>ProbeUuids</c> değerlerinden bağımsız).
+windows/src/WinDrop.Platform/PushNotifier.cs:28:/// PROTOCOL §6.5 tetik: <c>POST &lt;relayUrl&gt;/v1/push/&lt;pushId&gt;</c> <c>{"from": "&lt;PC adı, ≤ 40&gt;"}</c>.
+windows/src/WinDrop.Platform/Sas.cs:6:/// <summary>PROTOCOL §2b doğrulama kodu: <c>SHA-256("WinDrop-SAS" || h)</c>'nin ilk 4 baytı (big-endian uint32) mod 10000, 4 hane.</summary>
+windows/src/WinDrop.Platform/SignalSessionAcceptor.cs:11:/// BLE bağlantısından (<see cref="IBleLink"/>) oturum üretir (PROTOCOL §1, §2b, §9a): ön ek → eşleştirme modu açıksa XXpsk3
+windows/src/WinDrop.Platform/SignalSessionAcceptor.cs:38:    /// Protokol hatasıyla biterse istemciye <c>WDR</c> gönderir (PROTOCOL §3a) ama yeniden senkron beklemez.</summary>
+windows/src/WinDrop.Platform/SignalSessionAcceptor.cs:42:    /// PROTOCOL §3a: <see cref="RunLinkAsync"/> gibi, ama oturum protokol hatasıyla bittiğinde (<c>WDR</c> gönderildikten sonra)
+windows/src/WinDrop.Platform/SignalSessionAcceptor.cs:127:                    _ => true,                                                // XX: yakındaki herkes (§2b); onay teklifte
+windows/src/WinDrop.Platform/SignalSessionAcceptor.cs:203:            // PROTOCOL §3a: iPhone oturumun öldüğünü bilmez; tek bildirimle haber ver (en iyi çaba, abone yoksa atlanır).
+windows/src/WinDrop.Platform/TransferCoordinator.cs:29:    /// <summary>PROTOCOL §6.5: telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor.</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:53:/// <summary>Kullanıcı onayı bekleyen gelen teklif; gönderen adı eşleştirme kaydındandır (PROTOCOL §0).</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:54:/// <param name="VerificationCode">XX oturumunda 4 haneli doğrulama kodu (PROTOCOL §2b); tanıdık/eşli (IK) cihazda null.</param>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:59:/// PROTOCOL §6.3: doğrudan yol/etkin nokta/BLE yok; aktarma sunucusu (internet/hücresel veri) kullanılacak — kullanıcı onayı bekler
+windows/src/WinDrop.Platform/TransferCoordinator.cs:89:    /// <summary>PROTOCOL §6.5: push bildirimi gönderildikten sonra telefonun BLE ile bağlanıp <c>hello</c> göndermesi için (5 dk).</summar
+windows/src/WinDrop.Platform/TransferCoordinator.cs:93:    /// <summary>BLE veri oturumunda eşin çerçeve göndermeden kalabileceği süre (§6.4, DECISIONS 6).</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:133:    /// PROTOCOL §6.2: eşli/tanıdık olmayan bir eşe <c>hotspot</c> (SSID + parola) gönderilen aktarım bitince (iptal/hata dahil)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:144:    /// <summary>Varsayılan ses çıkışı Bluetooth mu / ses çalıyor mu (<c>btAudio</c>, PROTOCOL §4). null: Bluetooth ses yok sayılır.<
+windows/src/WinDrop.Platform/TransferCoordinator.cs:147:    /// <summary>BLE veri yolunun (PROTOCOL §6.4) gönderim hız üst sınırı, bayt/sn; ≤ 0: sınırsız (yalnız test).</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:163:/// PROTOCOL §4/§6/§7 akışı: BLE sinyal oturumlarını (<see cref="HandleSessionAsync"/>) dinler; PC'den gönderme
+windows/src/WinDrop.Platform/TransferCoordinator.cs:166:/// <para>§6.4 BLE yolu: doğrudan yol ve etkin nokta mümkün değilse/başarısızsa, toplam ≤ 64 KB ve iki tarafta
+windows/src/WinDrop.Platform/TransferCoordinator.cs:167:/// <c>btAudio=false</c> ise §5 çerçeveleri BLE oturumundan hız sınırlı gider.</para>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:168:/// <para>§6.3 aktarma (relay) yolu: BLE de uygun değilse ve <see cref="AppSettings.RelayUrl"/> doluysa, kullanıcı onayından
+windows/src/WinDrop.Platform/TransferCoordinator.cs:174:    /// <summary>§6.4: BLE veri yolu toplam üst sınırı (64 KB).</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:180:    private const int PairedOfferRateLimit = 5;     // §5: cihaz başına 5/dk
+windows/src/WinDrop.Platform/TransferCoordinator.cs:181:    private const int UnpairedOfferRateLimit = 3;   // §2b: tanıdık (eşli olmayan) cihazdan 3/dk
+windows/src/WinDrop.Platform/TransferCoordinator.cs:182:    private const int UnknownOfferRateLimit = 3;    // §2b: bilinmeyen (XX) cihazlardan TOPLAM 3/dk (anahtar değiştirerek aşılamaz)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:202:    private readonly Dictionary<string, State> _bleActive = [];   // eş başına tek BLE veri aktarımı (§6.4)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:203:    private readonly Dictionary<string, List<State>> _pushWaiters = [];   // §6.5: push gönderilmiş, telefonun hello'sunu bekleyen aktarımla
+windows/src/WinDrop.Platform/TransferCoordinator.cs:250:    /// <summary>Eşin BLE oturumu açık ve <c>hello</c> geldi (PROTOCOL §2b: PC kendisi taramaz, iPhone bağlanır).</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:283:        s.Faulted = true;   // PROTOCOL §3a: oturum biterken iPhone'a WDR gider; sonraki bağlantı XX + onayla gelir
+windows/src/WinDrop.Platform/TransferCoordinator.cs:371:                    // §9a: düz metnin ilk baytı 1–8 → §5 çerçevesi; yalnız izin verilen BLE aktarımına ait olabilir (§6.4).
+windows/src/WinDrop.Platform/TransferCoordinator.cs:417:                // PROTOCOL §0: kayıtlı ad eşleştirme anındaki addır; hello.name kaydı DEĞİŞTİRMEZ (başka cihazın adı taklit edil
+windows/src/WinDrop.Platform/TransferCoordinator.cs:503:            // Push bekleyen aktarımın henüz BLE oturumu yoktur: eski oturumun kapanması onu düşürmez (§6.5).
+windows/src/WinDrop.Platform/TransferCoordinator.cs:510:    // ---------------------------------------------------------------- BLE küçük dosya yolu (§6.4)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:552:    /// BLE oturumundan gelen §5 çerçevesini sürmekte olan BLE aktarımına verir. false: çerçeve beklenmiyor (oturum düşürülür).
+windows/src/WinDrop.Platform/TransferCoordinator.cs:556:        // §6.4a: yol PC tarafından seçilir; çerçeve ancak PC `bleData` gönderdikten sonra (etkin BLE aktarımı) beklenir.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:620:            // §6.5: yakında değil ama pushId (ve aktarma sunucusu adresi) varsa telefon bildirimle uyandırılır.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:638:        try { files = FolderScanner.Collect(paths, PlatformLog.Write); }   // §5a: klasörler özyinelemeli açılır
+windows/src/WinDrop.Platform/TransferCoordinator.cs:660:    // ---------------------------------------------------------------- push bildirimi (§6.5)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:707:    /// §6.5: push gönder → telefonun BLE <c>hello</c>'sunu en çok <see cref="TransferTimeouts.PushWait"/> bekle → bekleyen teklifi
+windows/src/WinDrop.Platform/TransferCoordinator.cs:782:    /// <summary>offer.preview: klasör içindeki dosyalar yerine en üst klasör adı, sonda "/" ile (§5a); aynı klasör bir kez.</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:829:        // §2b: eşli olmayan (tanıdık/bilinmeyen) cihazdan reddedilen teklifin ardından 2 dk sessizlik.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:851:                // §2b: bilinmeyen (XX) cihazlar için PeerId'ye değil GENEL sınır (yeni anahtarla aşılamaz):
+windows/src/WinDrop.Platform/TransferCoordinator.cs:932:        // §7 + §2b: otomatik kabul yalnız QR ile eşli cihazlara; tanıdık/bilinmeyen her zaman alıcı onayı ister.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:951:            // §2b: onaylanan karşı taraf "tanıdık cihaz" olarak hatırlanır (sonraki bağlantılar IK); reddedilen saklanmaz.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:960:        if (store.GetFreeSpaceBytes() - TransferLimits.DefaultSpaceMarginBytes < s.Total)   // §5: kabulden önce
+windows/src/WinDrop.Platform/TransferCoordinator.cs:980:    // ---------------------------------------------------------------- yol seçimi (§6)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:983:    /// §6: iPhone <c>wifi=connected</c> (veya bilinmiyor) → <c>addr</c>; <c>wifi=none</c> → etkin noktayı aç + <c>hotspot</c>.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:997:            // Etkin nokta açılırken iPhone bir Wi-Fi'a bağlandıysa ek yol olarak addr da gider (§6 yol değişimi).
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1058:        // §6.2: hotspot yalnız kullanıcının onayladığı aktarımda gider (alıcıda onay/otomatik kabul, gönderende kullanıcının se
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1110:    /// §6 yol değişimi: bekleme sırasında eşin Wi-Fi durumu değişirse ek yol aynı transferId ile gönderilir
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1225:    /// §6.4/§6.4a BLE küçük dosya yoluna düşer (toplam ≤ 64 KB, iki tarafta btAudio=false): PC `bleData` yollar, olmazsa "yol yok" ha
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1242:        // §6: doğrudan yol → etkin nokta → BLE (küçük dosya) → aktarma sunucusu.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1262:    // ---------------------------------------------------------------- aktarma sunucusu (§6.3)
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1273:    /// §6.3: kullanıcı onayı → token + <c>relay</c> → odaya bağlan, yanıtlayan olarak el sıkış → §5 çerçeveleri.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1450:    /// <summary>Tek dosya → dosyanın yolu; hepsi indirme klasöründeki tek bir alt klasörün içindeyse (§5a klasör aktarımı) o klas�
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1545:                // §6.2 / DECISIONS 8: bilinmeyen eş SSID + parolayı öğrendi → aktarım nasıl biterse bitsin parola yenilenir.
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1711:        /// <summary>§6.4: bu aktarımın BLE veri kanalı (etkinleştirildiyse).</summary>
+windows/src/WinDrop.Platform/TransferCoordinator.cs:1736:        /// <summary>§6.5: push bildirimi gönderildi/gönderiliyor, telefonun BLE oturumu bekleniyor.</summary>
+windows/src/WinDrop.Platform/TrustedDevices.cs:9:/// <see cref="IsFamiliar"/>: QR ile eşleştirilmedi, PROTOCOL §2b "yakındaki herkes" modunda alıcı onayıyla hatırlandı
+windows/src/WinDrop.Platform/TrustedDevices.cs:12:/// <see cref="PushId"/>: cihazın aktarma sunucusundaki push kaydı kimliği (PROTOCOL §6.5; yalnız cihazın kendi bildirimiyle, biçimi doğrulanm
+windows/tests/WinDrop.Core.Tests/Session/RelayRoomTests.cs:7:/// <summary>PROTOCOL §6.3: token, oda kimliği (ortak vektör protocol/vectors/relay.json) ve aktarma adresi.</summary>
+windows/tests/WinDrop.Core.Tests/Support/FakeRelayServer.cs:48:/// relay/src/index.ts davranışının test sahtesi (PROTOCOL §6.3): <c>/v1/room/&lt;32 hex&gt;?role=pc|phone</c>; ilk pc + ilk phone e
+windows/tests/WinDrop.Core.Tests/Transfer/FolderTransferTests.cs:8:/// <summary>PROTOCOL §5a klasör gönderme: tarama, MANIFEST <c>dir</c>, alıcı yol güvenliği, üst klasör çakışması, devam
+windows/tests/WinDrop.Platform.Tests/BleResyncTests.cs:7:/// <summary>PROTOCOL §3a: oturum protokol hatasıyla ölünce WDR, ardından eski yazmaları yok sayma, yeni ön ekle yeniden kurulum.</summa
+windows/tests/WinDrop.Platform.Tests/BleSmallFileTests.cs:8:/// <summary>PROTOCOL §6.4: küçük dosyalar BLE oturumundan (TCP/etkin nokta mümkün değilken), btAudio ve boyut kapılarıyla.</summar
+windows/tests/WinDrop.Platform.Tests/BleSmallFileTests.cs:31:    /// <summary>§6.4a: PC önce `bleData` yollar, sonra MANIFEST ile başlar.</summary>
+windows/tests/WinDrop.Platform.Tests/BleSmallFileTests.cs:216:        Assert.Equal(2048, spy.MaxData);   // §6.4a: ≤ 2048 B (20 000 B → tam dolu parçalar)
+windows/tests/WinDrop.Platform.Tests/DataListenerTests.cs:70:        // Yön veri akışından bağımsız (PROTOCOL §5): iPhone bağlanır ama alıcıdır.
+windows/tests/WinDrop.Platform.Tests/DuplicateIdentityTests.cs:18:        // PROTOCOL §0 (windows-core #11): kayıtlı ad eşleştirme anındaki addır; hello.name kaydı değiştirmez.
+windows/tests/WinDrop.Platform.Tests/NearbyEveryoneTests.cs:11:/// <summary>PROTOCOL §2b: eşleştirmesiz "yakındaki herkes" modu (Noise XX, alıcı onayı, tanıdık cihaz, doğrulama kodu).</summa
+windows/tests/WinDrop.Platform.Tests/PushTests.cs:125:/// <summary>PROTOCOL §6.5: pushId kaydı ve bildirimle uyandırma (uzaktaki tanıdık/eşli cihaza gönderim).</summary>
+windows/tests/WinDrop.Platform.Tests/RelayPathTests.cs:9:/// <summary>PROTOCOL §6.3: doğrudan yol başarısız + BLE uygun değil + RelayUrl dolu → kullanıcı onayı → aktarma sunucusu (sahte r
+windows/tests/WinDrop.Platform.Tests/RemoveDeviceTests.cs:21:        Assert.Equal(BleResync.Marker, await phone.Link.ReceiveAsync(cts.Token));   // §3a WDR
+windows/tests/WinDrop.Platform.Tests/SasVectorTests.cs:8:/// PROTOCOL §2b ortak vektörü (protocol/vectors/sas.json; Swift üretti, bağımsız Node referansıyla doğrulandı):
+windows/tests/WinDrop.Platform.Tests/SecurityFixTests.cs:22:/// <summary>PROTOCOL §6.2: etkin nokta parolası eşli/tanıdık olmayan eş için aktarım sonunda yenilenir.</summary>
+windows/tools/WinDrop.Interop/Program.cs:17://          PC rolünde (yanıtlayan) aktarma odasına (PROTOCOL §6.3, role=pc) bağlanır; odaya girince "RELAY_READY room=<id>" yazar,
+windows/tools/WinDrop.Interop/Program.cs:58:    /// <summary>Swift `signals` ile birebir aynı değerler (PROTOCOL §4/§9a).</summary>
+windows/tools/WinDrop.Interop/Program.cs:220:    /// <summary>relay-pc: PC rolünde (yanıtlayan) aktarma odasına bağlanır (PROTOCOL §6.3); iPhone başlatandır.</summary>
+ios/App/project.yml:11:# Push bildirimi (APNs, docs/PROTOCOL.md §6.5) da YALNIZ ücretli hesapla çalışır: "Release-Push" yapılandırması
+ios/App/Shared/App/AutoAcceptSettings.swift:9:    /// Protokol üst sınırı (PROTOCOL §5, §7): 2 GB.
+ios/App/Shared/App/ShareActivitySignal.swift:3:/// Süreçler arası basit sinyal (PROTOCOL §3a): Paylaşım uzantısı açılınca ana uygulama BLE bağlantılarını bırakır,
+ios/App/Shared/App/Support.swift:8:    /// Dolgusuz base64url (PROTOCOL §9a: transferId 16 bayt -> 22 karakter).
+ios/App/Shared/Ble/BleCentral.swift:14:/// CoreBluetooth merkezi (central): PROTOCOL §3.
+ios/App/Shared/Ble/BleCentral.swift:156:    /// PROTOCOL §3a: oturumu kapat, GATT bağlantısını kes; `didDisconnect` 1 sn sonra yeniden bağlanmayı planlar.
+ios/App/Shared/Ble/BleCentral.swift:198:    /// Paylaşım uzantısı açıkken ana uygulama BLE bağlantılarını bırakır (PROTOCOL §3a).
+ios/App/Shared/Ble/BlePeripheralLink.swift:53:    /// ATT MTU = en çok yazılabilir bayt + 3 (PROTOCOL §9a: parça yükü ≤ MTU − 3 − 1).
+ios/App/Shared/Ble/ProtocolIds.swift:38:    /// PROTOCOL §3a: PC'nin oturumu kapattığını bildiren, `p2c` üzerinden tek bildirim olarak gelen 3 bayt ASCII `WDR`.
+ios/App/Shared/Ble/ProtocolIds.swift:45:    /// PROTOCOL §5: PC'nin dinlediği veri portu.
+ios/App/Shared/Ble/ProtocolIds.swift:48:    /// PROTOCOL §6.1: aday başına bağlanma süresi.
+ios/App/Shared/Ble/SignalHub.swift:38:    /// BLE oturumu IK ile mi kuruldu (veri kanalı aynı deseni kullanır; PROTOCOL §2b).
+ios/App/Shared/Ble/SignalHub.swift:44:/// BLE oturumu üstünde küçük dosya aktarımı için kanal (PROTOCOL §6.4): Kit kanalı + okuma döngüsünün
+ios/App/Shared/Ble/SignalHub.swift:75:/// BLE oturumlarını yönetir (PROTOCOL §2b): tarama -> bağlan -> IK (tanıdık) veya XX -> `hello` -> ileti okuma döngüsü.
+ios/App/Shared/Ble/SignalHub.swift:94:    /// Çevre birimi başına oturum durumu (PROTOCOL §2b): aynı GATT bağlantısına aynı anda tek oturum yazar.
+ios/App/Shared/Ble/SignalHub.swift:320:    /// Ağ/ses durumu değişince `status` gönderir (PROTOCOL §4).
+ios/App/Shared/Ble/SignalHub.swift:329:    /// Push kaydı kimliği (PROTOCOL §6.5); nil = kayıt yok / ayar kapalı. AppModel doldurur.
+ios/App/Shared/Ble/SignalHub.swift:578:                    // Doğrulama kodu yalnız XX özetinden (PROTOCOL §2b); IK (tanıdık/eşli) oturumda kod gösterilmez.
+ios/App/Shared/Ble/SignalHub.swift:600:                    // BLE çerçevesi (PROTOCOL §6.4a): yalnız `bleData` ile başlayan aktarım kuyruğa alınır, başıboş atılır.
+ios/App/Shared/Ble/SignalHub.swift:642:/// Ad sahteciliği (RLO) engellenir; PC tarafındaki ayıklamayla (PROTOCOL §2.8) aynı kural.
+ios/App/Shared/Hotspot/HotspotJoiner.swift:13:/// PC'nin Mobil Etkin Noktasına katılma (PROTOCOL §6.2).
+ios/App/Shared/Identity/IdentityStore.swift:5:/// Tanıdık bilgisayar kaydı (PROTOCOL §0, §2b). `id` = açık anahtarın SHA-256'sının ilk 16 baytı (hex; Kit `DeviceId`).
+ios/App/Shared/Identity/IdentityStore.swift:6:/// `autoAccept` yalnız QR ile eşleştirilenlerde true (PROTOCOL §7); onayla "tanıdık" olanlarda false.
+ios/App/Shared/Net/BluetoothAudioMonitor.swift:5:/// Bluetooth ses çıkışı (`hello.btAudio` / `status.btAudio`, PROTOCOL §4, §6.4): çıkış rotasında A2DP/HFP/LE var VE
+ios/App/Shared/Net/DataClient.swift:229:/// PROTOCOL §6.1: adaylara paralel bağlanır (aday başına 1,5 sn), ilk başarılı kazanır.
+ios/App/Shared/Net/NetworkMonitor.swift:5:/// Wi-Fi durumu (`hello.wifi` / `status.wifi`, PROTOCOL §4). Bluetooth ses için bkz. `BluetoothAudioMonitor`.
+ios/App/Shared/Net/RelaySocket.swift:5:/// (PROTOCOL §6 madde 3). App Group varsa uzantı ortak ayarı görür; grup yoksa uzantı kendi `UserDefaults`'unu görür: boşsa aktarma yolu kapalıdır.
+ios/App/Shared/Net/RelaySocket.swift:49:/// `URLSessionWebSocketTask` -> WinDropKit `WebSocketLike`. Her ikili mesaj = bir Noise mesajı (PROTOCOL §6.3).
+ios/App/Shared/Transfers/FilePreparer.swift:45:    /// Klasörlerin dosyalarını (PROTOCOL §5a) özyinelemeli listeler; sembolik bağlar izlenmez, boş klasörler taşınmaz.
+ios/App/Shared/Transfers/TransferCoordinator.swift:27:/// (PROTOCOL §2b, §4, §6, §7). `pcID` her yerde PC'nin açık anahtar kimliğidir (`NearbyPeer.id`).
+ios/App/Shared/Transfers/TransferCoordinator.swift:46:    /// Bu cihazda Bluetooth ses etkin mi? (PROTOCOL §6.4: BLE veri yolu yalnız false iken.) Bilinmezse temkinli: true.
+ios/App/Shared/Transfers/TransferCoordinator.swift:50:    /// Gelen teklif hız sınırı (PROTOCOL §2b, §5): kimlik başına tanıdık 5/dk; bilinmeyenler için TOPLAM 3/dk (anahtar üreterek aşı
+ios/App/Shared/Transfers/TransferCoordinator.swift:53:    /// Reddedilen bilinmeyen anahtardan sonra 2 dk sessizlik (PROTOCOL §2b).
+ios/App/Shared/Transfers/TransferCoordinator.swift:104:        // Klasör dosyaları için klasör adı (PROTOCOL §5a: `offer.preview` klasör adlarını gösterebilir); tekrarsız, sıralı.
+ios/App/Shared/Transfers/TransferCoordinator.swift:198:            // Yalnız onaylanmış aktarımda ve iPhone o an Wi-Fi'a bağlı değilken (PROTOCOL §6.2).
+ios/App/Shared/Transfers/TransferCoordinator.swift:210:            // Yolu PC seçer (PROTOCOL §6.4a): gönderen MANIFEST'i BLE'den başlatır, alıcı BLE'den MANIFEST bekler.
+ios/App/Shared/Transfers/TransferCoordinator.swift:250:    /// Gelen teklif hız sınırı (PROTOCOL §2b, §5): tanıdık kimlik başına 5/dk; bilinmeyen cihazlar için TOPLAM 3/dk.
+ios/App/Shared/Transfers/TransferCoordinator.swift:291:            // Bilinmeyen: reddedilen anahtardan 2 dk sessizlik; aynı anda en çok 1 bekleyen teklif (PROTOCOL §2b).
+ios/App/Shared/Transfers/TransferCoordinator.swift:305:        // Önizlemede sonda "/" klasör demektir (PROTOCOL §5a); ad yine temizlenir, "/" arayüz için korunur.
+ios/App/Shared/Transfers/TransferCoordinator.swift:309:        // Otomatik kabul yalnız QR ile eşleştirilmiş PC'den, Ayarlar'da açıksa ve boyut sınırı içinde (PROTOCOL §5, §7);
+ios/App/Shared/Transfers/TransferCoordinator.swift:321:        // Kabulden önce boş alan (PROTOCOL §5): yetmiyorsa teklifi sorgusuz reddet (`no_space`).
+ios/App/Shared/Transfers/TransferCoordinator.swift:424:    /// (PROTOCOL §6.3). Bağlantı/el sıkışma başarısızsa `path relay_fail` gider ve aktarım başarısız olur.
+ios/App/Shared/Transfers/TransferCoordinator.swift:451:    /// (PROTOCOL §6 madde 3); ayar boş/geçersizse veya token bozuksa `relay_fail` gider. Kullanıcı onayı beklenir.
+ios/App/Shared/Transfers/TransferCoordinator.swift:479:    // MARK: Veri yolu (PROTOCOL §6)
+ios/App/Shared/Transfers/TransferCoordinator.swift:607:    /// Tüm denemeler başarısız: yolu PC seçer (`bleData` veya `relay`, §6.3/§6.4a). Kota uyarısı `relay` gelince gösterilir.
+ios/App/Shared/Transfers/TransferCoordinator.swift:678:    /// PROTOCOL §5: kabulden önce `total` <= boş alan − pay.
+ios/App/Shared/Transfers/TransferCoordinator.swift:809:    // MARK: BLE küçük dosya yolu (PROTOCOL §6.4)
+ios/App/Shared/Transfers/TransferCoordinator.swift:811:    /// BLE yolunu PC seçer (`bleData`, §6.4a); burada yalnız yerel sınırlar: toplam <= 64 KB ve bu cihazda Bluetooth ses yok.
+ios/App/Shared/Transfers/TransferItem.swift:21:        /// Aktarma (relay) yolu önerildi (`relay` sinyali geldi): kullanıcı kota uyarısını onaylamalı (PROTOCOL §6.3).
+ios/App/Shared/Transfers/TransferItem.swift:58:    /// PROTOCOL §6.3 / ARCHITECTURE: aktarma yolu seçilirse gösterilecek uyarı.
+ios/App/Shared/Transfers/TransferItem.swift:141:    /// Klasör aktarımı mı (ad "/" ile bitiyorsa; PROTOCOL §5a)? Klasör için klasör simgesi gösterilir.
+ios/App/Shared/Transfers/TransferRunner.swift:19:    /// PROTOCOL §5a: gönderilen klasör kökünden göreli klasör yolu (`Klasör/alt`, `/` ayırıcı); tek dosyada nil.
+ios/App/Shared/Transfers/TransferRunner.swift:26:    /// `offer.preview` / arayüz adı (PROTOCOL §5a): klasör içindeyse en üst klasör adı + sonda "/", değilse dosya adı.
+ios/App/Shared/Transfers/TransferRunner.swift:56:/// Veri kanalı kimliği (PROTOCOL §2b: BLE oturumu IK idiyse IK, değilse XX + anahtar eşitliği doğrulaması).
+ios/App/Shared/Transfers/TransferRunner.swift:130:    /// BLE oturumu üstünde gönderim (PROTOCOL §6.4): küçük DATA parçaları, ~20 KB/s pacing; kanal açık BLE oturumunundur.
+ios/App/Shared/UI/VerificationCodeBanner.swift:3:/// Bilinmeyen (XX) bilgisayar için 4 haneli doğrulama kodu: iPhone ve bilgisayar ekranında aynı olmalı (PROTOCOL §2b).
+ios/App/ShareExtension/ShareItemLoader.swift:44:    /// Öğeyi gönderilecek dosyalara çevirir: klasör ise (PROTOCOL §5a) içeriği geçici dizine kopyalanıp özyinelemeli taranır
+ios/App/ShareExtension/ShareModel.swift:7:/// Bilinmeyen PC: XX + doğrulama kodu; alıcı PC'de onay gerekir (PROTOCOL §2b).
+ios/App/ShareExtension/ShareViewController.swift:6:/// `teardown()` tüm bağlantıları iptal eder ve Darwin "inactive" sinyalini gönderir (PROTOCOL §3a).
+ios/App/ShareExtension/ShareViewController.swift:15:        ShareActivitySignal.post(active: true)   // ana uygulama BLE bağlantılarını bırakır (PROTOCOL §3a)
+ios/App/Sources/App/AppModel.swift:89:            // Uzaktan (push) bildirimde `transferId` yoktur: PC'leri tara ve bağlan; PC bekleyen teklifi yeniden yollar (§6.5).
+ios/App/Sources/App/AppModel.swift:115:        // PROTOCOL §3a: Paylaşım uzantısı açıkken BLE bağlantıları bırakılır, kapanınca yeniden kurulur.
+ios/App/Sources/App/AppModel.swift:170:        // Not: PC tarafında da silinmeli; PC bir sonraki IK denemesinde reddeder (PROTOCOL §0).
+ios/App/Sources/Notifications/NotificationManager.swift:4:/// Yerel bildirimler (PROTOCOL §7): arka planda gelen `offer` -> bildirim (Kabul / Reddet eylemleri).
+ios/App/Sources/Pairing/PairingController.swift:6:/// Eşleştirme akışı (PROTOCOL §2): QR -> BLE'de PC'yi bul -> XXpsk3 -> `k` doğrulaması ->
+ios/App/Sources/Pairing/PairingController.swift:120:            // PC'de onay: kullanıcı onaylamadan PC bir şey göndermez (PROTOCOL §2.4). Önce `hello`.
+ios/App/Sources/Pairing/PairingController.swift:129:                case .pairInfo(let p):   // PROTOCOL §2.7/§4: eşleştirmede etkin nokta bilgisi
+ios/App/Sources/Pairing/PairingInvite.swift:23:/// `windrop://pair?v=1&k=<PC açık anahtarı b64url>&s=<32 B sır b64url>&n=<PC adı>` (PROTOCOL §2).
+ios/App/Sources/Push/PushManager.swift:6:/// Push bildirimi (PROTOCOL §6.5; yalnız `PUSH_ENABLED` derlemesinde, ücretli hesap + `aps-environment` yetkisi).
+ios/App/Sources/Push/PushManager.swift:114:    /// PROTOCOL §6.5: 32 küçük onaltılık karakter.
+ios/App/Sources/UI/HowItWorksView.swift:6:    /// `PUSH_ENABLED` (ücretli hesap + APNs, PROTOCOL §6.5): metin değişir.
+ios/App/Sources/UI/OfferSheet.swift:42:                    // PROTOCOL §5a: sonda "/" olan önizleme girdisi klasördür.
+ios/WinDropKit/Sources/windrop-interop/main.swift:27://                PROTOCOL §6.3: aktarma sunucusunda `phone` rolüyle bağlanır (ön ek taşıma=3), sonra send/receive-from gibi çalışır.
+ios/WinDropKit/Sources/windrop-interop/main.swift:180:// C# `signals` ile birebir aynı değerler (PROTOCOL §4/§9a).
+ios/WinDropKit/Sources/windrop-interop/main.swift:259:/// PROTOCOL §6.3: `URLSessionWebSocketTask` (FoundationNetworking'de var) -> `WebSocketLike`. Bağlantı hatası ilk
+ios/WinDropKit/Sources/WinDropKit/Protocol/BleFragmenter.swift:3:/// PROTOCOL §3 BLE parçalama: bir Noise mesajı (en çok 8192 bayt) GATT yüklerine bölünür.
+ios/WinDropKit/Sources/WinDropKit/Protocol/BleFragmenter.swift:5:/// Sıra no mesaj başınadır: bir mesajın tüm parçaları aynı no'yu taşır (PROTOCOL §9a).
+ios/WinDropKit/Sources/WinDropKit/Protocol/BleFragmenter.swift:57:/// Herhangi bir hata sonrası nesne kalıcı bozulur: PROTOCOL §3 gereği oturum düşer, yeni el sıkışma gerekir.
+ios/WinDropKit/Sources/WinDropKit/Protocol/FileNameSanitizer.swift:9:/// PROTOCOL §5 "Dosya adı (alıcı)" kuralları (iOS'ta da aynen uygulanır; C# `FileNameSanitizer` ile uyumlu):
+ios/WinDropKit/Sources/WinDropKit/Protocol/FileNameSanitizer.swift:12:/// Ek (PROTOCOL §9a): `< > " | ? *`, C1 denetim, bidi denetim karakterleri, eşleşmemiş vekiller `_` olur;
+ios/WinDropKit/Sources/WinDropKit/Protocol/FolderPath.swift:3:/// PROTOCOL §5a klasör yolu (MANIFEST `dir`) doğrulama ve temizleme.
+ios/WinDropKit/Sources/WinDropKit/Protocol/Framing.swift:3:/// Veri kanalı çerçeve türü (PROTOCOL §5, §9a).
+ios/WinDropKit/Sources/WinDropKit/Protocol/Framing.swift:15:// MARK: Kontrol gövdeleri (JSON, camelCase, alanlar zorunlu; PROTOCOL §9a)
+ios/WinDropKit/Sources/WinDropKit/Protocol/Framing.swift:24:    /// PROTOCOL §5a: gönderilen kökten göreli klasör yolu (`/` ayırıcı, ≤ 16 seviye, ≤ 1024 karakter); nil ise yazılmaz.
+ios/WinDropKit/Sources/WinDropKit/Protocol/Framing.swift:31:/// MANIFEST sayfası (PROTOCOL §9a): `{"files":[...],"more":bool}`; `more` yoksa false. Yazarken yalnız true ise yazılır.
+ios/WinDropKit/Sources/WinDropKit/Protocol/Framing.swift:83:/// §5 düz metin çerçeve kodlaması: `tür (1 B) || gövde`, en çok 65519 B (Noise şifrelemesi +16 → 65535).
+ios/WinDropKit/Sources/WinDropKit/Protocol/Framing.swift:152:/// §5 TCP çerçevesi: `uzunluk (2 B big-endian) || Noise mesajı` (1..65535 bayt).
+ios/WinDropKit/Sources/WinDropKit/Protocol/Prefix.swift:3:/// Taşıma türü (PROTOCOL §1 ön ek, 4. bayt).
+ios/WinDropKit/Sources/WinDropKit/Protocol/Prefix.swift:10:/// PROTOCOL §1 açık ön ek (20 bayt, şifresiz): `"WD" || sürüm (1) || taşıma (1) || transferId (16)`.
+ios/WinDropKit/Sources/WinDropKit/Protocol/Prefix.swift:12:/// BLE'de ön ek parçalanmaz; `c2p`'ye tek yazma olarak gider (PROTOCOL §9a).
+ios/WinDropKit/Sources/WinDropKit/Protocol/SignalMessages.swift:3:// PROTOCOL §4 sinyal mesajları (BLE oturumu içinde): UTF-8 JSON `{"t": "<tür>", ...}`.
+ios/WinDropKit/Sources/WinDropKit/Protocol/SignalMessages.swift:8:// Alan tipleri PROTOCOL §9a: `transferId` = 16 B base64url dolgusuz (22 karakter, bkz. `TransferId`; decode'da
+ios/WinDropKit/Sources/WinDropKit/Protocol/SignalMessages.swift:72:/// `pairInfo` (PC→iPhone, yalnız eşleştirme kanalında; PROTOCOL §2.7, §4): etkin nokta SSID/parolası.
+ios/WinDropKit/Sources/WinDropKit/Protocol/SignalMessages.swift:105:/// `bleData` (PC→iPhone, PROTOCOL §6.4a): veri yolu BLE oturumudur; gönderen MANIFEST'i BLE'den başlatır, alıcı bekler.
+ios/WinDropKit/Sources/WinDropKit/Protocol/SignalMessages.swift:111:/// `pushId` (iPhone→PC, yalnız tanıdık/eşli PC'nin şifreli BLE kanalında, PROTOCOL §6.5): aktarma sunucusundaki push kayd�
+ios/WinDropKit/Sources/WinDropKit/Protocol/TransferId.swift:3:/// 16 baytlık aktarım kimliği (PROTOCOL §1 ön ek; §4 JSON'da 16 B base64url, dolgusuz, 22 karakter).
+ios/WinDropKit/Sources/WinDropKit/Session/MessageTransport.swift:13:    /// Yanıtlayan, başlatandan ilk geçerli taşıma mesajı gelmeden veri gönderemez (§1).
+ios/WinDropKit/Sources/WinDropKit/Session/RelayTransport.swift:8:// PROTOCOL §6.3 aktarma sunucusu: oda kimliği, adres kurma ve WebSocket üstünde MessageTransport.
+ios/WinDropKit/Sources/WinDropKit/Session/RelayTransport.swift:29:    /// (`transferId` ile aynı biçim, PROTOCOL §9a). Geçersizse nil.
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:8:/// Cihaz kimliği = açık anahtarın SHA-256'sının ilk 16 baytı (PROTOCOL §0).
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:16:/// Eşleştirmesiz ("yakındaki herkes", PROTOCOL §2b) doğrulama kodu: `SHA-256("WinDrop-SAS" || h)`in ilk 4 baytı
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:78:/// Kanaldan gelen tek mesaj: §5 çerçevesi veya §4 sinyali (BLE oturumunda ayrım: düz metnin ilk baytı `{` ise sinyal,
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:79:/// 1–8 ise çerçeve; PROTOCOL §9a).
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:88:/// Kurulmuş sayma (PROTOCOL §1, §9a): IK'de el sıkışmayı yanıtlayan bitirir, bu yüzden başlatan hemen sonra
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:163:    /// ileri uyumluluk). Çerçeve (§5) çözme hataları ve Noise hataları eskisi gibi hata verir.
+ios/WinDropKit/Sources/WinDropKit/Session/SecureChannel.swift:253:    /// Eşleştirmesiz bağlantı (PROTOCOL §2b): ön ek + `Noise_XX` (psk yok), bilinmeyen PC ile. Dönen kanalın
+ios/WinDropKit/Sources/WinDropKit/Transfer/FileReceiver.swift:26:/// PROTOCOL §5 alıcı: MANIFEST'i (sayfalı) toplar, sınırları denetler, her dosya için RESUME yollar, DATA'yı kısmi dosyaya
+ios/WinDropKit/Sources/WinDropKit/Transfer/FileReceiver.swift:38:    /// PROTOCOL §5a: dosya kimliği -> temizlenmiş klasör bileşenleri (en üst klasör çakışması henüz çözülmemiş).
+ios/WinDropKit/Sources/WinDropKit/Transfer/FileReceiver.swift:54:            try await channel.ensureEstablished()   // yanıtlayan: başlatanın boş onay mesajını bekler (§1)
+ios/WinDropKit/Sources/WinDropKit/Transfer/FileSender.swift:21:    /// PROTOCOL §5a: gönderilen kökten göreli klasör yolu (`/` ayırıcı); dosya kökteyse nil.
+ios/WinDropKit/Sources/WinDropKit/Transfer/FileSender.swift:28:/// PROTOCOL §5 gönderen: MANIFEST (sayfalı) -> her dosya için [alıcıdan RESUME -> FILE_START -> DATA… -> FILE_END] -> DONE bekle
+ios/WinDropKit/Sources/WinDropKit/Transfer/FileSender.swift:59:            try await channel.ensureEstablished()   // yanıtlayan: başlatanın boş onay mesajını bekler (§1)
+ios/WinDropKit/Sources/WinDropKit/Transfer/FolderScanner.swift:5:    /// Klasör ağacı > 16 seviye (PROTOCOL §5a).
+ios/WinDropKit/Sources/WinDropKit/Transfer/FolderScanner.swift:12:/// PROTOCOL §5a gönderen: klasörden özyinelemeli dosya listesi. Sembolik bağlar izlenmez (atlanır), boş klasörler taşınmaz.
+ios/WinDropKit/Sources/WinDropKit/Transfer/Storage.swift:3:/// Kısmi dosya anahtarı: `(eş kimliği, transferId, dosya id)` (PROTOCOL §5).
+ios/WinDropKit/Sources/WinDropKit/Transfer/Storage.swift:33:    /// Tamamlanan dosyayı hedef klasörün `directory` (temizlenmiş, en üst klasörü çözülmüş; PROTOCOL §5a) alt klasörüne
+ios/WinDropKit/Sources/WinDropKit/Transfer/Storage.swift:55:    /// PROTOCOL §5a: aktarımın en üst klasörü `name` (temizlenmiş) için hedef adı. Hedefte aynı adlı öğe varsa "ad (2)";
+ios/WinDropKit/Sources/WinDropKit/Transfer/Storage.swift:170:    // MARK: PROTOCOL §5a en üst klasör eşlemesi
+ios/WinDropKit/Sources/WinDropKit/Transfer/TransferTypes.swift:8:/// PROTOCOL §5 sabitleri.
+ios/WinDropKit/Sources/WinDropKit/Transfer/TransferTypes.swift:19:    /// BLE yolu (PROTOCOL §6.4): toplam boyut üst sınırı.
+ios/WinDropKit/Sources/WinDropKit/Transfer/TransferTypes.swift:31:/// (sinyalleri ayıran) çerçeveleri buradan besler (PROTOCOL §9a: aynı kanalda `{` = sinyal, 1–8 = çerçeve).
+ios/WinDropKit/Tests/WinDropKitTests/BleTransferTests.swift:5:/// PROTOCOL §6.4: küçük dosya BLE oturumu üstünden (bellek içi GATT bağlantısı, MTU 185).
+ios/WinDropKit/Tests/WinDropKitTests/EndToEndTests.swift:5:/// Bellek içi uçtan uca: Prefix (prologue) + IK / XXpsk3 + TCP ve BLE taşıma + SecureChannel (PROTOCOL §1, §3, §5).
+ios/WinDropKit/Tests/WinDropKitTests/FolderTransferTests.swift:5:/// PROTOCOL §5a klasör gönderme.
+ios/WinDropKit/Tests/WinDropKitTests/FolderTransferTests.swift:55:        // Aynı klasörde aynı ad: §5 kuralıyla numaralanır.
+ios/WinDropKit/Tests/WinDropKitTests/ProtocolTests.swift:202:    /// PROTOCOL §6.5; C# ile aynı JSON (anahtar sırası anlamsız).
+ios/WinDropKit/Tests/WinDropKitTests/RelayTests.swift:5:/// PROTOCOL §6.3 aktarma sunucusu: oda kimliği vektörü (protocol/vectors/relay.json), sahte WebSocket üstünde IK + aktarım.
+ios/WinDropKit/Tests/WinDropKitTests/SasTests.swift:5:/// PROTOCOL §2b: yakındaki herkes (XX) + 4 haneli doğrulama kodu. Ortak vektör: protocol/vectors/sas.json.
+relay/README.md:5:`docs/PROTOCOL.md` §6.3. Sunucuyu Efe kendi Cloudflare hesabına kurar; bu depo hesaba giriş yapmaz.
+relay/README.md:16:  (`docs/PROTOCOL.md` §6.5). Ayrıntı aşağıda "Push bildirimi (APNs)".
+relay/README.md:121:- **Sunucu içerik göremez.** Kanal uçtan uca Noise ile şifrelidir (`docs/PROTOCOL.md` §1, §6); sunucu
+relay/src/index.ts:1:// WinDrop aktarma sunucusu (docs/PROTOCOL.md §6.3).
+relay/src/index.ts:13:  /** APNs sırları (§6.5); eksikse /v1/push/* 501 döner. `wrangler secret put` ile girilir. */
+relay/src/index.ts:22:/** Sınırlar (PROTOCOL.md §6.3). */
+relay/src/push.ts:1:// APNs push bildirimi (docs/PROTOCOL.md §6.5). Cihaz belirteci YALNIZ PushRegistry deposunda durur;
+relay/wrangler.jsonc:2:  // WinDrop aktarma sunucusu. Ayrıntı: docs/PROTOCOL.md §6.3 ve relay/README.md
+protocol/vectors/README.md:3:PROTOCOL §1: Windows ve iOS Noise uygulamaları resmi vektörlerden geçmeden kullanılmaz.
+protocol/vectors/README.md:24:- `sas.json`: PROTOCOL §2b doğrulama kodu vektörü (sabit anahtarlarla bir `Noise_XX` el sıkışması, `handshake_hash`, `sas` = 4 hane). Kaynak: bağımsız Node ref
+protocol/vectors/README.md:26:- `relay.json`: PROTOCOL §6.3 `roomId = hex(SHA-256("WinDrop-relay" || token))[0:32]` vektörleri. `token` 32 ham bayttır; `relay` sinyalinde 43 karakterlik dolgusuz ba
+README.md:42:   Push ve bazı yetenekler (etkin nokta yetkisi vb.) yalnız ücretli hesapla çalışır (`docs/review/infra-docs.md` §4.8, doğrulanmadı).
