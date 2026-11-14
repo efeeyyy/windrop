@@ -26,6 +26,7 @@ internal sealed class BleDataChannel : IFrameChannel, IDisposable
     private readonly object _paceLock = new();
     private long _nextSendTimestamp;
     private int _frameSeen;
+    private int _frameSinceCheck;
 
     /// <param name="session">Kurulmuş BLE oturumu (PeerSession.Channel).</param>
     /// <param name="bytesPerSecond">Gönderim hız üst sınırı; ≤ 0: sınırsız (yalnız test).</param>
@@ -55,11 +56,15 @@ internal sealed class BleDataChannel : IFrameChannel, IDisposable
     {
         if (!_inbox.Writer.TryWrite(frame)) return false;
         Volatile.Write(ref _frameSeen, 1);
+        Volatile.Write(ref _frameSinceCheck, 1);
         return true;
     }
 
     /// <summary>Eşten en az bir çerçeve geldi mi (eş BLE'den hiç yanıt vermiyorsa zaman aşımı için).</summary>
     public bool FrameSeen => Volatile.Read(ref _frameSeen) != 0;
+
+    /// <summary>Son çağrıdan beri çerçeve geldi mi (sessizlik bekçisi; çağrı sayacı sıfırlar).</summary>
+    public bool TakeFrameSeenSinceLastCheck() => Interlocked.Exchange(ref _frameSinceCheck, 0) != 0;
 
     /// <summary>Oturum koptu: bekleyen okuyucu null (bağlantı koptu) alır.</summary>
     public void Complete() => _inbox.Writer.TryComplete();

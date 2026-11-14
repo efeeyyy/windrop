@@ -14,7 +14,11 @@ public partial class PairingWindow : Window
         _vm = new PairingViewModel(devices);
         DataContext = _vm;
         _vm.CloseRequested += (_, _) => Close();
-        Loaded += async (_, _) => await _vm.StartAsync();
+        Loaded += async (_, _) =>
+        {
+            try { await _vm.StartAsync(); }
+            catch (Exception ex) when (ex is not OutOfMemoryException) { Infrastructure.AppLog.Write($"eşleştirme penceresi hatası: {ex}"); }
+        };
         Closed += (_, _) => _vm.Dispose();
     }
 }

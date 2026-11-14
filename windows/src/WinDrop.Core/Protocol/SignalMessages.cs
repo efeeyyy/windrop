@@ -5,7 +5,7 @@ namespace WinDrop.Core.Protocol;
 
 /// <summary>
 /// PROTOCOL §4 sinyal mesajları. Gövde UTF-8 JSON <c>{"t": "&lt;tür&gt;", ...}</c>, alanlar camelCase.
-/// Bilinmeyen alanlar yok sayılır; bilinmeyen/eksik <c>t</c> ve eksik zorunlu alan <see cref="ProtocolException"/>.
+/// Bilinmeyen alanlar yok sayılır; bilinmeyen/eksik <c>t</c> ve eksik zorunlu alan <see cref="SignalDecodeException"/> (tek mesaj atılır, oturum sürer).
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "t")]
 [JsonDerivedType(typeof(HelloMessage), "hello")]
@@ -131,6 +131,12 @@ public static class PathResult
 internal sealed partial class SignalJsonContext : JsonSerializerContext;
 
 /// <summary>§4 sinyal mesajı kodlama/çözme. Düz metin üst sınırı: 8192 − 16 (etiket) = 8176 bayt (BLE Noise mesajı ≤ 8192).</summary>
+/// <summary>
+/// Tek bir sinyal mesajı çözülemedi (bozuk JSON, bilinmeyen <c>t</c>, eksik zorunlu alan, geçersiz değer). Taşıma durumu bozulmamıştır:
+/// alıcı mesajı atar ve oturumu sürdürür (DECISIONS 1). Taşıma/şifre hataları düz <see cref="ProtocolException"/> kalır.
+/// </summary>
+public sealed class SignalDecodeException(string message) : ProtocolException(message);
+
 public static class SignalMessages
 {
     public const int MaxPlaintext = 8176;
@@ -150,7 +156,7 @@ public static class SignalMessages
     {
         if (plaintext.Length == 0) throw new ProtocolException("Boş sinyal mesajı.");
         if (plaintext.Length > MaxPlaintext)
-            throw new ProtocolException($"Sinyal mesajı {MaxPlaintext} baytı aşıyor ({plaintext.Length}).");
+            throw new SignalDecodeException($"Sinyal mesajı {MaxPlaintext} baytı aşıyor ({plaintext.Length}).");
         SignalMessage? message;
         try
         {
@@ -159,10 +165,11 @@ public static class SignalMessages
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
             // NotSupportedException: bilinmeyen/eksik "t" ayırıcısı.
-            throw new ProtocolException($"Geçersiz sinyal mesajı: {ex.Message}");
+            throw new SignalDecodeException($"Geçersiz sinyal mesajı: {ex.Message}");
         }
-        if (message is null) throw new ProtocolException("Sinyal mesajı null.");
-        Validate(message);
+        if (message is null) throw new SignalDecodeException("Sinyal mesajı null.");
+        try { Validate(message); }
+        catch (ProtocolException ex) { throw new SignalDecodeException(ex.Message); }
         return message;
     }
 

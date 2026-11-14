@@ -8,6 +8,8 @@
         <infra:BoolToVisibilityConverter x:Key="BoolToVis" />
         <infra:BoolToVisibilityConverter x:Key="InvBoolToVis" Invert="True" />
         <infra:InverseBoolConverter x:Key="InvBool" />
-        <infra:BoolToBrushConverter x:Key="NearbyBrush" TrueBrush="#4022AA55" FalseBrush="#40808080" />
+        <infra:BoolToBrushConverter x:Key="NearbyBrush" TrueBrush="#6622AA55" FalseBrush="#40808080" />
+        <!-- Hata metni rengi; koyu/açık temaya göre App.OnStartup'ta güncellenir (açık temada AA kontrast) -->
+        <SolidColorBrush x:Key="ErrorBrush" Color="#C42B1C" />
     </Application.Resources>
 </Application>

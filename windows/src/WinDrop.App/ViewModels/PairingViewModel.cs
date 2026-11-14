@@ -34,6 +34,8 @@ public sealed partial class PairingViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial PairingRequest? PendingRequest { get; set; }
 
     public bool HasPending => PendingRequest != null;
+    /// <summary>Onay istenirken "iPhone bekleniyor" ve geri sayım gizlenir (çelişkili görünmesin).</summary>
+    public bool ShowWaiting => PendingRequest == null;
     public string ConfirmText => PendingRequest == null ? ""
         : Strings.Format("Pair.Confirm", PendingRequest.DeviceName)
           + (PendingRequest.VerificationCode is { } code ? "\n" + Strings.Format("Pair.Code", code) : "");
@@ -41,6 +43,7 @@ public sealed partial class PairingViewModel : ObservableObject, IDisposable
     partial void OnPendingRequestChanged(PairingRequest? value)
     {
         OnPropertyChanged(nameof(HasPending));
+        OnPropertyChanged(nameof(ShowWaiting));
         OnPropertyChanged(nameof(ConfirmText));
     }
 
@@ -48,8 +51,23 @@ public sealed partial class PairingViewModel : ObservableObject, IDisposable
     {
         IsExpired = false;
         _session?.Cancel();
-        _session = await _devices.StartPairingAsync();
-        QrImage = RenderQr(_session.QrPayload);
+        try
+        {
+            _session = await _devices.StartPairingAsync();
+            QrImage = RenderQr(_session.QrPayload);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Eşleştirme başlatılamadı (BLE/ağ): boş QR + sonsuz "bekleniyor" yerine nedeni göster, "Yeniden başlat" açık kalsın.
+            AppLog.Write($"eşleştirme başlatılamadı: {ex}");
+            _timer.Stop();
+            _session = null;
+            IsExpired = true;
+            QrImage = null;
+            RemainingText = "";
+            StatusText = Strings.Format("Pair.StartFailed", ex.Message);
+            return;
+        }
         StatusText = Strings.Get("Pair.Waiting");
         UpdateRemaining();
         _timer.Start();

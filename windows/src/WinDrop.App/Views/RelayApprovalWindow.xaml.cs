@@ -31,16 +31,11 @@ public partial class RelayApprovalWindow : Window
             else UpdateTimeout();
         };
         _timer.Start();
-        Loaded += (_, _) =>
-        {
-            var area = SystemParameters.WorkArea;
-            Left = area.Right - ActualWidth - 16;
-            Top = area.Bottom - ActualHeight - 16;
-        };
+        PopupStack.Add(this);
         Closed += (_, _) => { _timer.Stop(); Answer(false); };
     }
 
-    private void UpdateTimeout() => TimeoutText.Text = Strings.Format("Offer.Timeout", _remaining);
+    private void UpdateTimeout() => TimeoutText.Text = Strings.Format("Relay.Timeout", _remaining);
 
     private void Answer(bool allow)
     {

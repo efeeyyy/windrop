@@ -94,7 +94,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
     public ValueTask SendSignalAsync(SignalMessage message, CancellationToken cancellationToken = default) =>
         SendPlaintextAsync(SignalMessages.Encode(message), cancellationToken);
 
-    private async ValueTask SendPlaintextAsync(ReadOnlyMemory<byte> plaintext, CancellationToken cancellationToken)
+    internal async ValueTask SendPlaintextAsync(ReadOnlyMemory<byte> plaintext, CancellationToken cancellationToken)
     {
         if (!_established)
             throw new InvalidOperationException("Oturum kurulmadı: önce EnsureEstablishedAsync (PROTOCOL §1, 0-RTT yok).");

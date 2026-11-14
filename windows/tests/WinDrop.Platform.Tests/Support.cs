@@ -123,15 +123,18 @@ internal sealed class FakeHotspot : IHotspotController
 {
     public bool Result { get; set; } = true;
     public Exception? Throw { get; set; }
+    /// <summary>Doluysa StartAsync bu görev tamamlanana kadar bekler (yavaş etkin nokta açılışı).</summary>
+    public Task? StartGate { get; set; }
     public int StartCalls;
     public int Started;
     public int Finished;
 
-    public Task<bool> StartAsync(HotspotConfig config, CancellationToken ct = default)
+    public async Task<bool> StartAsync(HotspotConfig config, CancellationToken ct = default)
     {
         Interlocked.Increment(ref StartCalls);
         if (Throw is not null) throw Throw;
-        return Task.FromResult(Result);
+        if (StartGate is { } gate) await gate.WaitAsync(ct);
+        return Result;
     }
 
     public void TransferStarted() => Interlocked.Increment(ref Started);
@@ -161,7 +164,7 @@ internal sealed class Harness : IAsyncDisposable
 
     /// <param name="blePace">BLE veri yolu hız sınırı (bayt/sn); testlerde varsayılan sınırsız.</param>
     public Harness(bool autoAccept = true, bool trustPhone = true, TransferTimeouts? timeouts = null, int blePace = 0,
-        string relayUrl = "", HttpMessageHandler? pushHandler = null, TimeProvider? time = null)
+        string relayUrl = "", HttpMessageHandler? pushHandler = null, TimeProvider? time = null, IFileCommitHook? commitHook = null)
     {
         Settings = new AppSettings { DownloadFolder = Path.Combine(Dir.Path, "downloads"), AutoAccept = autoAccept, RelayUrl = relayUrl };
         var root = Path.Combine(Dir.Path, "pc");
@@ -185,7 +188,7 @@ internal sealed class Harness : IAsyncDisposable
             RotateHotspotPassphrase = () => HotspotCfg.RotatePassphrase(),
             CandidateAddresses = () => ["127.0.0.1"],
             HotspotAddress = () => "127.0.0.1",
-            CommitHook = new MotwCommitHook(),
+            CommitHook = commitHook ?? new MotwCommitHook(),
             BluetoothAudio = BtAudio,
             BleBytesPerSecond = blePace,
             LocalKey = Identity.LoadOrCreate(),
@@ -200,6 +203,7 @@ internal sealed class Harness : IAsyncDisposable
                 Reconnect = TimeSpan.FromSeconds(3),
                 RelayPeer = TimeSpan.FromSeconds(8),
                 RelayApproval = TimeSpan.FromSeconds(10),
+                BleIdle = TimeSpan.FromSeconds(3),
                 Poll = TimeSpan.FromMilliseconds(20),
             },
         });

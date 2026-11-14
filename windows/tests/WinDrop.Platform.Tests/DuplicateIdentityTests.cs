@@ -10,18 +10,16 @@ namespace WinDrop.Platform.Tests;
 public class DuplicateIdentityTests
 {
     [Fact]
-    public async Task Ik_Hello_WithNewName_UpdatesRegisteredName_Sanitized_Max40()
+    public async Task Ik_Hello_WithNewName_DoesNotChangeRegisteredName()
     {
         await using var h = new Harness();
         var longName = "Efe\u0007'nin‮ " + new string('x', 80);
         using var phone = await h.ConnectPhoneAsync(WifiState.Connected, helloName: longName);
+        // PROTOCOL §0 (windows-core #11): kayıtlı ad eşleştirme anındaki addır; hello.name kaydı değiştirmez.
         var device = Assert.Single(h.Trusted.List());
-        Assert.NotEqual("Test iPhone", device.Name);
-        Assert.True(device.Name.Length <= 40);
-        Assert.DoesNotContain(device.Name, c => char.IsControl(c) || c == '‮');
-        Assert.StartsWith("Efe'nin", device.Name);
-        Assert.Equal(device.Name, Assert.Single(h.Coord.NearbyPeers).Name);
-        Assert.Equal(device.Name, new TrustedDevices(Path.GetDirectoryName(h.Trusted.FilePath)).List()[0].Name);   // diske yazıldı
+        Assert.Equal("Test iPhone", device.Name);
+        Assert.Equal("Test iPhone", Assert.Single(h.Coord.NearbyPeers).Name);
+        Assert.Equal("Test iPhone", new TrustedDevices(Path.GetDirectoryName(h.Trusted.FilePath)).List()[0].Name);
     }
 
     [Fact]

@@ -45,19 +45,49 @@ public sealed class AppSettings
     /// <summary>Arayüz dili: <c>system</c> (varsayılan), <c>tr</c> ya da <c>en</c>. Yeniden başlatınca uygulanır.</summary>
     public string Language { get; set; } = "system";
 
-    public static AppSettings Load(string? path = null)
+    /// <summary>
+    /// Okur. UTF-8 BOM'a (Not Defteri, PowerShell 5.1) toleranslıdır. Dosya bozuksa <c>.corrupt</c> olarak yedeklenir
+    /// (üzerine yazılmaz) ve varsayılanlar döner; <paramref name="onProblem"/> ile bildirilir.
+    /// </summary>
+    public static AppSettings Load(string? path = null, Action<string>? onProblem = null)
     {
         path ??= DefaultPath;
         try
         {
-            if (File.Exists(path))
+            if (!File.Exists(path)) return new AppSettings();
+            var bytes = File.ReadAllBytes(path);
+            var span = bytes.AsSpan();
+            if (span.Length >= 3 && span[0] == 0xEF && span[1] == 0xBB && span[2] == 0xBF) span = span[3..];
+            try
             {
-                var s = JsonSerializer.Deserialize<AppSettings>(File.ReadAllBytes(path), JsonOptions);
+                var s = JsonSerializer.Deserialize<AppSettings>(span, JsonOptions);
                 if (s != null) return s.Sanitized();
+                BackupCorrupt(path, "boş (null)", onProblem);
+            }
+            catch (JsonException ex)
+            {
+                BackupCorrupt(path, ex.Message, onProblem);
             }
         }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            onProblem?.Invoke($"ayar dosyası okunamadı: {ex.Message}");
+        }
         return new AppSettings();
+    }
+
+    private static void BackupCorrupt(string path, string reason, Action<string>? onProblem)
+    {
+        try
+        {
+            var backup = path + ".corrupt";
+            File.Move(path, backup, overwrite: true);
+            onProblem?.Invoke($"ayar dosyası bozuk ({reason}); '{backup}' olarak yedeklendi, varsayılanlar kullanılıyor.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            onProblem?.Invoke($"ayar dosyası bozuk ({reason}) ve yedeklenemedi: {ex.Message}");
+        }
     }
 
     public void Save(string? path = null) =>

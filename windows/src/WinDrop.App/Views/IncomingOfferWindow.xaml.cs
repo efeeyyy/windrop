@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Threading;
 using WinDrop.App.Infrastructure;
 using WinDrop.App.Services;
@@ -6,10 +7,14 @@ using WinDrop.Core.Protocol;
 
 namespace WinDrop.App.Views;
 
-/// <summary>Küçük, en üstte onay penceresi. 30 sn içinde yanıt yoksa ret.</summary>
+/// <summary>
+/// Küçük, en üstte, odağı çalmayan onay penceresi. 60 sn içinde yanıt yoksa ret (docs\review\DECISIONS.md madde 3).
+/// Varsayılan düğme yoktur: Enter teklifi kabul etmez.
+/// </summary>
 public partial class IncomingOfferWindow : Window
 {
-    public const int TimeoutSeconds = 30;
+    public const int TimeoutSeconds = 60;
+    private const int MaxListedFiles = 5;
 
     private readonly Action<bool> _onResult;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
@@ -20,9 +25,18 @@ public partial class IncomingOfferWindow : Window
     {
         InitializeComponent();
         _onResult = onResult;
-        MessageText.Text = Strings.Format("Offer.Text", offer.SenderName, offer.FileCount, ByteFormat.Size(offer.TotalBytes));
-        // PROTOCOL §5a: preview girdisi "/" ile bitiyorsa klasör adıdır. Ad karşı cihazdan geldiği için temizlenerek gösterilir.
-        var folders = (offer.Preview ?? []).Where(p => p.EndsWith('/')).Select(p => FileNameSanitizer.Sanitize(p)).ToArray();
+        MessageText.Text = Strings.Plural("Offer.Text", offer.FileCount, offer.SenderName, offer.FileCount, ByteFormat.Size(offer.TotalBytes));
+        // PROTOCOL §5a: preview girdisi "/" ile bitiyorsa klasör adıdır. Adlar karşı cihazdan geldiği için temizlenerek gösterilir.
+        var preview = (offer.Preview ?? []).Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
+        var folders = preview.Where(p => p.EndsWith('/')).Select(p => FileNameSanitizer.Sanitize(p)).ToArray();
+        var files = preview.Where(p => !p.EndsWith('/')).Select(p => FileNameSanitizer.Sanitize(p)).ToArray();
+        if (files.Length > 0)
+        {
+            int extra = Math.Max(files.Length, offer.FileCount) - Math.Min(files.Length, MaxListedFiles);
+            var text = string.Join(", ", files.Take(MaxListedFiles));
+            FilesText.Text = extra > 0 ? Strings.Format("Offer.FilesMore", text, extra) : Strings.Format("Offer.Files", text);
+            FilesText.Visibility = Visibility.Visible;
+        }
         if (folders.Length > 0)
         {
             FoldersText.Text = Strings.Format("Offer.Folders", string.Join(", ", folders));
@@ -33,6 +47,8 @@ public partial class IncomingOfferWindow : Window
             CodeText.Text = Strings.Format("Offer.Code", code) + "\n" + Strings.Get("Offer.Unknown");
             CodeText.Visibility = Visibility.Visible;
         }
+        AutomationProperties.SetName(this, Strings.Get("Offer.Title") + ": " + MessageText.Text);
+        AutomationProperties.SetLiveSetting(TimeoutText, AutomationLiveSetting.Off);
         UpdateTimeout();
         _timer.Tick += (_, _) =>
         {
@@ -40,12 +56,7 @@ public partial class IncomingOfferWindow : Window
             else UpdateTimeout();
         };
         _timer.Start();
-        Loaded += (_, _) =>
-        {
-            var area = SystemParameters.WorkArea;
-            Left = area.Right - ActualWidth - 16;
-            Top = area.Bottom - ActualHeight - 16;
-        };
+        PopupStack.Add(this);
         Closed += (_, _) => { _timer.Stop(); Answer(false); };
     }
 

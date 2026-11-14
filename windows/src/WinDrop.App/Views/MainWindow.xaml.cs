@@ -6,10 +6,13 @@ namespace WinDrop.App.Views;
 
 public partial class MainWindow : Window
 {
+    private readonly System.Windows.Media.Brush _dropBorder;
+
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _dropBorder = DropZone.BorderBrush;   // XAML'deki tema uyumlu kenarlık; sürüklemeden sonra bu geri gelir
     }
 
     /// <summary>Gerçek çıkışta true: pencere kapanır; aksi halde tepsiye küçülür.</summary>
@@ -35,16 +38,16 @@ public partial class MainWindow : Window
     {
         bool ok = e.Data.GetDataPresent(DataFormats.FileDrop);
         e.Effects = ok ? DragDropEffects.Copy : DragDropEffects.None;
-        DropZone.BorderBrush = ok ? SystemColors.HighlightBrush : System.Windows.Media.Brushes.Gray;
+        DropZone.BorderBrush = ok ? SystemColors.HighlightBrush : _dropBorder;
         e.Handled = true;
     }
 
     private void OnDragLeave(object sender, DragEventArgs e) =>
-        DropZone.BorderBrush = System.Windows.Media.Brushes.Gray;
+        DropZone.BorderBrush = _dropBorder;
 
     private void OnDrop(object sender, DragEventArgs e)
     {
-        DropZone.BorderBrush = System.Windows.Media.Brushes.Gray;
+        DropZone.BorderBrush = _dropBorder;
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files) Vm.StageFiles(files);
         e.Handled = true;
     }

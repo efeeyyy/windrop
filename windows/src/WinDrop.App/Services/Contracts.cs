@@ -10,6 +10,9 @@ namespace WinDrop.App.Services;
 public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false, bool IsTrusted = true,
     bool IsPaired = true, DateTimeOffset? LastSeen = null)
 {
+    /// <summary>Ekran okuyucu için "Kaldır" düğmesi adı ("‘X’ eşleşmesini kaldır"): aynı adlı düğmeler ayırt edilsin.</summary>
+    public string RemoveLabel => Infrastructure.Strings.Format("Settings.RemoveNamed", Name);
+
     /// <summary>"Eşli"/"Tanıdık" etiketi ve son görülme zamanı (ayarlardaki liste).</summary>
     public string Detail =>
         Infrastructure.Strings.Get(IsPaired ? "Settings.KindPaired" : "Settings.KindFamiliar") + " · " +
@@ -85,6 +88,9 @@ public sealed partial class TransferItem : ObservableObject
     public string DeviceName { get; }
     public int FileCount { get; }
     public long TotalBytes { get; }
+
+    /// <summary>Satırın oluşturulduğu (aktarımın göründüğü) yerel zaman.</summary>
+    public DateTimeOffset StartedAt { get; } = DateTimeOffset.Now;
 
     /// <summary>0..1</summary>
     [ObservableProperty] public partial double Progress { get; set; }

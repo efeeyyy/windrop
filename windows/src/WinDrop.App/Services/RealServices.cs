@@ -10,7 +10,7 @@ namespace WinDrop.App.Services;
 public sealed class DeviceService : IDeviceService
 {
     private readonly WinDropRuntime _rt;
-    private readonly SynchronizationContext _ui = SynchronizationContext.Current ?? new SynchronizationContext();
+    private readonly SynchronizationContext _ui = UiContext.Capture();
 
     public DeviceService(WinDropRuntime runtime)
     {
@@ -80,7 +80,7 @@ public sealed class DeviceService : IDeviceService
 public sealed class TransferService : ITransferService
 {
     private readonly TransferCoordinator _coord;
-    private readonly SynchronizationContext _ui = SynchronizationContext.Current ?? new SynchronizationContext();
+    private readonly SynchronizationContext _ui = UiContext.Capture();
     private readonly Dictionary<string, TransferItem> _items = [];   // yalnız UI iş parçacığında
 
     public TransferService(WinDropRuntime runtime)

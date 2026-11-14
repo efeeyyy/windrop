@@ -89,6 +89,8 @@ public sealed class SignalSessionAcceptor
 
         public ValueTask SendResetAsync(CancellationToken cancellationToken) => inner.SendResetAsync(cancellationToken);
 
+        public ValueTask SendUnknownAsync(CancellationToken cancellationToken) => inner.SendUnknownAsync(cancellationToken);
+
         public ValueTask<byte[]?> ReceiveAsync(CancellationToken cancellationToken)
         {
             var f = Interlocked.Exchange(ref _first, null);
@@ -100,6 +102,7 @@ public sealed class SignalSessionAcceptor
     private async Task<(bool Fault, byte[]? Restart)> RunOnceAsync(IBleLink link, CancellationToken ct)
     {
         var fault = false;
+        var unknownKey = false;
         SecureChannel? channel = null;
         BleMessageTransport? transport = null;
         try
@@ -168,7 +171,10 @@ public sealed class SignalSessionAcceptor
         }
         catch (PeerNotTrustedException)
         {
+            // DECISIONS 2: IK anahtarı güvenilen listede yok → WDU (WDR değil); iPhone yalnız bunu alınca kaydını siler.
             PlatformLog.Write("BLE: güvenilmeyen anahtar, bağlantı kapatıldı.");
+            unknownKey = true;
+            fault = true;   // oturum biter ama bağlantı yeni ön eki (XX) bekler
         }
         catch (VersionMismatchException ex)
         {
@@ -199,8 +205,10 @@ public sealed class SignalSessionAcceptor
             {
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 cts.CancelAfter(TimeSpan.FromSeconds(3));
-                await link.SendResetAsync(cts.Token).ConfigureAwait(false);
-                PlatformLog.Write("BLE: istemciye oturum sıfırlama işareti (WDR) gönderildi.");
+                if (unknownKey) await link.SendUnknownAsync(cts.Token).ConfigureAwait(false);
+                else await link.SendResetAsync(cts.Token).ConfigureAwait(false);
+                PlatformLog.Write(unknownKey ? "BLE: istemciye 'anahtar tanınmıyor' işareti (WDU) gönderildi."
+                                             : "BLE: istemciye oturum sıfırlama işareti (WDR) gönderildi.");
             }
             catch (Exception ex)
             {

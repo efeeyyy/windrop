@@ -63,7 +63,7 @@ public sealed class SignalMessagesTests
         const string id = "0123456789abcdef0123456789abcdef";
         Assert.Equal($$"""{"t":"pushId","pushId":"{{id}}"}""", Json(new PushIdMessage(id)));
         Assert.Equal(id, ((PushIdMessage)Decode($$"""{"pushId":"{{id}}","t":"pushId"}""")).PushId);
-        Assert.Throws<ProtocolException>(() => Decode("""{"t":"pushId"}"""));     // zorunlu alan yok
+        Assert.ThrowsAny<ProtocolException>(() => Decode("""{"t":"pushId"}"""));     // zorunlu alan yok
 
         Assert.True(PushIds.IsValid(id));
         Assert.False(PushIds.IsValid(null));
@@ -97,7 +97,14 @@ public sealed class SignalMessagesTests
     [InlineData("null")]
     [InlineData("")]
     public void Decode_Invalid_ThrowsProtocolException(string json) =>
-        Assert.Throws<ProtocolException>(() => Decode(json));
+        Assert.ThrowsAny<ProtocolException>(() => Decode(json));
+
+    [Theory]
+    [InlineData("""{"t":"future-thing","x":1}""")]
+    [InlineData("""{"x":1}""")]
+    [InlineData("""{"t":"hello","v":1}""")]
+    public void Decode_UnknownTypeOrBadMessage_ThrowsSignalDecodeException(string json) =>
+        Assert.Throws<SignalDecodeException>(() => Decode(json));
 
     [Fact]
     public void PlaintextLimit_8176()
@@ -117,7 +124,7 @@ public sealed class SignalMessagesTests
         exact[^1] = (byte)'}';
         Assert.IsType<CancelSignalMessage>(SignalMessages.Decode(exact));                 // tam sınırda kabul
 
-        Assert.Throws<ProtocolException>(() => SignalMessages.Decode(new byte[SignalMessages.MaxPlaintext + 1]));
+        Assert.ThrowsAny<ProtocolException>(() => SignalMessages.Decode(new byte[SignalMessages.MaxPlaintext + 1]));
     }
 
     [Fact]

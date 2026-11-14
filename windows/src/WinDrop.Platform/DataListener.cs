@@ -190,6 +190,7 @@ public sealed class DataListener : IAsyncDisposable
         try
         {
             client.NoDelay = true;
+            EnableKeepAlive(client, remote);
             var transport = new TcpMessageTransport(client.GetStream());
             using var hs = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
             hs.CancelAfter(HandshakeTimeout);
@@ -261,6 +262,23 @@ public sealed class DataListener : IAsyncDisposable
         {
             lock (_gate) _connections.Remove(holder);
             holder.Dispose();
+        }
+    }
+
+    /// <summary>DECISIONS 6: yarı açık bağlantılar ~30 sn içinde (15 + 3 × 5 sn) anlaşılsın.</summary>
+    private static void EnableKeepAlive(TcpClient client, string remote)
+    {
+        try
+        {
+            var socket = client.Client;
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 15);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 5);
+            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
+        }
+        catch (Exception ex) when (ex is SocketException or ArgumentException or PlatformNotSupportedException or ObjectDisposedException)
+        {
+            PlatformLog.Write($"DataListener {remote}: TCP keepalive ayarlanamadı ({ex.GetType().Name}).");
         }
     }
 

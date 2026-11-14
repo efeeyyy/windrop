@@ -9,14 +9,14 @@
   <data name="Main.DropHere" xml:space="preserve"><value>Drag and drop files or folders here</value></data>
   <data name="Main.PickFiles" xml:space="preserve"><value>Choose files…</value></data>
   <data name="Main.PickFolder" xml:space="preserve"><value>Choose folder…</value></data>
-  <data name="Main.StagedFormat" xml:space="preserve"><value>{0} item(s) ready to send</value></data>
+  <data name="Main.StagedFormat" xml:space="preserve"><value>{0} items ready to send</value></data>
   <data name="Main.Send" xml:space="preserve"><value>Send</value></data>
   <data name="Main.ClearStaged" xml:space="preserve"><value>Clear</value></data>
   <data name="Main.HintSelectDevice" xml:space="preserve"><value>Select a nearby device to send to.</value></data>
   <data name="Main.Devices" xml:space="preserve"><value>Nearby devices</value></data>
   <data name="Main.NoDevices" xml:space="preserve"><value>No devices nearby. Make sure WinDrop and Bluetooth are on for both devices (WinDrop must be in the foreground on the iPhone).</value></data>
   <data name="Main.Transfers" xml:space="preserve"><value>Transfers</value></data>
-  <data name="Main.NoTransfers" xml:space="preserve"><value>No transfers yet.</value></data>
+  <data name="Main.NoTransfers" xml:space="preserve"><value>No transfers yet. Drop files above or press “Choose files…”.</value></data>
   <data name="Main.AddPhone" xml:space="preserve"><value>Pair iPhone (optional)</value></data>
   <data name="Main.Settings" xml:space="preserve"><value>Settings</value></data>
   <data name="Main.Cancel" xml:space="preserve"><value>Cancel</value></data>
@@ -27,7 +27,7 @@
   <data name="Device.Push" xml:space="preserve"><value>Reachable by notification</value></data>
   <data name="Transfer.To" xml:space="preserve"><value>To {0}</value></data>
   <data name="Transfer.From" xml:space="preserve"><value>From {0}</value></data>
-  <data name="Transfer.Detail" xml:space="preserve"><value>{0} file(s) · {1}</value></data>
+  <data name="Transfer.Detail" xml:space="preserve"><value>{0} files · {1}</value></data>
   <data name="Status.Waiting" xml:space="preserve"><value>Waiting</value></data>
   <data name="Status.PushSent" xml:space="preserve"><value>Notification sent to phone — waiting</value></data>
   <data name="Status.Active" xml:space="preserve"><value>Transferring</value></data>
@@ -48,7 +48,7 @@
   <data name="Pair.Reject" xml:space="preserve"><value>Decline</value></data>
   <data name="Pair.Close" xml:space="preserve"><value>Close</value></data>
   <data name="Offer.Title" xml:space="preserve"><value>Incoming files</value></data>
-  <data name="Offer.Text" xml:space="preserve"><value>“{0}” wants to send you {1} file(s) ({2}).</value></data>
+  <data name="Offer.Text" xml:space="preserve"><value>“{0}” wants to send you {1} files ({2}).</value></data>
   <data name="Offer.Folders" xml:space="preserve"><value>Folder: {0}</value></data>
   <data name="Offer.Accept" xml:space="preserve"><value>Accept</value></data>
   <data name="Offer.Reject" xml:space="preserve"><value>Decline</value></data>
@@ -56,7 +56,7 @@
   <data name="Offer.Unknown" xml:space="preserve"><value>This device isn’t recognized yet; if you decline, nothing is saved.</value></data>
   <data name="Relay.Title" xml:space="preserve"><value>Transfer over the internet</value></data>
   <data name="Relay.Intro" xml:space="preserve"><value>Couldn’t connect directly to “{0}”.</value></data>
-  <data name="Relay.Warning" xml:space="preserve"><value>This transfer will use your Wi-Fi or cellular data allowance. ({0}) End-to-end encrypted.</value></data>
+  <data name="Relay.Warning" xml:space="preserve"><value>Size: {0}. This transfer will use your internet (Wi-Fi or cellular data) allowance; it is end-to-end encrypted.</value></data>
   <data name="Relay.Confirm" xml:space="preserve"><value>Allow</value></data>
   <data name="Relay.Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Offer.Timeout" xml:space="preserve"><value>Declined automatically if there’s no response within {0} s.</value></data>
@@ -167,4 +167,38 @@
   <data name="Err.HsBtOff" xml:space="preserve"><value>Bluetooth is off.</value></data>
   <data name="Err.HsLimited" xml:space="preserve"><value>Network connectivity is limited; couldn’t turn on the hotspot.</value></data>
   <data name="Err.HsStartStatus" xml:space="preserve"><value>Couldn’t start the Mobile Hotspot ({0}).</value></data>
+  <data name="Main.StagedFormat.One" xml:space="preserve"><value>{0} item ready to send</value></data>
+  <data name="Transfer.Detail.One" xml:space="preserve"><value>{0} file · {1}</value></data>
+  <data name="Offer.Text.One" xml:space="preserve"><value>“{0}” wants to send you {1} file ({2}).</value></data>
+  <data name="Main.OpenLog" xml:space="preserve"><value>Open log</value></data>
+  <data name="Main.Restart" xml:space="preserve"><value>Restart</value></data>
+  <data name="Main.Dismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="Main.ServiceFailed" xml:space="preserve"><value>Bluetooth or network services couldn’t start: {0}. Devices may not appear; check Bluetooth and the firewall, then restart the app.</value></data>
+  <data name="Main.UnexpectedError" xml:space="preserve"><value>An unexpected error occurred. Details are in the log.</value></data>
+  <data name="Main.SettingsProblem" xml:space="preserve"><value>The settings file was corrupt; it was backed up as “.corrupt” and default settings are in use.</value></data>
+  <data name="Main.RemoveStagedNamed" xml:space="preserve"><value>Remove “{0}” from the list</value></data>
+  <data name="Main.ClearFinished" xml:space="preserve"><value>Clear finished</value></data>
+  <data name="Main.ProgressNamed" xml:space="preserve"><value>Progress of transfer {0}</value></data>
+  <data name="Main.CancelNamed" xml:space="preserve"><value>Cancel transfer: {0}</value></data>
+  <data name="Main.ShowNamed" xml:space="preserve"><value>Show transfer in folder: {0}</value></data>
+  <data name="Transfer.Sent" xml:space="preserve"><value>Sent</value></data>
+  <data name="Transfer.Received" xml:space="preserve"><value>Received</value></data>
+  <data name="Transfer.Percent" xml:space="preserve"><value>{0:0}%</value></data>
+  <data name="Transfer.NameMore" xml:space="preserve"><value>{0} +{1} more</value></data>
+  <data name="Pair.StartFailed" xml:space="preserve"><value>Couldn’t start pairing: {0}</value></data>
+  <data name="Pair.QrName" xml:space="preserve"><value>Pairing QR code</value></data>
+  <data name="Offer.Files" xml:space="preserve"><value>Files: {0}</value></data>
+  <data name="Offer.FilesMore" xml:space="preserve"><value>Files: {0} and {1} more</value></data>
+  <data name="Relay.Timeout" xml:space="preserve"><value>Canceled automatically if there’s no response within {0} s.</value></data>
+  <data name="Settings.RemoveNamed" xml:space="preserve"><value>Remove pairing with “{0}”</value></data>
+  <data name="Settings.Version" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Settings.FolderInvalid" xml:space="preserve"><value>Enter a valid folder path (e.g. C:\Users\Name\Downloads\WinDrop).</value></data>
+  <data name="Settings.FolderCreateFailed" xml:space="preserve"><value>Couldn’t create the folder: {0}</value></data>
+  <data name="Settings.MaxInvalid" xml:space="preserve"><value>Enter a whole number between 1 and {0}.</value></data>
+  <data name="Settings.RelayInvalid" xml:space="preserve"><value>Invalid address. Use “host” or “wss://host”.</value></data>
+  <data name="Dialog.Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Dialog.No" xml:space="preserve"><value>No</value></data>
+  <data name="Tray.ExitConfirm" xml:space="preserve"><value>Transfers are in progress; exiting will cancel them. Exit anyway?</value></data>
+  <data name="Tray.Received" xml:space="preserve"><value>Received {1} files from “{0}”. Click to show in folder.</value></data>
+  <data name="Tray.Received.One" xml:space="preserve"><value>Received {1} file from “{0}”. Click to show in folder.</value></data>
 </root>

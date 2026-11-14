@@ -5,17 +5,37 @@
         Title="{infra:T App.Title}" Width="540" Height="720" MinWidth="440" MinHeight="560"
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/Assets/app.ico">
+    <Window.InputBindings>
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding PickFilesCommand}" />
+        <KeyBinding Key="Return" Modifiers="Ctrl" Command="{Binding SendCommand}" />
+    </Window.InputBindings>
     <Grid Margin="16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- Kalıcı durum bandı: servisler başlamadı / ayar dosyası bozuktu / beklenmeyen hata -->
+        <Border Grid.Row="0" Margin="0,0,0,12" Padding="12" CornerRadius="6" Background="#20FF8C00" BorderBrush="{DynamicResource ErrorBrush}"
+                BorderThickness="1" Visibility="{Binding HasNotice, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="{Binding NoticeMessage}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Assertive" />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Content="{infra:T Main.OpenLog}" Command="{Binding OpenLogCommand}" Margin="0,0,8,0" />
+                    <Button Content="{infra:T Main.Restart}" Command="{Binding RestartAppCommand}" Margin="0,0,8,0"
+                            Visibility="{Binding NoticeCanRestart, Converter={StaticResource BoolToVis}}" />
+                    <Button Content="{infra:T Main.Dismiss}" Command="{Binding DismissNoticeCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- Gönder alanı -->
-        <Border Grid.Row="0" x:Name="DropZone" AllowDrop="True" CornerRadius="8" BorderThickness="2"
+        <Border Grid.Row="1" x:Name="DropZone" AllowDrop="True" CornerRadius="8" BorderThickness="2"
                 BorderBrush="#80808080" Background="#10808080" Padding="16"
+                AutomationProperties.Name="{infra:T Main.DropHere}"
                 DragEnter="OnDragOver" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
             <StackPanel HorizontalAlignment="Center">
                 <TextBlock Text="{infra:T Main.DropHere}" FontSize="16" HorizontalAlignment="Center" />
@@ -25,10 +45,32 @@
                 </StackPanel>
                 <StackPanel Visibility="{Binding HasStaged, Converter={StaticResource BoolToVis}}" Margin="0,12,0,0">
                     <TextBlock Text="{Binding StagedText}" HorizontalAlignment="Center" FontWeight="SemiBold" />
-                    <TextBlock Text="{infra:T Main.HintSelectDevice}" HorizontalAlignment="Center" Opacity="0.7" Margin="0,4,0,0"
+                    <!-- Hazırlanan dosyalar: tek tek çıkarılabilir -->
+                    <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Margin="0,6,0,0" Focusable="False">
+                        <ItemsControl ItemsSource="{Binding Staged}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,1" ToolTip="{Binding Path}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="13" />
+                                        <Button Grid.Column="1" Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                                                Padding="6,3" Margin="8,0,0,0" Background="Transparent" BorderThickness="0"
+                                                AutomationProperties.Name="{Binding RemoveLabel}" ToolTip="{Binding RemoveLabel}"
+                                                Command="{Binding DataContext.RemoveStagedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <TextBlock Text="{infra:T Main.HintSelectDevice}" HorizontalAlignment="Center" Opacity="0.8" Margin="0,6,0,0"
                                Visibility="{Binding ShowSelectHint, Converter={StaticResource BoolToVis}}" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                        <Button Content="{infra:T Main.Send}" Command="{Binding SendCommand}" MinWidth="100" Margin="0,0,8,0" />
+                        <Button Content="{infra:T Main.Send}" Command="{Binding SendCommand}" MinWidth="100" Margin="0,0,8,0"
+                                Style="{DynamicResource AccentButtonStyle}" />
                         <Button Content="{infra:T Main.ClearStaged}" Command="{Binding ClearStagedCommand}" />
                     </StackPanel>
                 </StackPanel>
@@ -36,21 +78,22 @@
         </Border>
 
         <!-- Eşli cihazlar -->
-        <StackPanel Grid.Row="1" Margin="0,16,0,0">
-            <TextBlock Text="{infra:T Main.Devices}" FontWeight="SemiBold" Margin="0,0,0,6" />
-            <TextBlock Text="{infra:T Main.NoDevices}" Opacity="0.7" TextWrapping="Wrap"
+        <StackPanel Grid.Row="2" Margin="0,16,0,0">
+            <TextBlock x:Name="DevicesHeader" Text="{infra:T Main.Devices}" FontWeight="SemiBold" Margin="0,0,0,6" />
+            <TextBlock Text="{infra:T Main.NoDevices}" Opacity="0.8" TextWrapping="Wrap"
                        Visibility="{Binding HasNoDevices, Converter={StaticResource BoolToVis}}" />
             <ListBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}" MaxHeight="150"
+                     AutomationProperties.LabeledBy="{Binding ElementName=DevicesHeader}"
                      Visibility="{Binding HasNoDevices, Converter={StaticResource InvBoolToVis}}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid>
+                        <Grid AutomationProperties.Name="{Binding AutomationName}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                            <Border Grid.Column="1" CornerRadius="10" Padding="8,2" Margin="12,0,0,0"
+                            <Border Grid.Column="1" CornerRadius="10" Padding="8,2" Margin="12,0,0,0" BorderThickness="1" BorderBrush="#50808080"
                                     Background="{Binding IsReachable, Converter={StaticResource NearbyBrush}}">
                                 <TextBlock Text="{Binding BadgeText}" FontSize="12" />
                             </Border>
@@ -61,20 +104,25 @@
         </StackPanel>
 
         <!-- Aktarımlar -->
-        <Grid Grid.Row="2" Margin="0,16,0,0">
+        <Grid Grid.Row="3" Margin="0,16,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TextBlock Text="{infra:T Main.Transfers}" FontWeight="SemiBold" Margin="0,0,0,6" />
-            <TextBlock Grid.Row="1" Text="{infra:T Main.NoTransfers}" Opacity="0.7"
+            <Grid Margin="0,0,0,6">
+                <TextBlock Text="{infra:T Main.Transfers}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Content="{infra:T Main.ClearFinished}" Command="{Binding ClearFinishedCommand}" HorizontalAlignment="Right"
+                        Padding="8,2" FontSize="12" Visibility="{Binding HasFinished, Converter={StaticResource BoolToVis}}" />
+            </Grid>
+            <TextBlock Grid.Row="1" Text="{infra:T Main.NoTransfers}" Opacity="0.8" TextWrapping="Wrap"
                        Visibility="{Binding HasNoTransfers, Converter={StaticResource BoolToVis}}" />
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding HasNoTransfers, Converter={StaticResource InvBoolToVis}}">
                 <ItemsControl ItemsSource="{Binding Transfers}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="12" Margin="0,0,0,8" CornerRadius="6" Background="#10808080">
+                            <Border Padding="12" Margin="0,0,0,8" CornerRadius="6" Background="#10808080" Focusable="True"
+                                    AutomationProperties.Name="{Binding AutomationName}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -105,18 +153,25 @@
                                         </Border.Clip>
                                     </Border>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding Detail}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding DirectionGlyph}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                                                       VerticalAlignment="Center" Margin="0,0,6,0" Opacity="0.85"
+                                                       ToolTip="{Binding DirectionName}" />
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Detail}" Opacity="0.8" FontSize="12" TextWrapping="Wrap" />
                                         <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,6,0,2"
+                                                     AutomationProperties.Name="{Binding ProgressName}"
+                                                     AutomationProperties.HelpText="{Binding StatusLine}"
                                                      Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}" />
-                                        <TextBlock Text="{Binding StatusText}" FontSize="12" />
+                                        <TextBlock Text="{Binding StatusLine}" FontSize="12" TextWrapping="Wrap" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0,0,0">
-                                        <Button Content="{infra:T Main.Cancel}"
+                                        <Button Content="{infra:T Main.Cancel}" AutomationProperties.Name="{Binding CancelName}"
                                                 Command="{Binding DataContext.CancelTransferCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 Visibility="{Binding CanCancel, Converter={StaticResource BoolToVis}}" />
-                                        <Button Content="{infra:T Main.ShowInFolder}"
+                                        <Button Content="{infra:T Main.ShowInFolder}" AutomationProperties.Name="{Binding ShowName}"
                                                 Command="{Binding DataContext.ShowInFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
                                                 Visibility="{Binding CanShow, Converter={StaticResource BoolToVis}}" />
@@ -130,8 +185,9 @@
         </Grid>
 
         <!-- Alt menü -->
-        <StackPanel Grid.Row="3" Margin="0,12,0,0">
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="OrangeRed" TextWrapping="Wrap" Margin="0,0,0,6" />
+        <StackPanel Grid.Row="4" Margin="0,12,0,0">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" Margin="0,0,0,6"
+                       AutomationProperties.LiveSetting="Assertive" />
             <Grid>
                 <Button Content="{infra:T Main.AddPhone}" Command="{Binding AddDeviceCommand}" HorizontalAlignment="Left" />
                 <Button Content="{infra:T Main.Settings}" Command="{Binding OpenSettingsCommand}" HorizontalAlignment="Right" />

@@ -73,13 +73,13 @@ public class TransferException(UserError error) : InvalidOperationException(erro
 public sealed class TransferTimeouts
 {
     /// <summary>Gönderen: karşı tarafın accept/reject yanıtı için (kullanıcı iPhone'da onaylıyor olabilir).</summary>
-    public TimeSpan Accept { get; set; } = TimeSpan.FromMinutes(2);
+    public TimeSpan Accept { get; set; } = TimeSpan.FromSeconds(80);   // DECISIONS 3: PC onay penceresi 60 sn + pay
     /// <summary>Alıcı: PC'deki kullanıcı onayı için.</summary>
-    public TimeSpan Approval { get; set; } = TimeSpan.FromMinutes(2);
+    public TimeSpan Approval { get; set; } = TimeSpan.FromSeconds(60);   // DECISIONS 3: zaman aşımı = ret
     /// <summary>addr sonrası iPhone'un veri bağlantısı için.</summary>
     public TimeSpan Connect { get; set; } = TimeSpan.FromSeconds(30);
     /// <summary>hotspot sonrası (iPhone önce ağa katılır) veri bağlantısı için.</summary>
-    public TimeSpan HotspotConnect { get; set; } = TimeSpan.FromSeconds(90);
+    public TimeSpan HotspotConnect { get; set; } = TimeSpan.FromSeconds(120);   // DECISIONS 6
     /// <summary>Aktarım ortasında kopunca aynı transferId ile yeniden bağlanma süresi.</summary>
     public TimeSpan Reconnect { get; set; } = TimeSpan.FromMinutes(2);
     /// <summary>Aktarma: odaya girişten kurulmuş Noise oturumuna kadar (iPhone'un bağlanmasını bekleme dahil; sunucu eşi 60 sn bekler).</summary>
@@ -88,6 +88,10 @@ public sealed class TransferTimeouts
     public TimeSpan RelayApproval { get; set; } = TimeSpan.FromMinutes(2);
     /// <summary>PROTOCOL §6.5: push bildirimi gönderildikten sonra telefonun BLE ile bağlanıp <c>hello</c> göndermesi için (5 dk).</summary>
     public TimeSpan PushWait { get; set; } = TimeSpan.FromMinutes(5);
+    /// <summary>TCP/aktarma veri oturumunda boşta kalma (ilerleme yok) sınırı; aşımda aktarım hatayla biter (DECISIONS 6).</summary>
+    public TimeSpan DataIdle { get; set; } = TimeSpan.FromSeconds(30);
+    /// <summary>BLE veri oturumunda eşin çerçeve göndermeden kalabileceği süre (§6.4, DECISIONS 6).</summary>
+    public TimeSpan BleIdle { get; set; } = TimeSpan.FromSeconds(30);
     /// <summary>Bekleme döngüsü aralığı.</summary>
     public TimeSpan Poll { get; set; } = TimeSpan.FromMilliseconds(250);
 }
@@ -101,6 +105,12 @@ public interface IHotspotController
 
     void TransferStarted();
     void TransferFinished();
+
+    /// <summary>Kalıcı parola yenilendi (bilinmeyen eşe gönderilen parola); başka aktarım yoksa etkin nokta hemen kapatılabilir.</summary>
+    void PassphraseRotated() { }
+
+    /// <summary>Gerçekte geçerli etkin nokta ayarı (yeniden başlatma ertelendiyse eski parola); null: bilinmiyor, istenen ayar kullanılır.</summary>
+    HotspotConfig? CurrentConfig => null;
 }
 
 public sealed class TransferCoordinatorOptions
@@ -273,7 +283,21 @@ public sealed class TransferCoordinator : IAsyncDisposable
         s.Faulted = true;   // PROTOCOL §3a: oturum biterken iPhone'a WDR gider; sonraki bağlantı XX + onayla gelir
         s.Close();
         FailNegotiating(peerId, UserError.Of(UserErrorCode.PairingRemoved));
+        FailAllOf(peerId, UserError.Of(UserErrorCode.PairingRemoved));   // Connecting/Active ve push bekleyenler de düşer
         PeersChanged?.Invoke();
+    }
+
+    /// <summary>Eşin son duruma geçmemiş TÜM aktarımlarını hatayla bitirir ve veri kaydını kapatır (eşleştirme kaldırıldı).</summary>
+    private void FailAllOf(string peerId, UserError message)
+    {
+        State[] list;
+        lock (_lock) list = [.. _states.Values.Where(s => s.PeerId == peerId)];
+        foreach (var s in list)
+        {
+            if (s.IsTerminal) continue;
+            s.Fail(message);
+            s.Registration?.Dispose();
+        }
     }
 
     // ---------------------------------------------------------------- BLE oturumu
@@ -307,6 +331,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
                     flapping = q.Count > IdentityFlapLimit;
                 }
                 _lastPeerByBle[bleId] = session.PeerId;
+                PruneBleTablesLocked(now);
             }
         }
         if (flapping)
@@ -315,7 +340,14 @@ public sealed class TransferCoordinator : IAsyncDisposable
         replaced?.Close();
         foreach (var old in superseded) old.Close();
         if (session.IsKnown && session.Channel.Kind == HandshakeKind.IK)
-            _o.Trusted.NoteSeen(session.PublicKey, session.BleId, now);
+        {
+            // Disk/DPAPI hatası (AV/OneDrive kilidi) oturumu "Yakında" listesinde asılı bırakmasın.
+            try { _o.Trusted.NoteSeen(session.PublicKey, session.BleId, now); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException)
+            {
+                PlatformLog.Write($"NoteSeen yazılamadı: {ex.GetType().Name}");
+            }
+        }
         PeersChanged?.Invoke();
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct, session.Closed);
@@ -325,7 +357,14 @@ public sealed class TransferCoordinator : IAsyncDisposable
                 new HelloMessage(Prefix.CurrentVersion, _o.LocalName, ["tcp", "hotspot"], null, LocalBtAudio), cts.Token).ConfigureAwait(false);
             while (true)
             {
-                var msg = await session.Channel.ReceiveAsync(cts.Token).ConfigureAwait(false);
+                SecureMessage? msg;
+                try { msg = await session.Channel.ReceiveAsync(cts.Token).ConfigureAwait(false); }
+                catch (SignalDecodeException ex)
+                {
+                    // DECISIONS 1: bilinmeyen `t` / çözme hatası yalnız o mesajı atar; oturum düşmez (ileri uyumluluk).
+                    PlatformLog.Write($"BLE: çözülemeyen sinyal mesajı atıldı ({ex.Message}).");
+                    continue;
+                }
                 if (msg is null) break;
                 if (msg.Frame is { } frame)
                 {
@@ -357,21 +396,25 @@ public sealed class TransferCoordinator : IAsyncDisposable
         }
     }
 
+    private const int MaxTrackedBleIds = 256;
+
+    /// <summary>BLE kimliği tabloları (rastgele adres dönerse) sınırsız büyümesin.</summary>
+    private void PruneBleTablesLocked(DateTimeOffset now)
+    {
+        if (_lastPeerByBle.Count <= MaxTrackedBleIds && _identityChanges.Count <= MaxTrackedBleIds) return;
+        var live = _sessions.Values.Select(s => s.BleId).Where(b => b is not null).ToHashSet();
+        foreach (var key in _lastPeerByBle.Keys.Where(k => !live.Contains(k)).ToArray()) _lastPeerByBle.Remove(key);
+        foreach (var kv in _identityChanges.Where(kv => kv.Value.Count == 0 || now - kv.Value.Peek() > IdentityFlapWindow).ToArray())
+            _identityChanges.Remove(kv.Key);
+    }
+
     private void Dispatch(PeerSession session, SignalMessage signal)
     {
         switch (signal)
         {
             case HelloMessage h:
                 session.SetHelloName(PairingService.SanitizeName(h.Name));
-                // Kimliği doğrulanmış (IK; eşli/tanıdık) oturumda değişen ad kayda yansır. XX'te ad yalnız onaydan sonra kaydedilir.
-                if (session.IsKnown && session.Channel.Kind == HandshakeKind.IK
-                    && TrustedDevices.CleanName(h.Name) is { } newName
-                    && _o.Trusted.UpdateName(session.PublicKey, newName))
-                {
-                    session.SetRegisteredName(newName);
-                    PlatformLog.Write("Kayıtlı cihaz adı güncellendi.");
-                    PeersChanged?.Invoke();
-                }
+                // PROTOCOL §0: kayıtlı ad eşleştirme anındaki addır; hello.name kaydı DEĞİŞTİRMEZ (başka cihazın adı taklit edilemesin).
                 session.Wifi = h.Wifi;
                 OnPeerWifiChanged(session);
                 session.BtAudio = h.BtAudio;
@@ -435,10 +478,19 @@ public sealed class TransferCoordinator : IAsyncDisposable
         PlatformLog.Write($"path {s.Id}: {p.Result}");
         s.Touch(_o.Time);
         if (s.ConnectionActive) return;
-        if (p.Result is PathResult.TcpFail or PathResult.HotspotFail)
-            s.PathFailed.TrySetResult(p.Result);
+        if (p.Result == PathResult.TcpFail) { s.AddrFailed = true; EvaluatePathFailed(s, p.Result); }
+        else if (p.Result == PathResult.HotspotFail) { s.HotspotFailed = true; EvaluatePathFailed(s, p.Result); }
         else if (p.Result == PathResult.RelayFail)
             s.ReportRelayFail();
+    }
+
+    /// <summary>DECISIONS 4: yalnız gönderilmiş (claimed) TÜM yollar başarısız olunca sonraki yola geçilir.</summary>
+    private static void EvaluatePathFailed(State s, string last)
+    {
+        var addr = s.AddrClaimed != 0;
+        var hs = s.HotspotClaimed != 0;
+        if (!addr && !hs) return;
+        if ((!addr || s.AddrFailed) && (!hs || s.HotspotFailed)) s.PathFailed.TrySetResult(last);
     }
 
     private void FailNegotiating(string peerId, UserError message)
@@ -521,8 +573,14 @@ public sealed class TransferCoordinator : IAsyncDisposable
         {
             try
             {
-                await Task.Delay(_o.Timeouts.Connect, _o.Time, watchdogCts.Token).ConfigureAwait(false);
-                if (!ble.FrameSeen) s.Fail(UserError.Of(UserErrorCode.BleNoResponse));
+                while (true)
+                {
+                    await Task.Delay(_o.Timeouts.BleIdle, _o.Time, watchdogCts.Token).ConfigureAwait(false);
+                    if (!ble.FrameSeen) { s.Fail(UserError.Of(UserErrorCode.BleNoResponse)); return; }
+                    if (ble.TakeFrameSeenSinceLastCheck()) continue;
+                    s.Fail(UserError.Of(UserErrorCode.BleNoResponse));   // ilk çerçeveden sonra da sessizlik: düşer
+                    return;
+                }
             }
             catch (OperationCanceledException) { }
         }, CancellationToken.None);
@@ -717,6 +775,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     {
         State[] waiting;
         lock (_lock) waiting = _pushWaiters.TryGetValue(session.PeerId, out var list) ? [.. list] : [];
+        if (!session.IsKnown) return;   // kaldırılmış/bilinmeyen cihaz bekleyen teklifi tetikleyemez
         foreach (var s in waiting) s.PhoneArrived.TrySetResult(session);
     }
 
@@ -737,7 +796,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private async Task RunSenderAsync(State s, PeerSession session)
     {
         var ct = s.Cts.Token;
-        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => s.DualPath);
+        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => KeepExisting(s));
         Update(s, TransferPhase.Negotiating);
         var preview = BuildPreview(s.Files!);
         await session.Channel.SendSignalAsync(new OfferMessage(s.Id, s.Count, s.Total, preview), ct).ConfigureAwait(false);
@@ -786,7 +845,8 @@ public sealed class TransferCoordinator : IAsyncDisposable
         lock (_lock)
         {
             // Hız sınırı + kayıt tek kilit altında: eşzamanlı iki bilinmeyen teklif aynı anda geçemez.
-            if (!known)
+            if (_states.ContainsKey(offer.TransferId)) rejectReason = "duplicate";   // denetim ve ekleme aynı kilitte (üzerine yazma yok)
+            else if (!known)
             {
                 // §2b: bilinmeyen (XX) cihazlar için PeerId'ye değil GENEL sınır (yeni anahtarla aşılamaz):
                 // aynı anda en çok 1 onay bekleyen bilinmeyen teklif ve toplam 3/dk.
@@ -903,7 +963,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
             throw new TransferException(UserError.Of(UserErrorCode.NoDiskSpace));
         }
 
-        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => s.DualPath);
+        s.Registration = _o.Pending.Register(s.Id, s.PeerKey, ch => OnDataConnectionAsync(s, ch), session.Channel.Kind, () => KeepExisting(s));
         Update(s, TransferPhase.Connecting);
         await session.Channel.SendSignalAsync(new AcceptMessage(s.Id), ct).ConfigureAwait(false);
         await RunPathAsync(s, session, ct).ConfigureAwait(false);
@@ -943,11 +1003,35 @@ public sealed class TransferCoordinator : IAsyncDisposable
         }
     }
 
+    /// <summary>İki yol yarışı (addr + hotspot) yalnız ilk <see cref="DualPathRaceWindow"/> boyunca etkin oturumu korur; sonra yeniden bağlanma serbest.</summary>
+    private bool KeepExisting(State s)
+    {
+        if (!s.DualPath) return false;
+        var since = Interlocked.Read(ref s.ActiveSinceTicks);
+        if (since == 0 || _o.Time.GetUtcNow().UtcTicks - since < DualPathRaceWindow.Ticks) return true;
+        s.DualPath = false;
+        return false;
+    }
+
+    private static readonly TimeSpan DualPathRaceWindow = TimeSpan.FromSeconds(10);
+
+    /// <summary>Yedek yola (BLE/aktarma) geçiş: açık yol beklemeleri kapanır, tablo kaydı silinir (DECISIONS 5).</summary>
+    private static void ClosePaths(State s)
+    {
+        s.PathClosed = true;
+        s.Registration?.Dispose();
+        s.Registration = null;
+    }
+
     private async Task SendHotspotPathAsync(State s, PeerSession session, int port, CancellationToken ct)
     {
         if (Interlocked.Exchange(ref s.HotspotClaimed, 1) != 0) return;
-        s.HotspotRequested = true;
-        _o.Hotspot!.TransferStarted();   // boşta zamanlayıcısı bu aktarım bitene kadar durur
+        lock (s.Gate)
+        {
+            if (s.Phase >= TransferPhase.Completed || s.PathClosed) return;
+            s.HotspotRequested = true;
+            _o.Hotspot!.TransferStarted();   // boşta zamanlayıcısı bu aktarım bitene kadar durur (Finish ile aynı kilit: sayaç dengeli)
+        }
         bool started;
         var cfg = _o.HotspotConfig!();
         try
@@ -956,16 +1040,28 @@ public sealed class TransferCoordinator : IAsyncDisposable
         }
         catch (HotspotException ex)
         {
+            s.HotspotFailed = true;
+            EvaluatePathFailed(s, PathResult.HotspotFail);
             throw new PathUnavailableException(UserError.Of(UserErrorCode.HotspotOpenFailed).Then(ex.Error.Parts));
         }
         if (!started)
+        {
+            s.HotspotFailed = true;
+            EvaluatePathFailed(s, PathResult.HotspotFail);
             throw new PathUnavailableException(UserError.Of(UserErrorCode.HotspotInUse));
+        }
 
+        cfg = _o.Hotspot.CurrentConfig ?? cfg;   // süren başka aktarım için yeniden başlatılmadıysa gerçekte geçerli ayar
         var ip = _o.HotspotAddress?.Invoke() ?? "192.168.137.1";
         s.ConnectTimeout = _o.Timeouts.HotspotConnect;
         s.Touch(_o.Time);
         // §6.2: hotspot yalnız kullanıcının onayladığı aktarımda gider (alıcıda onay/otomatik kabul, gönderende kullanıcının seçimi).
-        s.HotspotSent = true;
+        lock (s.Gate)
+        {
+            // Geç kalan gönderim (aktarım bitti / yedek yola geçildi) SSID + parolayı sızdırmaz.
+            if (s.Phase >= TransferPhase.Completed || s.PathClosed) return;
+            s.HotspotSent = true;   // gönderim başladı: bilinmeyen eşse aktarım nasıl biterse bitsin parola yenilenir
+        }
         await session.Channel.SendSignalAsync(new HotspotMessage(s.Id, ip, port, cfg.Ssid, cfg.Passphrase), ct).ConfigureAwait(false);
         PlatformLog.Write($"hotspot gönderildi {s.Id}: {ip}:{port}");
     }
@@ -988,7 +1084,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
 
     /// <summary>Aktarım henüz veri oturumu kurmadı ve BLE/son durumda değil mi (yol beklemesi sürüyor)?</summary>
     private static bool IsWaitingForPath(State s) =>
-        !s.ConnectionActive && !s.EverConnected && !s.IsTerminal && s.Ble is null;
+        !s.ConnectionActive && !s.EverConnected && !s.IsTerminal && s.Ble is null && !s.PathClosed && !s.PathFailed.Task.IsCompleted;
 
     private async Task TrySendExtraAddrAsync(State s, PeerSession session, CancellationToken ct)
     {
@@ -1047,6 +1143,15 @@ public sealed class TransferCoordinator : IAsyncDisposable
     private async Task OnDataConnectionAsync(State s, IFrameChannel channel)
     {
         var gen = Interlocked.Increment(ref s.Generation);
+        // Yeniden bağlanma: eski koşucunun (aynı .part dosyası) bitmesi kısa süre beklenir (bulgu 7).
+        var mine = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? prev;
+        lock (s.Gate) { prev = s.ActiveRun; s.ActiveRun = mine.Task; }
+        if (prev is not null)
+        {
+            try { await prev.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); } catch (Exception) { }
+        }
+        Interlocked.Exchange(ref s.ActiveSinceTicks, _o.Time.GetUtcNow().UtcTicks);
         s.ConnectionActive = true;
         s.EverConnected = true;
         s.Touch(_o.Time);
@@ -1066,7 +1171,15 @@ public sealed class TransferCoordinator : IAsyncDisposable
             }
             if (gen == s.Generation) s.DataDone.TrySetResult(result);
         }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or ProtocolException or NoiseException)
+        catch (ProtocolException ex)
+        {
+            // Protokol ihlali: karşıya zaten CANCEL gitti, yeniden bağlanma beklenmez (bulgu 6).
+            if (gen != s.Generation) return;
+            PlatformLog.Write($"protokol hatası {s.Id}: {ex.Message}");
+            s.ConnectionActive = false;
+            s.Fail(UserError.Of(UserErrorCode.TransferCutWith, "protocol"));
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or NoiseException)
         {
             // Bağlantı kopması (ConnectionLostException dahil), akışın ortasında kesilmesi veya yeni bağlantının eskiyi kapatması:
             // kısmi dosyalar saklanır, aynı transferId ile devam edilebilir (Reconnect süresi içinde).
@@ -1079,6 +1192,20 @@ public sealed class TransferCoordinator : IAsyncDisposable
         catch (OperationCanceledException)
         {
             if (gen == s.Generation) s.DataDone.TrySetResult(new TransferResult(TransferOutcome.Canceled, []));
+        }
+        catch (Exception ex)
+        {
+            // Beklenmeyen her istisna (ör. UnauthorizedAccessException) aktarımı hatayla bitirir; "Active"de takılmaz (bulgu 5).
+            if (gen != s.Generation) return;
+            PlatformLog.Write($"veri oturumu beklenmeyen hata {s.Id}: {ex}");
+            s.ConnectionActive = false;
+            s.Fail(ex is UnauthorizedAccessException or IOException
+                ? UserError.Of(UserErrorCode.TransferFailedWith, ex.Message)
+                : UserError.Of(UserErrorCode.TransferFailedUnexpected));
+        }
+        finally
+        {
+            mine.TrySetResult();
         }
     }
 
@@ -1109,6 +1236,7 @@ public sealed class TransferCoordinator : IAsyncDisposable
         catch (PathUnavailableException ex)
         {
             reason = ex.Error;
+            ClosePaths(s);
         }
 
         // §6: doğrudan yol → etkin nokta → BLE (küçük dosya) → aktarma sunucusu.
@@ -1276,6 +1404,10 @@ public sealed class TransferCoordinator : IAsyncDisposable
             if (s.PathFailed.Task.IsCompleted && !s.ConnectionActive)
                 throw new PathUnavailableException(UserError.Of(UserErrorCode.DirectFailedReported, s.PathFailed.Task.Result?.ToString()));
 
+            // DECISIONS 6: veri oturumu açık ama DataIdle boyunca ilerleme yok → anlaşılır hatayla bitir (yarı açık bağlantı).
+            if (s.ConnectionActive && s.Ble is null && _o.Time.GetUtcNow() - s.LastActivity > _o.Timeouts.DataIdle)
+                throw new TransferException(UserError.Of(UserErrorCode.TransferCutWith, "timeout"));
+
             if (!s.ConnectionActive)
             {
                 var limit = s.EverConnected ? _o.Timeouts.Reconnect : s.ConnectTimeout;
@@ -1405,14 +1537,23 @@ public sealed class TransferCoordinator : IAsyncDisposable
         finally
         {
             s.Registration?.Dispose();
-            if (s.HotspotRequested) _o.Hotspot?.TransferFinished();
-            if (s.HotspotSent && !s.KnownAtStart)
+            bool hotspotRequested, hotspotSent;
+            lock (s.Gate) { hotspotRequested = s.HotspotRequested; hotspotSent = s.HotspotSent; }   // Finish sonrası: yeni gönderim başlayamaz
+            if (hotspotRequested) _o.Hotspot?.TransferFinished();
+            if (hotspotSent && !s.KnownAtStart)
             {
-                // §6.2: eşli/tanıdık olmayan eş SSID + parolayı öğrendi → aktarım bitti/iptal; kalıcı parola yenilenir.
+                // §6.2 / DECISIONS 8: bilinmeyen eş SSID + parolayı öğrendi → aktarım nasıl biterse bitsin parola yenilenir.
                 try { _o.RotateHotspotPassphrase?.Invoke(); PlatformLog.Write("Etkin nokta parolası yenilendi (bilinmeyen eş)."); }
                 catch (Exception ex) { PlatformLog.Write($"Etkin nokta parolası yenilenemedi: {ex.Message}"); }
+                try { _o.Hotspot?.PassphraseRotated(); } catch (Exception ex) { PlatformLog.Write($"Etkin nokta kapatılamadı: {ex.Message}"); }
             }
             ReleaseBle(s);
+            // Bulgu 20: başarısız/iptal alıcı aktarımın kısmi dosyaları hemen silinir (devam edilemez; en iyi çaba).
+            if (s.Role == TransferRole.Receiver && s.Store is { } store && s.Phase is TransferPhase.Failed or TransferPhase.Canceled)
+            {
+                try { await store.DeleteTransferAsync(DeviceId.ToHex(DeviceId.FromPublicKey(s.PeerKey)), s.Id, CancellationToken.None).ConfigureAwait(false); }
+                catch (Exception ex) { PlatformLog.Write($"Kısmi dosyalar silinemedi: {ex.Message}"); }
+            }
         }
     }
 
@@ -1475,6 +1616,9 @@ public sealed class TransferCoordinator : IAsyncDisposable
             if (phase == TransferPhase.Completed) s.Progress = 1;
             s.Speed = 0;
         }
+        // DECISIONS 5: son durumda yan görevler (ek yol, etkin nokta başlatma) durur, veri kaydı kapanır.
+        try { s.Cts.Cancel(); } catch (ObjectDisposedException) { }
+        try { s.Registration?.Dispose(); } catch (Exception) { }
         PlatformLog.Write($"aktarım bitti {s.Id}: {phase}{(error is null ? "" : " — " + error)}");
         var snap = Snapshot(s);
         try { TransferUpdated?.Invoke(snap); }
@@ -1546,10 +1690,19 @@ public sealed class TransferCoordinator : IAsyncDisposable
         public FileSystemPartialStore? Store;
         public IDisposable? Registration;
         public string? RejectReason;
-        public bool HotspotRequested;
-        public volatile bool HotspotSent;
+        public bool HotspotRequested;   // Gate altında
+        public bool HotspotSent;
         public int HotspotClaimed;
         public int AddrClaimed;
+        /// <summary>Yol başına başarısızlık (DECISIONS 4): tcp_fail yalnız addr, hotspot_fail yalnız etkin nokta yolunu kapatır.</summary>
+        public volatile bool AddrFailed;
+        public volatile bool HotspotFailed;
+        /// <summary>Yedek yola geçildi: yol beklemeleri kapalı, ek yol gönderilmez.</summary>
+        public volatile bool PathClosed;
+        /// <summary>Son veri oturumunun başlangıcı (UTC ticks; 0: henüz yok) — çift yol koruma penceresi için.</summary>
+        public long ActiveSinceTicks;
+        /// <summary>Son veri oturumu koşucusu (yeniden bağlanmada eskisi beklenir).</summary>
+        public Task? ActiveRun;
         /// <summary>Hem addr hem hotspot gönderildi: yol yarışı; ikinci veri bağlantısı reddedilir.</summary>
         public volatile bool DualPath;
         /// <summary>Teklif/gönderim anında eş eşli veya tanıdık mıydı (onay sonrası "tanıdık" yapılması bunu değiştirmez).</summary>

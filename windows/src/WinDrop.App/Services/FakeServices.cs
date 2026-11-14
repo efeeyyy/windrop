@@ -7,7 +7,7 @@ namespace WinDrop.App.Services;
 /// <summary>Sahte cihaz servisi (ağ/BLE yok): tasarım ve deneme içindir.</summary>
 public sealed class FakeDeviceService : IDeviceService
 {
-    private readonly SynchronizationContext _ui = SynchronizationContext.Current ?? new SynchronizationContext();
+    private readonly SynchronizationContext _ui = UiContext.Capture();
     private readonly List<DeviceInfo> _devices =
     [
         new("fake-1", "Efe'nin iPhone'u", true),
@@ -54,7 +54,7 @@ public sealed class FakeDeviceService : IDeviceService
 /// <summary>Sahte aktarım servisi: ilerleme üretir, dosya yazmaz.</summary>
 public sealed class FakeTransferService : ITransferService
 {
-    private readonly SynchronizationContext _ui = SynchronizationContext.Current ?? new SynchronizationContext();
+    private readonly SynchronizationContext _ui = UiContext.Capture();
     private readonly Func<string> _downloadFolder;
     private readonly IDeviceService _devices;
     private readonly Dictionary<string, CancellationTokenSource> _running = [];

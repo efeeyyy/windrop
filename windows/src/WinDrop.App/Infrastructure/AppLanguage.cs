@@ -15,6 +15,12 @@ public static class AppLanguage
     public const string Turkish = "tr";
     public const string English = "en";
 
+    /// <summary>Kullanıcının Windows görüntüleme dili (Apply bunu değiştirmeden önce yakalanır; kurulu OS dili değil).</summary>
+    private static readonly CultureInfo DisplayUi = CultureInfo.CurrentUICulture;
+
+    /// <summary>Çalışan sürecin uygulanan dil AYARI (<c>system</c>/<c>tr</c>/<c>en</c>); "yeniden başlat" uyarısı bununla karşılaştırılır.</summary>
+    public static string Applied { get; private set; } = Auto;
+
     public static string Normalize(string? language) => language?.Trim().ToLowerInvariant() switch
     {
         Turkish => Turkish,
@@ -27,13 +33,14 @@ public static class AppLanguage
     {
         Turkish => Turkish,
         English => English,
-        _ => (systemUi ?? CultureInfo.InstalledUICulture).TwoLetterISOLanguageName == "tr" ? Turkish : English,
+        _ => (systemUi ?? DisplayUi).TwoLetterISOLanguageName == "tr" ? Turkish : English,
     };
 
     /// <summary>Ayara göre iş parçacığı ve varsayılan kültürleri ayarlar (pencereler açılmadan önce çağrılır).</summary>
     public static void Apply(string? language)
     {
         var lang = Normalize(language);
+        Applied = lang;
         var ui = CultureInfo.GetCultureInfo(Resolve(lang) == Turkish ? "tr-TR" : "en-US");
         CultureInfo.DefaultThreadCurrentUICulture = ui;
         CultureInfo.CurrentUICulture = ui;

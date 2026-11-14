@@ -262,4 +262,33 @@ public class AppSettingsTests
         Assert.Equal(AppSettings.DefaultDownloadFolder(), s.DownloadFolder);
         Assert.Equal(AppSettings.DefaultAutoAcceptMaxBytes, s.AutoAcceptMaxBytes);
     }
+
+    [Fact]
+    public void Utf8Bom_Settings_Are_Read()
+    {
+        using var dir = new TempDir();
+        var path = Path.Combine(dir.Path, "settings.json");
+        File.WriteAllText(path, "{\"language\":\"en\",\"downloadFolder\":\"D:\\\\Gelen\"}", new System.Text.UTF8Encoding(true));
+        Assert.Equal(0xEF, File.ReadAllBytes(path)[0]);
+        var s = AppSettings.Load(path);
+        Assert.Equal("en", s.Language);
+        Assert.Equal(@"D:\Gelen", s.DownloadFolder);
+        Assert.False(File.Exists(path + ".corrupt"));
+    }
+
+    [Fact]
+    public void Corrupt_Settings_Are_Backed_Up_Not_Overwritten()
+    {
+        using var dir = new TempDir();
+        var path = Path.Combine(dir.Path, "settings.json");
+        File.WriteAllText(path, "{ not json");
+        var problems = new List<string>();
+        var s = AppSettings.Load(path, problems.Add);
+        Assert.Equal("system", s.Language);
+        Assert.Single(problems);
+        Assert.False(File.Exists(path));
+        Assert.Equal("{ not json", File.ReadAllText(path + ".corrupt"));
+        s.Save(path);   // sonraki kayıt yedeğe dokunmaz
+        Assert.Equal("{ not json", File.ReadAllText(path + ".corrupt"));
+    }
 }

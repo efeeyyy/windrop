@@ -55,6 +55,24 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
     /// <summary>WinDrop etkin noktayı açtı ve henüz kapatmadı.</summary>
     public bool IsOwned => _owned;
 
+    /// <summary>Gerçekte geçerli WinDrop etkin nokta ayarı (açık değilse null); <c>hotspot</c> iletisi bunu taşımalı.</summary>
+    public HotspotConfig? CurrentConfig => _owned ? _activeConfig : null;
+
+    /// <summary>
+    /// Bilinmeyen eşe verilen parola yenilendi: başka aktarım yoksa etkin nokta hemen kapatılır (eski parolayla boşta açık kalmasın).
+    /// </summary>
+    public void PassphraseRotated()
+    {
+        bool idle;
+        lock (_timerLock) idle = _activeTransfers == 0 && _owned;
+        if (!idle) return;
+        _ = Task.Run(async () =>
+        {
+            try { await StopAsync().ConfigureAwait(false); }
+            catch (Exception ex) { PlatformLog.Write($"Etkin nokta kapatılamadı: {ex.Message}"); }
+        });
+    }
+
     /// <summary>Etkin nokta boşta süresi dolduğu için kapandığında (başarılı/başarısız).</summary>
     public event Action<Exception?>? IdleStopped;
 
@@ -89,6 +107,11 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
             {
                 if (!_owned) return false; // kullanıcının kendi etkin noktası: dokunma
                 if (_activeConfig is null || _activeConfig == config) { ArmIdleTimer(); return true; }
+                // Başka bir aktarım (çağıran kendisi sayaçta: >1) eski parolayla etkin noktayı kullanıyor: yeniden başlatma onu koparır.
+                // Geçerli ayar CurrentConfig ile döner; yeni parola yalnız etkin nokta boşaldıktan sonra uygulanır.
+                bool othersActive;
+                lock (_timerLock) othersActive = _activeTransfers > 1;
+                if (othersActive) { ArmIdleTimer(); return true; }
                 // Parola yenilendi (PROTOCOL §6.2): açık kalan etkin nokta eski parolayla çalışıyor; yenisiyle yeniden başlat.
                 try
                 {
@@ -112,8 +135,10 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
             if (state == TetheringOperationalState.InTransition)
                 throw new HotspotException(UserError.Of(UserErrorCode.HotspotInTransition));
 
-            var original = Snapshot(mgr.GetCurrentAccessPointConfiguration());
-            SaveBackup(original);
+            // _owned iken etkin nokta dışarıdan kapatılmış olabilir: o anki ayar WinDrop'unkidir, kullanıcının özgün yedeği ezilmez.
+            var original = _owned ? LoadBackup() ?? Snapshot(mgr.GetCurrentAccessPointConfiguration())
+                                  : Snapshot(mgr.GetCurrentAccessPointConfiguration());
+            if (!_owned) SaveBackup(original);
             _owned = true;
             try
             {
@@ -129,7 +154,11 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
                 _owned = false;
                 try { await TryStopAsync(mgr).ConfigureAwait(false); } catch (Exception) { }
                 try { await RestoreAsync(mgr, original).ConfigureAwait(false); DeleteBackup(); }
-                catch (Exception rex) { throw new AggregateException("Etkin nokta başlatılamadı ve eski ayar geri yüklenemedi (yedek dosyada).", ex, rex); }
+                catch (Exception rex)
+                {
+                    throw new HotspotException(UserError.Of(UserErrorCode.HotspotStartFailed, "eski ayar geri yüklenemedi (yedek dosyada): " + rex.Message),
+                        new AggregateException(ex, rex));
+                }
                 if (ex is HotspotException) throw;
                 if (ex is OperationCanceledException) throw;
                 throw new HotspotException(UserError.Of(UserErrorCode.HotspotStartFailed, ex.Message), ex);

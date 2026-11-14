@@ -291,16 +291,21 @@ public sealed class BleSignalServer : IAsyncDisposable
         }
 
         /// <summary>PROTOCOL §3a: <c>WDR</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>
-        public async ValueTask SendResetAsync(CancellationToken cancellationToken)
+        public ValueTask SendResetAsync(CancellationToken cancellationToken) => NotifyMarkerAsync(BleResync.Marker, "WDR");
+
+        /// <summary>DECISIONS 2: <c>WDU</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>
+        public ValueTask SendUnknownAsync(CancellationToken cancellationToken) => NotifyMarkerAsync(BleResync.UnknownMarker, "WDU");
+
+        private async ValueTask NotifyMarkerAsync(byte[] marker, string name)
         {
             var host = server._host;
             var client = FindClient();
             if (host is null || client is null) return;
             var writer = new DataWriter();
-            writer.WriteBytes(BleResync.Marker);
+            writer.WriteBytes(marker);
             var result = await host.P2c.NotifyValueAsync(writer.DetachBuffer(), client);
             if (result.Status != GattCommunicationStatus.Success)
-                throw new IOException($"WDR bildirimi gönderilemedi ({result.Status}).");
+                throw new IOException($"{name} bildirimi gönderilemedi ({result.Status}).");
         }
 
         public async ValueTask<byte[]?> ReceiveAsync(CancellationToken cancellationToken)

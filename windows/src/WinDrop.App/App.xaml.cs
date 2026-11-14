@@ -1,4 +1,7 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Media;
 using Microsoft.Win32;
 using WinDrop.App.Infrastructure;
 using WinDrop.App.Services;
@@ -39,9 +42,13 @@ public partial class App : Application, IAppShell
         {
             AppLog.Write($"yakalanmamış hata: {args.Exception}");
             args.Handled = true;
+            // Komut sessizce başarısız olmasın: kalıcı bantta göster (günlük açılabilir).
+            _mainVm?.ShowNotice(Strings.Get("Main.UnexpectedError"));
         };
+        SessionEnding += (_, _) => { if (_main is not null) _main.AllowClose = true; };   // oturum kapanırken "kapanmayı engelliyor" çıkmasın
+        ApplyThemeColors();
 
-        _settings = AppSettings.Load();
+        _settings = Program.Settings ?? AppSettings.Load(onProblem: AppLog.Write);
         PlatformLog.Sink = AppLog.Write;
         FakeTransferService? fakeTransfers = null;
         if (Environment.GetEnvironmentVariable("WINDROP_FAKE") == "1")
@@ -62,6 +69,7 @@ public partial class App : Application, IAppShell
         }
         _transfers.OfferReceived += OnOfferReceived;
         _transfers.RelayApprovalRequested += OnRelayApprovalRequested;
+        _transfers.Transfers.CollectionChanged += OnTransfersChanged;
 
         _mainVm = new MainViewModel(_devices, _transfers, this);
         _main = new MainWindow(_mainVm);
@@ -75,9 +83,11 @@ public partial class App : Application, IAppShell
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { AppLog.Write($"ayar kaydedilemedi: {ex.Message}"); }
         };
 
-        _tray = new TrayIcon(ShowMain, PickAndStage, ExitApp);
+        _tray = new TrayIcon(ShowMain, PickAndStage, () => ExitApp(confirm: true));
 
         _instance.StartServer(request => Dispatcher.BeginInvoke(() => HandleRequest(request)));
+
+        if (Program.SettingsProblem is not null) _mainVm.ShowNotice(Strings.Get("Main.SettingsProblem"));
 
         if (_options.SendPaths.Count > 0) HandleRequest(_options);
         else if (!_options.Hidden) ShowMain();
@@ -86,14 +96,39 @@ public partial class App : Application, IAppShell
             fakeTransfers.SimulateIncomingOffer();
     }
 
-    private static async Task StartRuntimeAsync(WinDropRuntime runtime)
+    /// <summary>Hata rengi temaya göre: açık temada koyu kırmızı (AA kontrast), koyu temada açık kırmızı.</summary>
+    private void ApplyThemeColors()
+    {
+        bool light = true;
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            light = key?.GetValue("AppsUseLightTheme") is not 0;
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException) { }
+        Resources["ErrorBrush"] = new SolidColorBrush(light ? Color.FromRgb(0xC4, 0x2B, 0x1C) : Color.FromRgb(0xFF, 0x99, 0xA4));
+    }
+
+    /// <summary>Platform servisleri (BLE, TCP, etkin nokta) başlayamazsa kullanıcıya kalıcı bantla bildirir.</summary>
+    private async Task StartRuntimeAsync(WinDropRuntime runtime)
     {
         try { await runtime.StartAsync(); }
-        catch (Exception ex) { AppLog.Write($"platform servisleri başlatılamadı: {ex}"); }
+        catch (Exception ex)
+        {
+            AppLog.Write($"platform servisleri başlatılamadı: {ex}");
+            _ = Dispatcher.BeginInvoke(() =>
+                _mainVm?.ShowNotice(Strings.Format("Main.ServiceFailed", ex.Message), canRestart: true));
+        }
     }
 
     private void HandleRequest(AppOptions request)
     {
+        if (request.Quit)
+        {
+            AppLog.Write("kapatma isteği alındı (--quit).");
+            ExitApp(confirm: false);   // kurulum/kaldırma betiği: onay sorulmaz
+            return;
+        }
         if (request.SendPaths.Count > 0)
         {
             AppLog.Write($"gönderim isteği işleniyor: {request.SendPaths.Count} yol ({string.Join("; ", request.SendPaths)})");
@@ -115,14 +150,23 @@ public partial class App : Application, IAppShell
         _mainVm.StageFiles(PickFiles());
     }
 
-    private void RestartApp()
+    public void RestartApp()
     {
+        if (!ConfirmQuitWithActiveTransfers()) return;
         RestartRequested = true;
-        ExitApp();
+        ExitApp(confirm: false);
     }
 
-    private void ExitApp()
+    /// <summary>Devam eden aktarım varsa çıkmadan önce (uygulama dilinde) sorar.</summary>
+    private bool ConfirmQuitWithActiveTransfers()
     {
+        if (!_transfers.Transfers.Any(t => t.Status is TransferStatus.Waiting or TransferStatus.Active)) return true;
+        return ConfirmDialog.Ask(_main, Strings.Get("Tray.ExitConfirm"), Strings.Get("Dialog.Yes"), Strings.Get("Dialog.No"));
+    }
+
+    private void ExitApp(bool confirm)
+    {
+        if (confirm && !ConfirmQuitWithActiveTransfers()) return;
         _main.AllowClose = true;
         _tray?.Dispose();
         _tray = null;
@@ -132,6 +176,8 @@ public partial class App : Application, IAppShell
     protected override void OnExit(ExitEventArgs e)
     {
         _tray?.Dispose();
+        // Platform kapanırken (en çok 8 sn) pencereler donuk kalmasın: önce gizle.
+        foreach (Window w in Windows.OfType<Window>().ToArray()) w.Hide();
         if (_runtime is not null)
         {
             try { Task.Run(() => _runtime.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(8)); }
@@ -144,7 +190,7 @@ public partial class App : Application, IAppShell
 
     public void OpenPairing()
     {
-        if (_pairing != null) { _pairing.Activate(); return; }
+        if (_pairing != null) { Restore(_pairing); return; }
         var window = new PairingWindow(_devices);
         if (_main.IsVisible) window.Owner = _main;
         window.Closed += (_, _) => _pairing = null;
@@ -154,14 +200,25 @@ public partial class App : Application, IAppShell
 
     public void OpenSettings()
     {
-        if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
-        var shell = new ShellIntegration(Environment.ProcessPath ?? throw new InvalidOperationException("Exe yolu yok."));
+        if (_settingsWindow != null) { Restore(_settingsWindow); return; }
+        // Ayrı deneme örneği (WINDROP_INSTANCE) gerçek SendTo kısayoluna / Run anahtarına dokunmaz.
+        ShellIntegration? shell = Environment.GetEnvironmentVariable("WINDROP_INSTANCE") is { Length: > 0 }
+            ? null
+            : new ShellIntegration(Environment.ProcessPath ?? throw new InvalidOperationException("Exe yolu yok."));
         var window = new SettingsWindow(new SettingsViewModel(_settings, shell, _devices, RestartApp));
         if (_main.IsVisible) window.Owner = _main;
         window.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow = window;
         window.Show();
     }
+
+    private static void Restore(Window window)
+    {
+        if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
+        window.Activate();
+    }
+
+    public void OpenLog() => Explorer.Reveal(AppLog.FilePath);
 
     public IReadOnlyList<string> PickFiles()
     {
@@ -173,6 +230,28 @@ public partial class App : Application, IAppShell
     {
         var dialog = new OpenFolderDialog { Multiselect = true, Title = Strings.Get("Dialog.PickSendFolder") };
         return dialog.ShowDialog() == true ? dialog.FolderNames : [];
+    }
+
+    // ---- Alınan dosya bildirimi ----
+
+    private void OnTransfersChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != NotifyCollectionChangedAction.Add || e.NewItems is null) return;
+        foreach (TransferItem item in e.NewItems)
+        {
+            if (item.Direction != TransferDirection.Receive) continue;
+            bool notified = false;
+            item.PropertyChanged += (_, args) =>
+            {
+                if (notified || args.PropertyName != nameof(TransferItem.Status) || item.Status != TransferStatus.Completed) return;
+                notified = true;
+                // Pencere görünür/öndeyken satır zaten görünür; gizliyken (tepside) bildirim ver.
+                if (_main.IsVisible && _main.IsActive) return;
+                var text = Strings.Plural("Tray.Received", item.FileCount, item.DeviceName, item.FileCount);
+                var path = item.SavedPath;
+                _tray?.ShowBalloon(text, () => { if (!string.IsNullOrEmpty(path)) Explorer.Reveal(path); else ShowMain(); });
+            };
+        }
     }
 
     // ---- Gelen teklif ----

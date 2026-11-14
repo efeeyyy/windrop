@@ -3,11 +3,12 @@ using WinForms = System.Windows.Forms;
 
 namespace WinDrop.App.Infrastructure;
 
-/// <summary>Bildirim alanı simgesi: Aç, Gönder…, Çıkış. Çift tık = Aç.</summary>
+/// <summary>Bildirim alanı simgesi: Aç, Gönder…, Çıkış. Tek tık = Aç.</summary>
 public sealed class TrayIcon : IDisposable
 {
     private readonly WinForms.NotifyIcon _icon;
     private readonly System.Drawing.Icon _drawingIcon;
+    private Action? _balloonClick;
 
     public TrayIcon(Action open, Action send, Action exit)
     {
@@ -29,14 +30,17 @@ public sealed class TrayIcon : IDisposable
             ContextMenuStrip = menu,
             Visible = true,
         };
-        _icon.MouseDoubleClick += (_, e) => { if (e.Button == WinForms.MouseButtons.Left) open(); };
+        _icon.MouseClick += (_, e) => { if (e.Button == WinForms.MouseButtons.Left) open(); };
+        _icon.BalloonTipClicked += (_, _) => _balloonClick?.Invoke();
     }
 
-    public void ShowBalloon(string text)
+    /// <summary>Bildirim balonu; <paramref name="onClick"/> balona tıklanınca çalışır (ör. klasörde göster).</summary>
+    public void ShowBalloon(string text, Action? onClick = null)
     {
+        _balloonClick = onClick;
         _icon.BalloonTipTitle = Strings.Get("App.Title");
         _icon.BalloonTipText = text;
-        _icon.ShowBalloonTip(2000);
+        _icon.ShowBalloonTip(4000);
     }
 
     public void Dispose()

@@ -1,4 +1,4 @@
-# Kaynak PNG'den WPF uyumlu .ico üretir: 16–128 px BMP (DIB, 32 bit BGRA + AND maskesi), 256 px PNG.
+﻿# Kaynak PNG'den WPF uyumlu .ico üretir: 16–128 px BMP (DIB, 32 bit BGRA + AND maskesi), 256 px PNG.
 # WPF'nin simge çözücüsü küçük boyutlarda PNG sıkıştırmalı girdileri okuyamıyor (0x88982F60).
 param(
     [string]$Source = "$PSScriptRoot\..\ios\App\Assets.xcassets\AppIcon.appiconset\AppIcon.png",

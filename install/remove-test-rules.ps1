@@ -1,4 +1,4 @@
-#Requires -RunAsAdministrator
+﻿#Requires -RunAsAdministrator
 <#
   NetProbe denemelerinde elle eklenen eski test kurallarını kaldırır. Yönetici gerektirir.
 #>

@@ -17,7 +17,7 @@
   <data name="Main.Devices" xml:space="preserve"><value>Yakındaki cihazlar</value></data>
   <data name="Main.NoDevices" xml:space="preserve"><value>Yakında cihaz görünmüyor. Her iki cihazda da WinDrop’un ve Bluetooth’un açık olduğundan emin olun (iPhone’da WinDrop ön planda olmalı).</value></data>
   <data name="Main.Transfers" xml:space="preserve"><value>Aktarımlar</value></data>
-  <data name="Main.NoTransfers" xml:space="preserve"><value>Henüz aktarım yok.</value></data>
+  <data name="Main.NoTransfers" xml:space="preserve"><value>Henüz aktarım yok. Dosyaları yukarıya bırakın ya da “Dosya seç…” düğmesine basın.</value></data>
   <data name="Main.AddPhone" xml:space="preserve"><value>iPhone eşleştir (isteğe bağlı)</value></data>
   <data name="Main.Settings" xml:space="preserve"><value>Ayarlar</value></data>
   <data name="Main.Cancel" xml:space="preserve"><value>İptal</value></data>
@@ -28,8 +28,8 @@
   <data name="Device.Away" xml:space="preserve"><value>Uzakta</value></data>
   <data name="Device.Push" xml:space="preserve"><value>Bildirimle ulaşılabilir</value></data>
 
-  <data name="Transfer.To" xml:space="preserve"><value>{0} cihazına</value></data>
-  <data name="Transfer.From" xml:space="preserve"><value>{0} cihazından</value></data>
+  <data name="Transfer.To" xml:space="preserve"><value>Alıcı: {0}</value></data>
+  <data name="Transfer.From" xml:space="preserve"><value>Gönderen: {0}</value></data>
   <data name="Transfer.Detail" xml:space="preserve"><value>{0} dosya · {1}</value></data>
   <data name="Status.Waiting" xml:space="preserve"><value>Bekleniyor</value></data>
   <data name="Status.PushSent" xml:space="preserve"><value>Telefona bildirim gönderildi — bekleniyor</value></data>
@@ -61,7 +61,7 @@
   <data name="Offer.Unknown" xml:space="preserve"><value>Bu cihaz daha önce tanınmıyor; kabul etmezseniz hiçbir şey kaydedilmez.</value></data>
   <data name="Relay.Title" xml:space="preserve"><value>İnternet üzerinden aktarım</value></data>
   <data name="Relay.Intro" xml:space="preserve"><value>‘{0}’ ile doğrudan bağlantı kurulamadı.</value></data>
-  <data name="Relay.Warning" xml:space="preserve"><value>Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir. ({0}) Uçtan uca şifreli.</value></data>
+  <data name="Relay.Warning" xml:space="preserve"><value>Boyut: {0}. Bu gönderim internet (Wi-Fi veya hücresel veri) kotanızdan gidecek; uçtan uca şifrelidir.</value></data>
   <data name="Relay.Confirm" xml:space="preserve"><value>Onayla</value></data>
   <data name="Relay.Cancel" xml:space="preserve"><value>İptal</value></data>
   <data name="Offer.Timeout" xml:space="preserve"><value>{0} sn içinde yanıt verilmezse reddedilir.</value></data>
@@ -179,4 +179,38 @@
   <data name="Err.HsBtOff" xml:space="preserve"><value>Bluetooth kapalı.</value></data>
   <data name="Err.HsLimited" xml:space="preserve"><value>Ağ bağlantısı sınırlı; etkin nokta açılamadı.</value></data>
   <data name="Err.HsStartStatus" xml:space="preserve"><value>Mobil etkin nokta başlatılamadı ({0}).</value></data>
+  <data name="Main.StagedFormat.One" xml:space="preserve"><value>{0} öğe gönderilmeye hazır</value></data>
+  <data name="Transfer.Detail.One" xml:space="preserve"><value>{0} dosya · {1}</value></data>
+  <data name="Offer.Text.One" xml:space="preserve"><value>‘{0}’ size {1} dosya göndermek istiyor ({2}).</value></data>
+  <data name="Main.OpenLog" xml:space="preserve"><value>Günlüğü aç</value></data>
+  <data name="Main.Restart" xml:space="preserve"><value>Yeniden başlat</value></data>
+  <data name="Main.Dismiss" xml:space="preserve"><value>Kapat</value></data>
+  <data name="Main.ServiceFailed" xml:space="preserve"><value>Bluetooth veya ağ servisleri başlatılamadı: {0}. Cihazlar görünmeyebilir; Bluetooth’u ve güvenlik duvarını kontrol edip uygulamayı yeniden başlatın.</value></data>
+  <data name="Main.UnexpectedError" xml:space="preserve"><value>Beklenmeyen bir hata oluştu. Ayrıntılar günlükte.</value></data>
+  <data name="Main.SettingsProblem" xml:space="preserve"><value>Ayar dosyası bozuktu; “.corrupt” olarak yedeklendi ve varsayılan ayarlar kullanılıyor.</value></data>
+  <data name="Main.RemoveStagedNamed" xml:space="preserve"><value>‘{0}’ öğesini listeden çıkar</value></data>
+  <data name="Main.ClearFinished" xml:space="preserve"><value>Bitenleri temizle</value></data>
+  <data name="Main.ProgressNamed" xml:space="preserve"><value>{0} aktarım ilerlemesi</value></data>
+  <data name="Main.CancelNamed" xml:space="preserve"><value>{0} aktarımını iptal et</value></data>
+  <data name="Main.ShowNamed" xml:space="preserve"><value>{0} aktarımını klasörde göster</value></data>
+  <data name="Transfer.Sent" xml:space="preserve"><value>Gönderilen</value></data>
+  <data name="Transfer.Received" xml:space="preserve"><value>Alınan</value></data>
+  <data name="Transfer.Percent" xml:space="preserve"><value>%{0:0}</value></data>
+  <data name="Transfer.NameMore" xml:space="preserve"><value>{0} +{1} dosya daha</value></data>
+  <data name="Pair.StartFailed" xml:space="preserve"><value>Eşleştirme başlatılamadı: {0}</value></data>
+  <data name="Pair.QrName" xml:space="preserve"><value>Eşleştirme QR kodu</value></data>
+  <data name="Offer.Files" xml:space="preserve"><value>Dosyalar: {0}</value></data>
+  <data name="Offer.FilesMore" xml:space="preserve"><value>Dosyalar: {0} ve {1} dosya daha</value></data>
+  <data name="Relay.Timeout" xml:space="preserve"><value>{0} sn içinde yanıt verilmezse iptal edilir.</value></data>
+  <data name="Settings.RemoveNamed" xml:space="preserve"><value>‘{0}’ eşleşmesini kaldır</value></data>
+  <data name="Settings.Version" xml:space="preserve"><value>Sürüm {0}</value></data>
+  <data name="Settings.FolderInvalid" xml:space="preserve"><value>Geçerli bir klasör yolu girin (ör. C:\Users\Ad\Downloads\WinDrop).</value></data>
+  <data name="Settings.FolderCreateFailed" xml:space="preserve"><value>Klasör oluşturulamadı: {0}</value></data>
+  <data name="Settings.MaxInvalid" xml:space="preserve"><value>1 ile {0} arasında bir tam sayı girin.</value></data>
+  <data name="Settings.RelayInvalid" xml:space="preserve"><value>Geçersiz adres. “host” ya da “wss://host” biçiminde girin.</value></data>
+  <data name="Dialog.Yes" xml:space="preserve"><value>Evet</value></data>
+  <data name="Dialog.No" xml:space="preserve"><value>Hayır</value></data>
+  <data name="Tray.ExitConfirm" xml:space="preserve"><value>Devam eden aktarımlar var; çıkarsanız iptal edilir. Çıkılsın mı?</value></data>
+  <data name="Tray.Received" xml:space="preserve"><value>‘{0}’ cihazından {1} dosya alındı. Klasörde göstermek için tıklayın.</value></data>
+  <data name="Tray.Received.One" xml:space="preserve"><value>‘{0}’ cihazından {1} dosya alındı. Klasörde göstermek için tıklayın.</value></data>
 </root>

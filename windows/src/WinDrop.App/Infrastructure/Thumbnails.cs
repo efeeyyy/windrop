@@ -13,9 +13,25 @@ namespace WinDrop.App.Infrastructure;
 public static class Thumbnails
 {
     private const uint ThumbSize = 96;   // 48 dip @ 200% DPI'ya yeter
+    private const int MaxEntries = 200;   // 96x96 BGRA ≈ 37 KB: en çok ~7 MB
     private static readonly ConcurrentDictionary<string, Task<ImageSource?>> Cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentQueue<string> Order = new();
 
-    public static Task<ImageSource?> GetAsync(string path) => Cache.GetOrAdd(path, p => Task.Run(() => Load(p)));
+    /// <summary>Başarısız/boş sonuç (dosya henüz yazılmadı, geçici hata) önbellekte kalmaz; sonraki istek yeniden dener.</summary>
+    public static async Task<ImageSource?> GetAsync(string path)
+    {
+        var task = Cache.GetOrAdd(path, p =>
+        {
+            Order.Enqueue(p);
+            while (Cache.Count > MaxEntries && Order.TryDequeue(out var old)) Cache.TryRemove(old, out _);
+            return Task.Run(() => Load(p));
+        });
+        ImageSource? result = null;
+        try { result = await task; }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { AppLog.Write($"küçük resim hatası ({ex.GetType().Name}): {path}"); }
+        if (result is null) Cache.TryRemove(new KeyValuePair<string, Task<ImageSource?>>(path, task));
+        return result;
+    }
 
     private static async Task<ImageSource?> Load(string path)
     {
@@ -46,9 +62,9 @@ public static class Thumbnails
             }
             return ShellIcon(path, isDir);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or ExternalException)
         {
-            return null;
+            return null;   // COMException da ExternalException'dır
         }
     }
 

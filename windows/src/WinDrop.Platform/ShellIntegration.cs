@@ -111,7 +111,7 @@ public sealed class ShellIntegration
         get
         {
             using var key = Registry.CurrentUser.OpenSubKey(_runKeyPath);
-            return key?.GetValue(RunValueName) is string s && s == AutoStartCommand;
+            return key?.GetValue(RunValueName) is string s && string.Equals(s, AutoStartCommand, StringComparison.OrdinalIgnoreCase);
         }
     }
 

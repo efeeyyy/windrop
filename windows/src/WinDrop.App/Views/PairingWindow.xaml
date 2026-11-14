@@ -9,26 +9,29 @@
         <TextBlock Text="{infra:T Pair.Instructions}" TextWrapping="Wrap" HorizontalAlignment="Center" FontSize="15" />
         <Border Width="260" Height="260" Margin="0,16" Background="White" CornerRadius="8" HorizontalAlignment="Center">
             <Grid>
-                <Image Source="{Binding QrImage}" Margin="8" RenderOptions.BitmapScalingMode="NearestNeighbor"
+                <Image Source="{Binding QrImage}" Margin="8" AutomationProperties.Name="{infra:T Pair.QrName}" RenderOptions.BitmapScalingMode="NearestNeighbor"
                        Visibility="{Binding IsExpired, Converter={StaticResource InvBoolToVis}}" />
                 <Button Content="{infra:T Pair.Restart}" Command="{Binding RestartCommand}" HorizontalAlignment="Center"
                         VerticalAlignment="Center" Visibility="{Binding IsExpired, Converter={StaticResource BoolToVis}}" />
             </Grid>
         </Border>
-        <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding RemainingText}" HorizontalAlignment="Center" Opacity="0.7" Margin="0,4,0,0" />
+        <StackPanel Visibility="{Binding ShowWaiting, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+            <TextBlock Text="{Binding RemainingText}" HorizontalAlignment="Center" Opacity="0.8" Margin="0,4,0,0" />
+        </StackPanel>
 
         <Border Margin="0,16,0,0" Padding="12" CornerRadius="6" Background="#20808080"
                 Visibility="{Binding HasPending, Converter={StaticResource BoolToVis}}">
             <StackPanel>
                 <TextBlock Text="{Binding ConfirmText}" FontWeight="SemiBold" TextWrapping="Wrap" HorizontalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                    <Button Content="{infra:T Pair.Accept}" Command="{Binding AcceptCommand}" MinWidth="90" Margin="0,0,8,0" />
+                    <Button Content="{infra:T Pair.Accept}" Command="{Binding AcceptCommand}" MinWidth="90" Margin="0,0,8,0"
+                            Style="{DynamicResource AccentButtonStyle}" />
                     <Button Content="{infra:T Pair.Reject}" Command="{Binding RejectCommand}" MinWidth="90" />
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <Button Content="{infra:T Pair.Close}" Command="{Binding CloseCommand}" HorizontalAlignment="Center" Margin="0,16,0,0" />
+        <Button Content="{infra:T Pair.Close}" Command="{Binding CloseCommand}" HorizontalAlignment="Center" Margin="0,16,0,0" IsCancel="True" />
     </StackPanel>
 </Window>

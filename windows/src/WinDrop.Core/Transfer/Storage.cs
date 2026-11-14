@@ -110,7 +110,7 @@ public sealed class FileSystemFileSource : IFileSource
     public string? Dir { get; }
 
     public ValueTask<Stream> OpenReadAsync(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Stream>(new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read,
+        ValueTask.FromResult<Stream>(new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
             bufferSize: 81920, FileOptions.Asynchronous | FileOptions.SequentialScan));
 }
 
@@ -230,12 +230,17 @@ public sealed class FileSystemPartialStore : IPartialStore
         {
             foreach (var transferDir in Directory.EnumerateDirectories(peerDir))
             {
-                var newest = Directory.EnumerateFiles(transferDir).Select(File.GetLastWriteTimeUtc).DefaultIfEmpty(Directory.GetLastWriteTimeUtc(transferDir)).Max();
-                if (newest >= cutoff) continue;
-                Directory.Delete(transferDir, recursive: true);
-                removed++;
+                try   // kilitli/erişilemeyen bir dizin döngünün geri kalanını durdurmasın
+                {
+                    var newest = Directory.EnumerateFiles(transferDir).Select(File.GetLastWriteTimeUtc).DefaultIfEmpty(Directory.GetLastWriteTimeUtc(transferDir)).Max();
+                    if (newest >= cutoff) continue;
+                    Directory.Delete(transferDir, recursive: true);
+                    removed++;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
             }
-            if (!Directory.EnumerateFileSystemEntries(peerDir).Any()) Directory.Delete(peerDir);
+            try { if (!Directory.EnumerateFileSystemEntries(peerDir).Any()) Directory.Delete(peerDir); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
         return removed;
     }

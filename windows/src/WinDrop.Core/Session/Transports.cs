@@ -83,6 +83,12 @@ public interface IBleLink
     /// Gerçek bağlantı, abone yoksa sessizce atlar; varsayılan uygulama düz <see cref="SendAsync"/>'tir.
     /// </summary>
     ValueTask SendResetAsync(CancellationToken cancellationToken) => SendAsync(BleResync.Marker, cancellationToken);
+
+    /// <summary>
+    /// DECISIONS 2: IK ilk mesajındaki statik anahtar güvenilen listede yoksa tek bildirim olarak <see cref="BleResync.UnknownMarker"/>
+    /// (<c>WDU</c>) gönderir; iPhone kaydını yalnız bunu alınca siler. Varsayılan uygulama düz <see cref="SendAsync"/>'tir.
+    /// </summary>
+    ValueTask SendUnknownAsync(CancellationToken cancellationToken) => SendAsync(BleResync.UnknownMarker, cancellationToken);
 }
 
 /// <summary>PROTOCOL §3a: BLE oturum sıfırlama işareti.</summary>
@@ -90,6 +96,9 @@ public static class BleResync
 {
     /// <summary>ASCII <c>WDR</c> (3 bayt): PC → iPhone, parçalama başlığı yok.</summary>
     public static readonly byte[] Marker = "WDR"u8.ToArray();
+
+    /// <summary>ASCII <c>WDU</c> (3 bayt): PC → iPhone, "IK anahtarı tanınmıyor" (unknown); parçalama başlığı yok.</summary>
+    public static readonly byte[] UnknownMarker = "WDU"u8.ToArray();
 }
 
 /// <summary>Oturum ortasında yeni BLE ön eki alındı; ön ek <see cref="BleMessageTransport.RestartPrefix"/> içindedir.</summary>

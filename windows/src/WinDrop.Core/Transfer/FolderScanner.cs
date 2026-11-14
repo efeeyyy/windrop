@@ -75,7 +75,7 @@ public static class FolderScanner
 
         foreach (var entry in entries)
         {
-            if (entry.Attributes.HasFlag(FileAttributes.ReparsePoint) || entry.LinkTarget is not null)
+            if (entry.LinkTarget is not null)   // yalnız symlink/junction; OneDrive yer tutucuları (bulut reparse) atlanmaz
             {
                 log?.Invoke($"bağlantı (symlink/junction) izlenmedi: {entry.FullName}");
                 continue;
