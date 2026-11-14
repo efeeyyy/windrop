@@ -30,18 +30,24 @@ Komutlar:
 - iOS çeviri denetimi: `py -3 ios\App\Localization\check-xcstrings.py`
 
 ## ŞU AN YARIM (2026-11-15) — ilk iş bunlar
-1. **Commit edilmemiş Windows değişiklikleri (48 dosya):** inceleme düzeltmeleri — Core+Platform
-   (`docs/review/windows-core-fixes.md`, tamam) + App/kurulum (`docs/review/windows-app.md` bulguları;
-   ajan durduruldu, `windows-app-fixes.md` YAZILMADI). Derleme 0 uyarı, testler geçiyor. Yapılacak:
-   `git diff` ile App/kurulum kısmını gözden geçir (teklif penceresinde Kabul varsayılan değil + odak
-   çalmıyor, install/uninstall düzgün kapatma, BOM'lu settings.json, erişilebilirlik, Ayarlar kaydırma,
-   INSTALL.md) → eksikleri tamamla → commit → push → `windows.yml` yeşil.
-2. **Birlikte güncelleme:** iOS yeni sürümü (WDU işareti, zaman aşımları) yeni Windows sürümünü bekliyor.
-   Windows'u kur, sonra Efe IPA'yı Sideloadly ile yükler (ücretsiz hesap: 7 günde bir yeniden yükleme).
-3. **PROTOCOL.md yeniden düzenleme:** `docs/review/protocol-consistency.md` sonundaki başlık planı +
-   `DECISIONS.md` maddeleri spesifikasyona işlenecek; eskimiş §9 açık sorular, §2/§2b çelişkisi temizlenecek.
-4. Ertelenen inceleme maddeleri: `windows-core-fixes.md` ve `ios-app-fixes.md` içindeki "ertelendi" listeleri.
-5. Karar bekleyen: iOS "eşli bilgisayarlardan otomatik kabul" varsayılanı açık (inceleme riskli buldu; Efe'ye soruldu).
+Dal: **`fix/windows-app-review`** (main'e birleştirilmedi; 2 commit, gönderildi; Windows + Interop CI yeşil).
+1. **Dalı main'e birleştir** (Efe onayıyla). İçerik: Windows inceleme düzeltmeleri (Core+Platform+App+kurulum,
+   `docs/review/windows-app-fixes.md` yazıldı) + yeniden düzenlenmiş `PROTOCOL.md`.
+2. **Birlikte güncelleme:** Windows **0.3.0 bu PC'ye kuruldu** (15 Kas; `dist\WinDrop-win-x64.zip`). Yeni sürümde
+   `QUIT` ile zarif kapanma canlı doğrulandı. Sıra Efe'de: `dist\WinDrop-unsigned.ipa`'yı Sideloadly ile yükle
+   (ücretsiz hesap: 7 günde bir yeniden yükleme), sonra iki yönde aktarım + teklif penceresini dene
+   (pencere odak çalmıyor; 60 sn'de fark edilmezse ret — ses/yanıp sönme yok, gerekirse eklenir).
+3. **PROTOCOL.md `§` atıfları:** bölüm numaraları değişti (eski → yeni: PROTOCOL.md Ek A). Kod yorumları ve
+   diğer belgelerdeki ~350 atıf eski numarayı taşıyor: `docs/review/protocol-section-refs.txt`. Mekanik
+   düzeltme; `ios/` dosyalarına dokunmak macOS CI dakikası harcar — iOS değişikliğiyle birlikte yap.
+4. **Kod–belge uyuşmazlıkları (belge değişmedi, karar gerek):** `protocol-consistency.md` U12 (iOS `rate` ↔
+   belge `rate_limited`), U13 (`caps.relay` gönderilmiyor), U14 (`relay` yalnız PC→iPhone), U25 (`btAudio` ile
+   BLE kesmesi yalnız PC'de), U22 (klasör kuralları platformlar arası farklı).
+5. Ertelenen inceleme maddeleri: `windows-core-fixes.md`, `windows-app-fixes.md`, `ios-app-fixes.md` sonundaki
+   "ertelendi" listeleri.
+6. Karar bekleyen: iOS "eşli bilgisayarlardan otomatik kabul" varsayılanı açık (inceleme riskli buldu; Efe'ye soruldu).
+7. Ortam: bu makinede git `user.name`/`user.email` ayarlı değil; commit için `git -c user.name=... -c user.email=...`
+   (önceki commit'lerdeki kimlik) kullanıldı.
 
 ## Kurulum / ortam notları (önemli)
 - **Claude kabuğu MSIX sanallaştırması altında:** `%LOCALAPPDATA%` okuma/yazma sanal kopyaya gidebilir.
