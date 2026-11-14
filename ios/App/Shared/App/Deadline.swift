@@ -28,6 +28,22 @@ enum DeadlineError: Error, LocalizedError {
     }
 }
 
+@MainActor
+private final class DeadlineFlag { var fired = false }
+
+private final class DeadlineGate<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cont: CheckedContinuation<T, Error>?
+    init(_ cont: CheckedContinuation<T, Error>) { self.cont = cont }
+    func resume(_ result: Result<T, Error>) {
+        lock.lock()
+        let c = cont
+        cont = nil
+        lock.unlock()
+        c?.resume(with: result)
+    }
+}
+
 /// Süreli çalıştırıcı (ana aktör): `operation` süre dolmadan bitmezse `onTimeout` çağrılır (bağlantıyı kapatıp
 /// bekleyen okuma/yazmayı uyandırmalıdır) ve işlem hata ile dönünce `DeadlineError.timedOut` fırlatılır.
 /// İşlem çağıranın görevinde çalışır (Sendable gerekmez); zamanlayıcı ayrı bir görevdir.
@@ -37,8 +53,7 @@ func withDeadline<T>(
     onTimeout: @escaping @MainActor () -> Void,
     operation: () async throws -> T
 ) async throws -> T {
-    final class Flag { var fired = false }
-    let flag = Flag()
+    let flag = DeadlineFlag()
     let timer = Task { @MainActor in
         try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
         guard !Task.isCancelled else { return }
@@ -60,20 +75,8 @@ func raceWithTimeout<T: Sendable>(
     seconds: TimeInterval,
     _ operation: @escaping @Sendable () async throws -> T
 ) async throws -> T {
-    final class Gate: @unchecked Sendable {
-        private let lock = NSLock()
-        private var cont: CheckedContinuation<T, Error>?
-        init(_ cont: CheckedContinuation<T, Error>) { self.cont = cont }
-        func resume(_ result: Result<T, Error>) {
-            lock.lock()
-            let c = cont
-            cont = nil
-            lock.unlock()
-            c?.resume(with: result)
-        }
-    }
     return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<T, Error>) in
-        let gate = Gate(cont)
+        let gate = DeadlineGate<T>(cont)
         Task {
             do { gate.resume(.success(try await operation())) } catch { gate.resume(.failure(error)) }
         }
