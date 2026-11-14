@@ -1,75 +1,68 @@
 # STATUS — devir notu
 
-Son güncelleme: 2026-10-17 (gece çalışması sonu). Yeni oturum bunu + `ARCHITECTURE.md` + `PROTOCOL.md` okur.
+Son güncelleme: 2026-11-15. Yeni oturum önce bunu, sonra `docs/review/DECISIONS.md`, gerekirse
+`ARCHITECTURE.md` / `PROTOCOL.md` okur. Ayrıntılı geçmiş git log'da.
 
-## Durum (özet)
-- Ölçümler bitti (ARCHITECTURE "Ölçüm bulguları"): BLE yalnız keşif/sinyal (ses kesiliyor);
-  eduroam'da doğrudan TCP çalışıyor (8/16 MB/s); ağsız durumda Windows Mobil etkin nokta (2,3/3,9 MB/s).
-- UX kararı (Efe): kurulumsuz, AirDrop gibi; eşleştirme zorunlu değil (XX + alıcı onayı + 4 haneli kod);
-  iOS paylaşım uzantısı; arka planda tanıdık PC'lere BLE; push ileride ücretli hesapla.
-- Protokol: `PROTOCOL.md` v0.1 + §2b + §9a. İki opus-high incelemesi (spesifikasyon + kod) yapıldı,
-  bulguların hepsi düzeltildi.
+## Ne bu proje
+Windows 11 ↔ iPhone/iPad, AirDrop benzeri dosya aktarımı. BLE yalnız keşif/sinyal; veri doğrudan TCP
+(aynı ağ) → PC Mobil etkin noktası (iPhone Wi-Fi'sız) → BLE (≤64 KB, kulaklık yokken) → Cloudflare
+aktarma sunucusu (izolasyonlu ağ, veri kotası onayıyla). Uçtan uca Noise (IK / XX / XXpsk3).
+UX (Efe): kurulumsuz, eşleştirme isteğe bağlı (XX + alıcı onayı + 4 haneli kod), izinler yalnız "Gönder"de,
+gelen medya Galeri'ye en yeni tarihle, paylaşım menüsü rehberi, tema Sistem/Açık/Koyu, TR + EN.
 
-## Kod
-| Parça | Yer | Doğrulama (2026-10-17) |
+## Kod ve doğrulama (2026-11-15)
+| Parça | Yer | Durum |
 |---|---|---|
-| C# çekirdek (Noise, çerçeve, aktarım) | `windows/src/WinDrop.Core` | 266 test geçti; 59 cacophony vektörü |
-| Windows servisleri (BLE GATT, TCP 53600, etkin nokta, kimlik) | `windows/src/WinDrop.Platform` | 116 test geçti |
-| Windows uygulaması (WPF Fluent, tepsi, SendTo) | `windows/src/WinDrop.App` | Derleniyor, açılıyor, BLE reklam + dinleyici logda |
-| Swift çekirdek | `ios/WinDropKit` | 82 test geçti (SwiftBox WSL, swift-crypto) |
-| iOS uygulaması + paylaşım uzantısı | `ios/App` (XcodeGen) | Mac'te (CI) derleniyor; cihazda denenmedi |
-| C# ↔ Swift çapraz uyum | `windows/tools/WinDrop.Interop`, `docs/INTEROP.md` | 6/6 senaryo PASS (TCP; BLE çapraz değil) |
-| CI | `.github/workflows/ios.yml` | Yeşil (run 39067587278); imzasız IPA dist\WinDrop-unsigned.ipa (823 KB, paylaşım uzantısı dahil) |
-| Ölçüm araçları | `windows/src/WinDrop.{BleProbe,NetProbe,ApProbe,PlatformCheck}` | — |
+| C# çekirdek | `windows/src/WinDrop.Core` | 340 test geçiyor |
+| Windows servisleri | `windows/src/WinDrop.Platform` | 211 test geçiyor |
+| Windows uygulaması (WPF) | `windows/src/WinDrop.App` | Derleniyor, 0 uyarı |
+| Swift çekirdek | `ios/WinDropKit` | 113 test (SwiftBox WSL) |
+| iOS uygulaması + uzantı | `ios/App` (XcodeGen) | CI yeşil (run 43595692985), IPA `dist/WinDrop-unsigned.ipa` (1,55 MB, 14 Kas) |
+| Aktarma/push sunucusu | `relay/` | 52 test; Cloudflare'e henüz kurulmadı |
+| Çapraz uyum | `windows/tools/WinDrop.Interop` | TCP 6/6 + relay 3/3 PASS |
+| CI | `.github/workflows/{ios,interop,windows,relay}.yml` | Yol filtreli + concurrency; hepsi yeşil |
 
-Testleri çalıştırma:
-- Windows: `dotnet test windows\WinDrop.slnx`
-- Swift: `wsl -d SwiftBox -u root -- bash -lc ". ~/.local/share/swiftly/env.sh; cd /mnt/c/Users/Efe/Desktop/WinDrop/ios/WinDropKit && swift test"`
+Komutlar:
+- Windows: `dotnet test windows\WinDrop.slnx` (dotnet: `C:\Program Files\dotnet\dotnet.exe`)
+- Swift: `wsl -d SwiftBox -u root -- bash -lc ". ~/.local/share/swiftly/env.sh; cd /mnt/c/Users/Efe/Desktop/WinDrop/ios/WinDropKit && swift test"` (önbellek bozuksa `--scratch-path /root/wdbuild`)
 - Çapraz: `wsl -d SwiftBox -u root -- bash -lc "bash /mnt/c/Users/Efe/Desktop/WinDrop/windows/tools/WinDrop.Interop/run-interop.sh"`
+- Windows paket: `build\publish.ps1 -Version x.y.z` → `dist\WinDrop-win-x64.zip`
+- iOS çeviri denetimi: `py -3 ios\App\Localization\check-xcstrings.py`
 
-## Ortam notları
-- "SwiftBox" WSL dağıtımı (Ubuntu 24.04, root, Swift 6.4.1 + .NET 10) `C:\Users\Efe\WSL\swiftbox`;
-  kaynak imaj `C:\Users\Efe\WSL\images\` (371 MB, silinebilir). Efe'nin "Ubuntu" dağıtımında kullanıcı
-  alanına deneme Swift'i kuruldu (`~/.local/share/swiftly`, `~/swift-*`) — kullanılmıyor, silinebilir.
-- Efe'nin Windows Mobil etkin noktası gece açık kaldı (dokunulmadı).
-- Test güvenlik duvarı kuralları duruyor → `install\remove-test-rules.ps1`.
-- GitHub: github.com/efeeyyy/windrop (özel). iOS derlemesi her push'ta; IPA artifact "WinDrop-unsigned-ipa".
+## ŞU AN YARIM (2026-11-15) — ilk iş bunlar
+1. **Commit edilmemiş Windows değişiklikleri (48 dosya):** inceleme düzeltmeleri — Core+Platform
+   (`docs/review/windows-core-fixes.md`, tamam) + App/kurulum (`docs/review/windows-app.md` bulguları;
+   ajan durduruldu, `windows-app-fixes.md` YAZILMADI). Derleme 0 uyarı, testler geçiyor. Yapılacak:
+   `git diff` ile App/kurulum kısmını gözden geçir (teklif penceresinde Kabul varsayılan değil + odak
+   çalmıyor, install/uninstall düzgün kapatma, BOM'lu settings.json, erişilebilirlik, Ayarlar kaydırma,
+   INSTALL.md) → eksikleri tamamla → commit → push → `windows.yml` yeşil.
+2. **Birlikte güncelleme:** iOS yeni sürümü (WDU işareti, zaman aşımları) yeni Windows sürümünü bekliyor.
+   Windows'u kur, sonra Efe IPA'yı Sideloadly ile yükler (ücretsiz hesap: 7 günde bir yeniden yükleme).
+3. **PROTOCOL.md yeniden düzenleme:** `docs/review/protocol-consistency.md` sonundaki başlık planı +
+   `DECISIONS.md` maddeleri spesifikasyona işlenecek; eskimiş §9 açık sorular, §2/§2b çelişkisi temizlenecek.
+4. Ertelenen inceleme maddeleri: `windows-core-fixes.md` ve `ios-app-fixes.md` içindeki "ertelendi" listeleri.
+5. Karar bekleyen: iOS "eşli bilgisayarlardan otomatik kabul" varsayılanı açık (inceleme riskli buldu; Efe'ye soruldu).
 
-## 2026-10-18 gece ikinci tur
-- Bluetooth ses algısı (Windows Core Audio, iOS AVAudioSession) + küçük dosya BLE yolu (PC `bleData` ile başlatır, §6.4a).
-- Aktarma sunucusu `relay/` (Cloudflare Worker + DO, 22 test) + iki uygulamada istemci ve veri kotası onayı;
-  C#↔Swift aktarma çapraz testi macOS CI'da yeşil (`.github/workflows/interop.yml`, run 39070933870).
-- Windows kurulum paketi: `build/publish.ps1` → `dist/WinDrop-win-x64.zip`; `install/install.ps1` (yönetici gerekmez).
-- Son sayılar: C# 458 test (Core 306, Platform 152), Swift 95, interop TCP 6/6 + relay 3/3, iOS CI yeşil.
+## Kurulum / ortam notları (önemli)
+- **Claude kabuğu MSIX sanallaştırması altında:** `%LOCALAPPDATA%` okuma/yazma sanal kopyaya gidebilir.
+  Gerçek günlük/ayar okumak ve kurulum için `Invoke-CimMethod Win32_Process Create` ile süreç başlat;
+  örnek: kur → `dist\setup\install.ps1 -SkipFirewall` bu yolla, sonra uygulamayı aynı yolla başlat.
+  Gerçek günlük: `C:\Users\Efe\AppData\Local\WinDrop\logs\app.log`.
+- Yeniden kurulumda çalışan `WinDrop.App` kapatılmalı (Stop-Process); Efe'ye haber ver.
+- iPhone kurulum: Sideloadly + iTunes **web** sürümü + Apple Mobile Device Support (Store sürümü çalışmaz).
+- SwiftBox WSL: `C:\Users\Efe\WSL\swiftbox` (imaj `C:\Users\Efe\WSL\images\` silinebilir).
+- GitHub: `efeeyyy/windrop` (özel). macOS CI dakikaları sınırlı — yalnız iOS değişince derle.
+  `sideloadlydaemon.log` (UDID içerir) git geçmişinde duruyor; depo açılacaksa geçmiş temizlenmeli.
+- Güvenlik duvarı: ürün kuralları kurulu ("WinDrop data", "WinDrop hotspot data").
 
-- 2026-10-18 gerçek makine: `PlatformCheck hotspot-cycle` geçti — etkin nokta WinDrop SSID'siyle açıldı
-  (2,4 GHz), 10 sn sonra kapandı, Efe'nin eski ayarı (SSID/bant/parola) birebir geri yüklendi.
+## Cihazda doğrulananlar (Efe, iPhone + bu PC, 18–19 Eki)
+BLE keşif, iki yönde aktarım (~10 MB/s eduroam), etkin nokta yolu + 2 dk otomatik kapanma + ayar geri
+yükleme, PC yeniden başlayınca otomatik yeniden bağlanma, QR eşleştirme, Galeri kaydı, küçük resimler,
+yol değişimi (Wi-Fi açılınca doğrudan yola geçiş).
+Henüz denenmedi: AirPods çalarken gönderim, paylaşım menüsünden gönderim (tek kimlik), arka planda
+bildirim, 500 MB+ video, aktarım ortasında Wi-Fi kopması/devam, BLE küçük dosya, iPad, İngilizce arayüz.
 
-- 2026-10-18 üçüncü tur: klasör gönderme (§5a, iki taraf), push bildirimi (§6.5): sunucu `relay/src/push.ts`
-  (43 test), Windows istemcisi, iOS `Release-Push` yapılandırması (`PUSH_ENABLED`) — CI'da derleniyor, ücretli
-  hesap + APNs anahtarı olmadan kapalı. macOS CI gerçek bir hata yakaladı ve düzeltildi: APFS adları NFD
-  sakladığı için Türkçe uzun adlar 255 baytı aşıyordu.
-- Son sayılar: C# 507 (Core 337, Platform 170), Swift 110, relay 43, interop TCP 6/6 + relay 3/3;
-  iOS CI run 39073625313 yeşil (Release + Release-Push), IPA `dist/WinDrop-unsigned.ipa` (958 KB),
-  Windows `dist/WinDrop-win-x64.zip`.
-
-## 2026-10-18 akşam: ilk gerçek cihaz testleri (Efe, iPhone + bu PC)
-Çalışanlar: Sideloadly kurulumu (iTunes web sürümü + Apple Mobile Device Support gerekti); BLE keşif;
-iPhone→PC ve PC→iPhone aktarım (eduroam doğrudan TCP, ~10 MB/s); etkin nokta yolu (iPhone Wi-Fi'sız,
-ilk katılma elle; 2 dk sonra otomatik kapanma ve ayar geri yükleme doğrulandı); PC yeniden başlayınca
-iPhone'un kendiliğinden yeniden bağlanması; QR eşleştirme; Galeri'ye kaydetme; küçük resimler.
-Cihazda bulunup düzeltilenler: Windows GATT yanıtsız yazmaları düşürüyor (iOS tüm yazmalar onaylı);
-oturum senkron kaybı (WDR + oturum ortasında ön ek = yeniden başlat); iOS'ta peripheral başına tek oturum;
-yerel ağ izni yarışı; WPF .ico biçimi; arayüzde koşulsuz otomatik kabul (güvenlik); uygulama ve uzantının
-ayrı kimlikleri (App Group ile tek kimlik — ücretsiz hesapta imza riski); iOS cihaz adı okunamıyor (ayar).
-2026-10-19 00:10: yol değişimi doğrulandı — iPhone Wi-Fi kapalı → "Wi-Fi'ı açın" notu; Wi-Fi açılıp eduroam'a
-bağlanınca aktarım etkin noktaya katılmadan doğrudan yoldan tamamlandı.
-Not: Claude kabuğu MSIX sanallaştırması altında; `%LOCALAPPDATA%` okuması/yazması için
-`Win32_Process.Create` ile sanallaştırma dışı süreç kullan (bkz. bu oturumun kurulum komutları).
-
-## Açık işler (öncelik sırası)
-1. Sabah testleri: `docs/MORNING-TESTS.md`.
-2. Aktarma sunucusunu Efe'nin Cloudflare hesabına kurmak (`relay/README.md`).
-3. Push'u açmak: ücretli Apple hesabı + APNs anahtarı (`relay/README.md`), `Release-Push` ile derleme.
-4. Etkin nokta parolası yenilenirken süren başka etkin nokta aktarımı kesilebilir (bilinen risk).
-5. Uygulama simgesi/marka; MSIX veya imzalı yükleyici.
+## Kullanıcıya bağlı / ileride
+- Aktarma sunucusunu Cloudflare'e kurmak (`relay/README.md`, Efe'nin hesabı).
+- Push + otomatik Wi-Fi katılma + 7 gün sınırının kalkması: ücretli Apple hesabı.
+- İmzalı Windows yükleyici (MSIX/Inno), LICENSE seçimi.
