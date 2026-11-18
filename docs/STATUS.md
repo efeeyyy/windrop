@@ -30,9 +30,8 @@ Komutlar:
 - iOS çeviri denetimi: `py -3 ios\App\Localization\check-xcstrings.py`
 
 ## ŞU AN YARIM (2026-11-15) — ilk iş bunlar
-Dal: **`fix/windows-app-review`** (main'e birleştirilmedi; 2 commit, gönderildi; Windows + Interop CI yeşil).
-1. **Dalı main'e birleştir** (Efe onayıyla). İçerik: Windows inceleme düzeltmeleri (Core+Platform+App+kurulum,
-   `docs/review/windows-app-fixes.md` yazıldı) + yeniden düzenlenmiş `PROTOCOL.md`.
+1. **Tamam (18 Kas):** `fix/windows-app-review` main'e birleştirildi (hızlı ileri, `00f18ba`). İçerik: Windows
+   inceleme düzeltmeleri (Core+Platform+App+kurulum, `docs/review/windows-app-fixes.md`) + yeniden düzenlenmiş `PROTOCOL.md`.
 2. **Birlikte güncelleme:** Windows **0.3.0 bu PC'ye kuruldu** (15 Kas; `dist\WinDrop-win-x64.zip`). Yeni sürümde
    `QUIT` ile zarif kapanma canlı doğrulandı. Sıra Efe'de: `dist\WinDrop-unsigned.ipa`'yı Sideloadly ile yükle
    (ücretsiz hesap: 7 günde bir yeniden yükleme), sonra iki yönde aktarım + teklif penceresini dene
