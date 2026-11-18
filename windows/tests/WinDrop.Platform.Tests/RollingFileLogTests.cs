@@ -27,9 +27,14 @@ public class RollingFileLogTests : IDisposable
         var log = new RollingFileLog(LogPath);
         log.Write("once");
         var fs = new FileStream(LogPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-        var release = Task.Run(() => { Thread.Sleep(80); fs.Dispose(); });
+        // Ayrı iş parçacığı: Task.Run yüklü CI'da iş parçacığı havuzunda geç başlayıp yeniden deneme
+        // bütçesini (~300 ms) aşabiliyordu. Bırakıcı başladığını bildirir, kilidi kısa süre sonra bırakır.
+        using var started = new ManualResetEventSlim();
+        var releaser = new Thread(() => { started.Set(); Thread.Sleep(30); fs.Dispose(); }) { IsBackground = true };
+        releaser.Start();
+        started.Wait();
         log.Write("during-lock");   // yeniden dener
-        await release;
+        await Task.Run(releaser.Join);
         log.Write("after");
         var lines = File.ReadAllLines(LogPath);
         Assert.Equal(new[] { "once", "during-lock", "after" }, lines);
