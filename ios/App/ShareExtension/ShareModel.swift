@@ -4,7 +4,7 @@ import UIKit
 
 /// Paylaşım Uzantısı'nın durumu: kendi (küçük) BLE + aktarım yığınını kurar. Kimlik: App Group varsa ana uygulamayla ortak
 /// cihaz anahtarı ve tanıdık liste (`IdentityStore`); grup yoksa uzantının kendi kimliği olur. Yalnız ekran açıkken bağlanır.
-/// Bilinmeyen PC: XX + doğrulama kodu; alıcı PC'de onay gerekir (PROTOCOL §2b).
+/// Bilinmeyen PC: XX + doğrulama kodu; alıcı PC'de onay gerekir (PROTOCOL §3.1).
 @MainActor
 @Observable
 final class ShareModel {

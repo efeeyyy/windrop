@@ -8,7 +8,7 @@
 # Ücretsiz hesapta varsayılan "Release"/"Debug" yapılandırmaları kullanılır (yetki yok).
 # Ücretli hesapta "Release-Hotspot" yapılandırması WinDrop-Hotspot.entitlements dosyasını
 # bağlar ve HOTSPOT_ENTITLEMENT derleme bayrağını açar.
-# Push bildirimi (APNs, docs/PROTOCOL.md §6.5) da YALNIZ ücretli hesapla çalışır: "Release-Push" yapılandırması
+# Push bildirimi (APNs, docs/PROTOCOL.md §9) da YALNIZ ücretli hesapla çalışır: "Release-Push" yapılandırması
 # WinDrop-Push.entitlements (aps-environment) dosyasını bağlar ve PUSH_ENABLED derleme bayrağını açar. Ücretsiz hesapta
 # push kodu hiç derlenmez. (Hotspot ve Push'u birlikte istiyorsanız iki yetkiyi tek dosyada birleştirip bayrakları ekleyin.)
 # Paylaşım Uzantısı (WinDropShare, iOS paylaşım menüsü): Shared/ klasörü iki hedefe de derlenir; ShareExtension/ yalnız uzantıdır.

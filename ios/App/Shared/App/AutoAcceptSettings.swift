@@ -6,7 +6,7 @@ enum AutoAcceptSettings {
     static let enabledKey = "autoAcceptPaired"
     static let limitKey = "autoAcceptLimitBytes"
 
-    /// Protokol üst sınırı (PROTOCOL §5, §7): 2 GB.
+    /// Protokol üst sınırı (PROTOCOL §6.5, §8): 2 GB.
     static let maxLimit: Int = 2 * 1024 * 1024 * 1024
 
     struct Option: Identifiable, Sendable {

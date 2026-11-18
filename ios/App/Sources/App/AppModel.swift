@@ -86,7 +86,7 @@ final class AppModel {
             // Biten aktarım bildirimi: Aktarımlar sekmesi; teklif bildirimi: ana sayfa (onay sayfası).
             if let transferId, self?.transfers.item(withID: transferId)?.state == .done { self?.selectedTab = .transfers } else { self?.selectedTab = .home }
             #if PUSH_ENABLED
-            // Uzaktan (push) bildirimde `transferId` yoktur: PC'leri tara ve bağlan; PC bekleyen teklifi yeniden yollar (§6.5).
+            // Uzaktan (push) bildirimde `transferId` yoktur: PC'leri tara ve bağlan; PC bekleyen teklifi yeniden yollar (§9).
             if transferId == nil { self?.startScanFromPush() }
             #endif
         }
@@ -112,7 +112,7 @@ final class AppModel {
         audio.start()   // yalnız okur; ses oturumunu etkinleştirmez
         // İzin zaten verilmişse (ve tanıdık PC varsa) merkez kurulur; izin istemi çıkarmaz.
         hub.startIfAlreadyAuthorized()
-        // PROTOCOL §3a: Paylaşım uzantısı açıkken BLE bağlantıları bırakılır, kapanınca yeniden kurulur.
+        // PROTOCOL §4.4: Paylaşım uzantısı açıkken BLE bağlantıları bırakılır, kapanınca yeniden kurulur.
         ShareActivitySignal.observe { [weak self] active in self?.shareActivityChanged(active) }
     }
 
@@ -167,6 +167,6 @@ final class AppModel {
 
     func removeKnown(_ pc: KnownPC) {
         hub.forget(pc)
-        // Not: PC tarafında da silinmeli; PC bir sonraki IK denemesinde reddeder (PROTOCOL §0).
+        // Not: PC tarafında da silinmeli; PC bir sonraki IK denemesinde reddeder (PROTOCOL §1).
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Süreçler arası basit sinyal (PROTOCOL §3a): Paylaşım uzantısı açılınca ana uygulama BLE bağlantılarını bırakır,
+/// Süreçler arası basit sinyal (PROTOCOL §4.4): Paylaşım uzantısı açılınca ana uygulama BLE bağlantılarını bırakır,
 /// uzantı kapanınca yeniden kurar. Darwin bildirimi (yük taşımaz).
 enum ShareActivitySignal {
     static let activeName = "com.efe.windrop.share.active"

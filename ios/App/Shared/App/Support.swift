@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 // Küçük, platform yardımcıları: base64url, tek okuyuculu posta kutusu, async kilit, pano.
 
 enum Base64URL {
-    /// Dolgusuz base64url (PROTOCOL §9a: transferId 16 bayt -> 22 karakter).
+    /// Dolgusuz base64url (PROTOCOL §5: transferId 16 bayt -> 22 karakter).
     static func encode(_ data: Data) -> String {
         data.base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")

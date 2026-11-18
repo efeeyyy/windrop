@@ -39,7 +39,7 @@ struct OfferSheet: View {
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(item.fileNames, id: \.self) { name in
-                    // PROTOCOL §5a: sonda "/" olan önizleme girdisi klasördür.
+                    // PROTOCOL §6.7: sonda "/" olan önizleme girdisi klasördür.
                     if name.hasSuffix("/") {
                         Label(String(name.dropLast()), systemImage: "folder").font(.footnote).lineLimit(1)
                     } else {

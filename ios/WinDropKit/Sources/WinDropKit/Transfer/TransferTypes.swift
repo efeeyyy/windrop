@@ -5,7 +5,7 @@ import CryptoKit
 import Crypto
 #endif
 
-/// PROTOCOL §5 sabitleri.
+/// PROTOCOL §6 sabitleri.
 public enum TransferLimits {
     public static let maxFiles = 10_000
     /// Dosya adı üst sınırı (UTF-16 kod birimi).
@@ -16,7 +16,7 @@ public enum TransferLimits {
     public static let defaultAckIntervalBytes = 4 * 1024 * 1024
     /// Kabulden önce boş alandan düşülen pay.
     public static let defaultSpaceMarginBytes: Int64 = 64 * 1024 * 1024
-    /// BLE yolu (PROTOCOL §6.4): toplam boyut üst sınırı.
+    /// BLE yolu (PROTOCOL §7.3): toplam boyut üst sınırı.
     public static let bleMaxTotalBytes: Int64 = 64 * 1024
     /// BLE yolunda DATA gövdesi: küçük parçalar gönderimi düzgün dağıtır (pacing ince taneli olur).
     public static let bleChunkSize = 2048
@@ -28,7 +28,7 @@ public enum TransferLimits {
 }
 
 /// Çerçeve kaynağı: `nil` = temiz kapanış. Varsayılan `SecureChannel.receiveFrame`; BLE'de oturum okuma döngüsü
-/// (sinyalleri ayıran) çerçeveleri buradan besler (PROTOCOL §9a: aynı kanalda `{` = sinyal, 1–8 = çerçeve).
+/// (sinyalleri ayıran) çerçeveleri buradan besler (PROTOCOL §4.2: aynı kanalda `{` = sinyal, 1–8 = çerçeve).
 public typealias FrameReader = () async throws -> Frame?
 
 public enum TransferOutcome: Equatable {

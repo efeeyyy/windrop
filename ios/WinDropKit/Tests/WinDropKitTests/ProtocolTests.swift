@@ -199,7 +199,7 @@ final class BleFragmenterTests: XCTestCase {
 }
 
 final class SignalMessageTests: XCTestCase {
-    /// PROTOCOL §6.5; C# ile aynı JSON (anahtar sırası anlamsız).
+    /// PROTOCOL §9; C# ile aynı JSON (anahtar sırası anlamsız).
     func testPushIdJson() throws {
         let id = "0123456789abcdef0123456789abcdef"
         let message = SignalMessage.pushId(PushIdMessage(pushId: id))

@@ -35,17 +35,17 @@ enum ProtocolIds {
     /// arka plan görevi ve bildirim yok (ana uygulamanın durum geri yüklemesiyle çakışmaz).
     static let isExtension: Bool = Bundle.main.bundlePath.hasSuffix(".appex")
 
-    /// PROTOCOL §3a: PC'nin oturumu kapattığını bildiren, `p2c` üzerinden tek bildirim olarak gelen 3 bayt ASCII `WDR`.
+    /// PROTOCOL §4.3: PC'nin oturumu kapattığını bildiren, `p2c` üzerinden tek bildirim olarak gelen 3 bayt ASCII `WDR`.
     static let resetMarker = Data("WDR".utf8)
 
     /// DECISIONS 2: PC, IK ilk mesajındaki statik anahtar güvenilen listede yoksa bağlantıyı kapatmadan önce `p2c` üzerinden
     /// tek bildirim olarak 3 bayt ASCII `WDU` ("unknown") yollar. iPhone eşleşme/tanıdık kaydını YALNIZ bunu alınca siler.
     static let unknownMarker = Data("WDU".utf8)
 
-    /// PROTOCOL §5: PC'nin dinlediği veri portu.
+    /// PROTOCOL §6.1: PC'nin dinlediği veri portu.
     static let tcpPort: UInt16 = 53600
 
-    /// PROTOCOL §6.1: aday başına bağlanma süresi.
+    /// PROTOCOL §7.1: aday başına bağlanma süresi.
     static let candidateTimeout: TimeInterval = 1.5
 
     /// `hello.v` (bilgi amaçlı).

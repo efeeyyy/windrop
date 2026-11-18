@@ -2,7 +2,7 @@ import Foundation
 import Network
 import Observation
 
-/// Wi-Fi durumu (`hello.wifi` / `status.wifi`, PROTOCOL §4). Bluetooth ses için bkz. `BluetoothAudioMonitor`.
+/// Wi-Fi durumu (`hello.wifi` / `status.wifi`, PROTOCOL §5). Bluetooth ses için bkz. `BluetoothAudioMonitor`.
 @MainActor
 @Observable
 final class NetworkMonitor {

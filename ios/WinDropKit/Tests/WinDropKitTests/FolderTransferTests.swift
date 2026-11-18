@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 @testable import WinDropKit
 
-/// PROTOCOL §5a klasör gönderme.
+/// PROTOCOL §6.7 klasör gönderme.
 extension TransferTests {
     func dirItem(_ id: Int, _ dir: String?, _ name: String, _ data: Data) -> SendItem {
         SendItem(id: id, name: name, size: Int64(data.count), mtime: 1_700_000_000_000, source: MemoryFileSource(data), dir: dir)
@@ -52,7 +52,7 @@ extension TransferTests {
         XCTAssertEqual(try read("tek.txt"), Data("dir yok".utf8))
         XCTAssertEqual(try visibleNames(), ["Proje", "tek.txt"])
         XCTAssertEqual(try visibleNames("Proje"), ["readme.txt", "src", "docs"])
-        // Aynı klasörde aynı ad: §5 kuralıyla numaralanır.
+        // Aynı klasörde aynı ad: §6.6 kuralıyla numaralanır.
         XCTAssertEqual(rr.receivedFiles.count, 5)
         await s.closeAll()
     }

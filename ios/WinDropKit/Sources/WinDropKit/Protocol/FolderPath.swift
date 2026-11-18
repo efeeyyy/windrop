@@ -1,6 +1,6 @@
 import Foundation
 
-/// PROTOCOL §5a klasör yolu (MANIFEST `dir`) doğrulama ve temizleme.
+/// PROTOCOL §6.7 klasör yolu (MANIFEST `dir`) doğrulama ve temizleme.
 public enum FolderPathError: Error, Equatable {
     /// `.`/`..`/boş bileşen, baştaki/sondaki/çift `/` (mutlak yol dahil): protokol hatası.
     case malformed(String)

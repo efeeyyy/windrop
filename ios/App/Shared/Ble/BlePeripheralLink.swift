@@ -50,7 +50,7 @@ final class BlePeripheralLink {
 
     var peripheralID: UUID { peripheral.identifier }
 
-    /// ATT MTU = en çok yazılabilir bayt + 3 (PROTOCOL §9a: parça yükü ≤ MTU − 3 − 1).
+    /// ATT MTU = en çok yazılabilir bayt + 3 (PROTOCOL §4.2: parça yükü ≤ MTU − 3 − 1).
     var mtu: Int { peripheral.maximumWriteValueLength(for: .withoutResponse) + 3 }
 
     /// Onaylı yazma (Write With Response): karşı taraf aldığını bildirene kadar bekler. Eşzamanlı çağrılar sıraya girer.

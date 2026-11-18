@@ -2,7 +2,7 @@ import AVFoundation
 import Foundation
 import Observation
 
-/// Bluetooth ses çıkışı (`hello.btAudio` / `status.btAudio`, PROTOCOL §4, §6.4): çıkış rotasında A2DP/HFP/LE var VE
+/// Bluetooth ses çıkışı (`hello.btAudio` / `status.btAudio`, PROTOCOL §5, §7.3): çıkış rotasında A2DP/HFP/LE var VE
 /// başka bir uygulama ses çalıyor. Yalnız OKUR: uygulama kendi ses oturumunu etkinleştirmez (başkasının müziğini kesmesin).
 /// `isOtherAudioPlaying` için bildirim güvenilir olmadığından rota bildirimine ek olarak hafif bir yoklama vardır.
 @MainActor

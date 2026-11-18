@@ -5,7 +5,7 @@ import CryptoKit
 import Crypto
 #endif
 
-// PROTOCOL §6.3 aktarma sunucusu: oda kimliği, adres kurma ve WebSocket üstünde MessageTransport.
+// PROTOCOL §7.4 aktarma sunucusu: oda kimliği, adres kurma ve WebSocket üstünde MessageTransport.
 
 /// Aktarma odasındaki rol (`?role=`).
 public enum RelayRole: String, Equatable {
@@ -26,7 +26,7 @@ public enum RelayRoom {
     }
 
     /// `relay` sinyalindeki `token` dizesi: 32 baytın base64url, dolgusuz (43 karakter) kodlaması
-    /// (`transferId` ile aynı biçim, PROTOCOL §9a). Geçersizse nil.
+    /// (`transferId` ile aynı biçim, PROTOCOL §5). Geçersizse nil.
     public static func decodeToken(_ text: String) -> Data? {
         guard text.utf8.count == 43 else { return nil }
         let ok = text.utf8.allSatisfy {

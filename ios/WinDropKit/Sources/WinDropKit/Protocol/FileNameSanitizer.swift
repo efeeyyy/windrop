@@ -6,10 +6,10 @@ public protocol FileNameExistence {
     func exists(_ fileName: String) -> Bool
 }
 
-/// PROTOCOL §5 "Dosya adı (alıcı)" kuralları (iOS'ta da aynen uygulanır; C# `FileNameSanitizer` ile uyumlu):
+/// PROTOCOL §6.6 "Dosya adı (alıcı)" kuralları (iOS'ta da aynen uygulanır; C# `FileNameSanitizer` ile uyumlu):
 /// yalnız son yol bileşeni; `..`, `/`, `\`, `:`, denetim karakterleri ve Windows ayrılmış adları reddedilmez,
 /// `_` ile değiştirilir / öne `_` eklenir; sondaki nokta/boşluk silinir; üzerine yazılmaz ("ad (2).ext").
-/// Ek (PROTOCOL §9a): `< > " | ? *`, C1 denetim, bidi denetim karakterleri, eşleşmemiş vekiller `_` olur;
+/// Ek (PROTOCOL §6.6): `< > " | ? *`, C1 denetim, bidi denetim karakterleri, eşleşmemiş vekiller `_` olur;
 /// COM¹²³ / CONIN$ / CONOUT$ ayrılmış sayılır; uzunluk sınırı 255 UTF-8 bayt (APFS; karakter ortasından kesilmez), uzantı (≤ 20 UTF-16 birimi) korunur.
 /// Sonuç hiçbir girdide boş olmaz (en kötü ihtimalle `fallbackName`).
 public enum FileNameSanitizer {

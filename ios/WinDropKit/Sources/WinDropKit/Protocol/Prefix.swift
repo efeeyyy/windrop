@@ -1,15 +1,15 @@
 import Foundation
 
-/// Taşıma türü (PROTOCOL §1 ön ek, 4. bayt).
+/// Taşıma türü (PROTOCOL §2 ön ek, 4. bayt).
 public enum TransportKind: UInt8, Equatable {
     case ble = 1
     case tcp = 2
     case relay = 3
 }
 
-/// PROTOCOL §1 açık ön ek (20 bayt, şifresiz): `"WD" || sürüm (1) || taşıma (1) || transferId (16)`.
+/// PROTOCOL §2 açık ön ek (20 bayt, şifresiz): `"WD" || sürüm (1) || taşıma (1) || transferId (16)`.
 /// Aynı 20 bayt Noise prologue olarak da kullanılır (`bytes`). BLE'de transferId 16 sıfır bayttır.
-/// BLE'de ön ek parçalanmaz; `c2p`'ye tek yazma olarak gider (PROTOCOL §9a).
+/// BLE'de ön ek parçalanmaz; `c2p`'ye tek yazma olarak gider (PROTOCOL §4.2).
 public struct Prefix: Equatable {
     public static let length = 20
     public static let transferIdLength = 16

@@ -18,7 +18,7 @@ final class TransferItem: Identifiable {
         case joiningHotspot
         /// Yetki yok: kullanıcı Ayarlar'dan etkin noktaya bir kez katılmalı.
         case needsManualHotspot
-        /// Aktarma (relay) yolu önerildi (`relay` sinyali geldi): kullanıcı kota uyarısını onaylamalı (PROTOCOL §6.3).
+        /// Aktarma (relay) yolu önerildi (`relay` sinyali geldi): kullanıcı kota uyarısını onaylamalı (PROTOCOL §7.4).
         case awaitingRelayConsent
         case transferring
         case done
@@ -55,7 +55,7 @@ final class TransferItem: Identifiable {
         var opensPhotos: Bool { self == .photos }
     }
 
-    /// PROTOCOL §6.3 / ARCHITECTURE: aktarma yolu seçilirse gösterilecek uyarı.
+    /// PROTOCOL §7.4 / ARCHITECTURE: aktarma yolu seçilirse gösterilecek uyarı.
     static var relayWarning: String { String(localized: "Bu gönderim Wi-Fi veya hücresel veri kotanızdan gidecektir.") }
 
     /// Uyarının tam metni: boyut ve uçtan uca şifreleme bilgisi dahil (iki tarafta da aynı).
@@ -138,7 +138,7 @@ final class TransferItem: Identifiable {
         direction == .send ? sendPreviewURL : receivedFiles.first?.url
     }
 
-    /// Klasör aktarımı mı (ad "/" ile bitiyorsa; PROTOCOL §5a)? Klasör için klasör simgesi gösterilir.
+    /// Klasör aktarımı mı (ad "/" ile bitiyorsa; PROTOCOL §6.7)? Klasör için klasör simgesi gösterilir.
     var isFolderTransfer: Bool { fileNames.first?.hasSuffix("/") == true }
 
     @ObservationIgnored var outgoing: [OutgoingFile] = []

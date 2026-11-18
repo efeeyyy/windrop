@@ -35,13 +35,13 @@ struct NearbyPeer: Identifiable, Equatable, Sendable {
     var autoAccept: Bool
     /// Karşının Bluetooth ses durumu (`hello`/`status`); bilinmiyorsa true (BLE yolu için temkinli varsayım).
     var remoteBtAudio = true
-    /// BLE oturumu IK ile mi kuruldu (veri kanalı aynı deseni kullanır; PROTOCOL §2b).
+    /// BLE oturumu IK ile mi kuruldu (veri kanalı aynı deseni kullanır; PROTOCOL §3.1).
     var usedIK: Bool
     /// 4 haneli doğrulama kodu (el sıkışma özetinden; iki ekranda aynı olmalı).
     var code: String
 }
 
-/// BLE oturumu üstünde küçük dosya aktarımı için kanal (PROTOCOL §6.4): Kit kanalı + okuma döngüsünün
+/// BLE oturumu üstünde küçük dosya aktarımı için kanal (PROTOCOL §7.3): Kit kanalı + okuma döngüsünün
 /// ayırdığı çerçeveleri veren okuyucu (kanalı doğrudan okumak oturum okuma döngüsüyle yarışır).
 struct BleDataSession {
     let channel: SecureChannel
@@ -72,7 +72,7 @@ enum SignalError: Error, LocalizedError {
     }
 }
 
-/// BLE oturumlarını yönetir (PROTOCOL §2b): tarama -> bağlan -> IK (tanıdık) veya XX -> `hello` -> ileti okuma döngüsü.
+/// BLE oturumlarını yönetir (PROTOCOL §3.1): tarama -> bağlan -> IK (tanıdık) veya XX -> `hello` -> ileti okuma döngüsü.
 /// CBCentralManager tembeldir: `start()` çağrılana (Gönder / izin verilmişse ön plan) kadar hiçbir izin istenmez.
 @MainActor
 @Observable
@@ -91,7 +91,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         }
     }
 
-    /// Çevre birimi başına oturum durumu (PROTOCOL §2b): aynı GATT bağlantısına aynı anda tek oturum yazar.
+    /// Çevre birimi başına oturum durumu (PROTOCOL §3.1): aynı GATT bağlantısına aynı anda tek oturum yazar.
     private enum SessionPhase {
         case idle, connecting, handshaking, established, closing
     }
@@ -317,7 +317,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
         mailbox.fail(MailboxError.closed)   // bekleyen okuyucuyu uyandırır
     }
 
-    /// Ağ/ses durumu değişince `status` gönderir (PROTOCOL §4).
+    /// Ağ/ses durumu değişince `status` gönderir (PROTOCOL §5).
     func broadcastStatus() {
         let status = helloInfo().statusMessage
         for keyID in channels.keys {
@@ -326,7 +326,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
     }
 
     #if PUSH_ENABLED
-    /// Push kaydı kimliği (PROTOCOL §6.5); nil = kayıt yok / ayar kapalı. AppModel doldurur.
+    /// Push kaydı kimliği (PROTOCOL §9); nil = kayıt yok / ayar kapalı. AppModel doldurur.
     @ObservationIgnored var pushIdProvider: (@MainActor () -> String?)?
 
     /// `pushId` yalnız tanıdık/eşli PC'ye verilir (tanıdık olmayana asla).
@@ -575,7 +575,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
                 let peer = NearbyPeer(
                     id: kid, name: known?.name ?? String(localized: "Bilgisayar"), publicKey: channel.remoteStaticKey,
                     peripheralID: pid, isKnown: known != nil, autoAccept: known?.autoAccept ?? false, usedIK: usedIK,
-                    // Doğrulama kodu yalnız XX özetinden (PROTOCOL §2b); IK (tanıdık/eşli) oturumda kod gösterilmez.
+                    // Doğrulama kodu yalnız XX özetinden (PROTOCOL §3.1); IK (tanıdık/eşli) oturumda kod gösterilmez.
                     code: usedIK ? "" : channel.verificationCode)
                 if let stale = channels[kid], stale.link !== link {
                     stale.link.close()   // aynı PC için eski oturum: yeni oturum tek yazıcı olsun
@@ -597,7 +597,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
             while let message = try await established.receiveMessage() {
                 try Task.checkCancellation()
                 guard case .signal(let signal) = message else {
-                    // BLE çerçevesi (PROTOCOL §6.4a): yalnız `bleData` ile başlayan aktarım kuyruğa alınır, başıboş atılır.
+                    // BLE çerçevesi (PROTOCOL §7.3): yalnız `bleData` ile başlayan aktarım kuyruğa alınır, başıboş atılır.
                     if case .frame(let frame) = message, let pc = channels[kid], pc.channel === established {
                         pc.frames?.push(frame)
                     }
@@ -639,7 +639,7 @@ final class SignalHub: BleCentralDelegate, SignalSending {
 }
 
 /// Karşı PC'nin bildirdiği ad: yalnız kontrol (Cc) ve biçim (Cf: bidi vb.) karakterleri atılır, kırpılır, en çok 64 karakter.
-/// Ad sahteciliği (RLO) engellenir; PC tarafındaki ayıklamayla (PROTOCOL §2.8) aynı kural.
+/// Ad sahteciliği (RLO) engellenir; PC tarafındaki ayıklamayla (PROTOCOL §3.2 madde 8) aynı kural.
 enum PeerName {
     static func sanitize(_ raw: String) -> String {
         var scalars = String.UnicodeScalarView()

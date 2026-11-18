@@ -1,6 +1,6 @@
 import Foundation
 
-/// Kısmi dosya anahtarı: `(eş kimliği, transferId, dosya id)` (PROTOCOL §5).
+/// Kısmi dosya anahtarı: `(eş kimliği, transferId, dosya id)` (PROTOCOL §6.4).
 public struct PartialKey: Hashable {
     public var peerId: String
     public var transferId: TransferId
@@ -30,7 +30,7 @@ public protocol PartialFile: AnyObject {
     func append(_ data: Data) throws
     /// Veriyi diske yazıp fsync eder, sonra kalıcı ofseti kaydeder. ACK yalnız bundan sonra gönderilir.
     func sync() throws
-    /// Tamamlanan dosyayı hedef klasörün `directory` (temizlenmiş, en üst klasörü çözülmüş; PROTOCOL §5a) alt klasörüne
+    /// Tamamlanan dosyayı hedef klasörün `directory` (temizlenmiş, en üst klasörü çözülmüş; PROTOCOL §6.7) alt klasörüne
     /// benzersiz adla ("ad (2).ext") taşır (klasörleri oluşturur), tamamlandı kaydını yazar; son yolu döndürür.
     func commit(directory: [String], fileName: String, sha256: String) throws -> String
     /// Kısmi veriyi ve kaydını siler.
@@ -52,7 +52,7 @@ public protocol ReceiverStorage: AnyObject {
     /// Mevcut kısmi dosyayı açar: boyut ve mtime aynıysa son kalıcı ofsete kırpılmış olarak; aksi halde eskisi silinip
     /// boş yeni dosya.
     func openPartial(for key: PartialKey, size: Int64, mtime: Int64) throws -> PartialFile
-    /// PROTOCOL §5a: aktarımın en üst klasörü `name` (temizlenmiş) için hedef adı. Hedefte aynı adlı öğe varsa "ad (2)";
+    /// PROTOCOL §6.7: aktarımın en üst klasörü `name` (temizlenmiş) için hedef adı. Hedefte aynı adlı öğe varsa "ad (2)";
     /// seçim `(peerId, transferId)` için kalıcıdır (devamda ve aynı aktarımdaki tüm dosyalar için aynı döner).
     func resolveTopFolder(peerId: String, transferId: TransferId, name: String) throws -> String
 }
@@ -167,7 +167,7 @@ public final class DirectoryReceiverStorage: ReceiverStorage {
         return dirURL.appendingPathComponent(unique)
     }
 
-    // MARK: PROTOCOL §5a en üst klasör eşlemesi
+    // MARK: PROTOCOL §6.7 en üst klasör eşlemesi
 
     private func dirsURL(peerId: String, transferId: TransferId) -> URL {
         stateDir.appendingPathComponent(transferBase(peerId: peerId, transferId: transferId) + ".dirs")

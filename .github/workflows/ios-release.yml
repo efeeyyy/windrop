@@ -1,0 +1,63 @@
+name: iOS Release
+
+# Elle tetiklenir: main'deki en son başarılı iOS CI çalışmasının imzasız IPA'sını yeniden derlemeden
+# (macOS dakikası harcamadan) bir GitHub Release'e koyar. CI artifact'ı 7 gün sonra silinir; Release kalıcıdır.
+# Örnek: gh workflow run ios-release.yml -f version=0.3.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Sürüm (ör. 0.3.0; etiket v0.3.0 olur)'
+        required: true
+        type: string
+
+concurrency:
+  group: ios-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # Release + etiket
+  actions: read     # başka çalışmanın artifact'ını indirmek
+
+jobs:
+  release:
+    name: IPA'yı Release'e koy
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Sürüm biçimini denetle
+        run: |
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "HATA: sürüm x.y.z olmalı: $VERSION"; exit 1; }
+          if gh release view "v$VERSION" >/dev/null 2>&1; then echo "HATA: v$VERSION zaten var"; exit 1; fi
+
+      - name: Son başarılı iOS çalışmasını bul
+        id: run
+        run: |
+          read -r RUN_ID SHA < <(gh run list --workflow ios.yml --branch main --status success --limit 1 \
+            --json databaseId,headSha -q '.[0] | "\(.databaseId) \(.headSha)"')
+          test -n "$RUN_ID" || { echo "HATA: main'de başarılı iOS çalışması yok"; exit 1; }
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "iOS çalışması $RUN_ID, commit $SHA"
+
+      - name: IPA'yı indir
+        run: |
+          gh run download "${{ steps.run.outputs.run_id }}" --name WinDrop-unsigned-ipa --dir dl \
+            || { echo "HATA: artifact bulunamadı (7 günlük süresi dolmuş olabilir; iOS CI'ı yeniden çalıştırın)"; exit 1; }
+          mv dl/WinDrop-unsigned.ipa "WinDrop-$VERSION-unsigned.ipa"
+          unzip -l "WinDrop-$VERSION-unsigned.ipa" | grep -F "Payload/WinDrop.app/PlugIns/WinDropShare.appex/Info.plist"
+          sha256sum "WinDrop-$VERSION-unsigned.ipa" | tee "WinDrop-$VERSION-unsigned.ipa.sha256"
+
+      - name: Release oluştur
+        run: |
+          SHA="${{ steps.run.outputs.sha }}"
+          cat > notes.md <<EOF
+          İmzasız iOS paketi (commit \`${SHA:0:7}\`, iOS CI çalışması ${{ steps.run.outputs.run_id }}).
+          Sideloadly veya SideStore ile kendi Apple hesabınızla imzalanarak yüklenir.
+          EOF
+          gh release create "v$VERSION" "WinDrop-$VERSION-unsigned.ipa" "WinDrop-$VERSION-unsigned.ipa.sha256" \
+            --target "$SHA" --title "WinDrop $VERSION (iOS)" --notes-file notes.md

@@ -16,7 +16,7 @@ kodunun tür denetimi CI'da (macOS) yapılacak.
 | 6 Veri kanalı boşta kalma | Düzeltildi | TCP: keepalive + okuma/yazma başına 30 sn (`NWByteStream`); BLE: `pop(timeout: 30)` → `TransferError.timeout`; aktarma WebSocket'i: 30 sn. |
 | 7 Push ortamı | Düzeltildi | `PUSH_SANDBOX` (veya DEBUG) → `sandbox`; `Release-Push` varsayılan olarak bayrağı taşır. |
 | 8 `joinOnce` | Düzeltildi | Tanıdık/eşli PC: `joinOnce=false`; bilinmeyen: true. Katılma 120 sn (`raceWithTimeout`), dolunca profil geri alınır. |
-| 9 App Group | Kısmen | Ana uygulama açılışta ortak anahtarı üretir; Ayarlar > Tanılama "Ortak kimlik açık/kapalı". CI'da entitlements gömerek imzalama (`.github`) kapsam dışı: ertelendi. |
+| 9 App Group | Kısmen | Ana uygulama açılışta ortak anahtarı üretir; Ayarlar > Tanılama "Ortak kimlik açık/kapalı". CI'da entitlements gömerek imzalama: 2026-11-18 yapıldı (`ios.yml` "Yetkileri göm", ad-hoc imza); `SharedGroup` yeniden imzalanmış paket kimliğinden türetilen `group.<kimlik>` adını da dener (SideStore). |
 | 10 Otomatik kabul varsayılanı | Değişmedi (bilinçli) | QR eşleştirme açık kullanıcı eylemi ve Ayarlar metni bunu anlatıyor; eşleştirme sonunda "sormadan kabul edilir" bilgisi eklendi. Genel varsayılanı `false` yapmak QR eşleşmesinin amacını bozar: Efe kararı gerekir. |
 | 11 Hız sınırı | Düzeltildi | Bilinmeyenler toplam 3/dk, aynı anda 1 bekleyen bilinmeyen teklif (`busy`), reddedilen anahtara 2 dk sessizlik (`silenced`), neden `rate_limited`. |
 | 12 Arka plan izinleri | Düzeltildi | Bildirim izni QR eşleştirme sonunda da istenir; arka planda Fotoğraflar izni `notDetermined` ise taşıma ertelenir (`photosPending`, `photosDenied` yazılmaz). |
@@ -42,8 +42,7 @@ kodunun tür denetimi CI'da (macOS) yapılacak.
 protocol-consistency: U1, U2, U3 (`cancel` gönderilir), U4, U12, U19 kapandı.
 
 ## Ertelendi
-Kökte tek `ActiveSheet` enum'u; `TransferCoordinator` birim testleri; Tanılama sayfasının tamamı (yalnız ortak kimlik satırı var); CI'da entitlements
-gömme (bulgu 9, `.github`); U13 `caps`, U18 PC'den gelen alan doğrulaması, U25 iPhone'da `btAudio` ile BLE kesme; Fotoğraflar'a dosya başına kaydetme;
+Kökte tek `ActiveSheet` enum'u; `TransferCoordinator` birim testleri; Tanılama sayfasının tamamı (yalnız ortak kimlik satırı var); U13 `caps`, U18 PC'den gelen alan doğrulaması, U25 iPhone'da `btAudio` ile BLE kesme; Fotoğraflar'a dosya başına kaydetme;
 uzantıda bağlanma öncesi bekleme.
 
 ## CI'da / cihazda özellikle bakılacaklar

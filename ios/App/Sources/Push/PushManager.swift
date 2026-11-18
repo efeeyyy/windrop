@@ -3,7 +3,7 @@ import Foundation
 import Observation
 import UIKit
 
-/// Push bildirimi (PROTOCOL §6.5; yalnız `PUSH_ENABLED` derlemesinde, ücretli hesap + `aps-environment` yetkisi).
+/// Push bildirimi (PROTOCOL §9; yalnız `PUSH_ENABLED` derlemesinde, ücretli hesap + `aps-environment` yetkisi).
 /// Akış: ayar açılır -> bildirim izni -> `registerForRemoteNotifications` -> APNs belirteci -> aktarma sunucusuna
 /// `POST /v1/push/register` -> `pushId` (Keychain) -> tanıdık/eşli PC'lere `pushId` sinyali (SignalHub).
 /// Cihaz belirteci yalnız aktarma sunucusuna gider; log'a yazılmaz. Kapatılınca sunucuya silme isteği yoktur
@@ -111,7 +111,7 @@ final class PushManager {
 
     // MARK: Yardımcılar
 
-    /// PROTOCOL §6.5: 32 küçük onaltılık karakter.
+    /// PROTOCOL §9: 32 küçük onaltılık karakter.
     nonisolated static func isValid(pushId: String) -> Bool {
         pushId.utf8.count == 32 && pushId.utf8.allSatisfy { ($0 >= 0x30 && $0 <= 0x39) || ($0 >= 0x61 && $0 <= 0x66) }
     }

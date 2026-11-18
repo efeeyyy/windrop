@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 @testable import WinDropKit
 
-/// PROTOCOL §2b: yakındaki herkes (XX) + 4 haneli doğrulama kodu. Ortak vektör: protocol/vectors/sas.json.
+/// PROTOCOL §3.1: yakındaki herkes (XX) + 4 haneli doğrulama kodu. Ortak vektör: protocol/vectors/sas.json.
 final class SasTests: XCTestCase {
     func testSasVectorFromSharedFile() throws {
         let url = repoRoot().appendingPathComponent("protocol/vectors/sas.json")

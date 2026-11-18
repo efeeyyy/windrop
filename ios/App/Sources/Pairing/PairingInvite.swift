@@ -20,7 +20,7 @@ enum PairingError: Error, LocalizedError {
     }
 }
 
-/// `windrop://pair?v=1&k=<PC açık anahtarı b64url>&s=<32 B sır b64url>&n=<PC adı>` (PROTOCOL §2).
+/// `windrop://pair?v=1&k=<PC açık anahtarı b64url>&s=<32 B sır b64url>&n=<PC adı>` (PROTOCOL §3.2).
 struct PairingInvite: Equatable, Sendable {
     let version: Int
     let pcPublicKey: Data

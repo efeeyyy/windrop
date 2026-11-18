@@ -23,7 +23,7 @@ public struct ReceiverOptions {
     }
 }
 
-/// PROTOCOL §5 alıcı: MANIFEST'i (sayfalı) toplar, sınırları denetler, her dosya için RESUME yollar, DATA'yı kısmi dosyaya
+/// PROTOCOL §6 alıcı: MANIFEST'i (sayfalı) toplar, sınırları denetler, her dosya için RESUME yollar, DATA'yı kısmi dosyaya
 /// yazar, ~4 MB'da bir fsync sonrası ACK yollar, FILE_END'de tam dosya SHA-256'sını doğrular, sonunda DONE yollar.
 /// Dosya adları `FileNameSanitizer` ile temizlenir; çakışmada "ad (2).ext". Görev iptali CANCEL yollar.
 public final class FileReceiver {
@@ -35,7 +35,7 @@ public final class FileReceiver {
     private var resumeOffsets: [Int: Int64] = [:]
     private var failed: [Int] = []
     private var received: [ReceivedFile] = []
-    /// PROTOCOL §5a: dosya kimliği -> temizlenmiş klasör bileşenleri (en üst klasör çakışması henüz çözülmemiş).
+    /// PROTOCOL §6.7: dosya kimliği -> temizlenmiş klasör bileşenleri (en üst klasör çakışması henüz çözülmemiş).
     private var dirComponents: [Int: [String]] = [:]
     /// Temizlenmiş en üst klasör adı -> hedef adı (aynı aktarımdaki tüm dosyalar aynı köke).
     private var topFolders: [String: String] = [:]
@@ -51,7 +51,7 @@ public final class FileReceiver {
 
     public func run() async throws -> TransferResult {
         do {
-            try await channel.ensureEstablished()   // yanıtlayan: başlatanın boş onay mesajını bekler (§1)
+            try await channel.ensureEstablished()   // yanıtlayan: başlatanın boş onay mesajını bekler (§2)
         } catch SessionError.connectionClosed {
             throw TransferError.connectionLost
         }

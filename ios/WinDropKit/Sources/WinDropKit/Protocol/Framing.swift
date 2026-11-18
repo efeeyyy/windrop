@@ -1,6 +1,6 @@
 import Foundation
 
-/// Veri kanalı çerçeve türü (PROTOCOL §5, §9a).
+/// Veri kanalı çerçeve türü (PROTOCOL §6.2).
 public enum FrameType: UInt8, Equatable {
     case manifest = 1
     case resume = 2
@@ -12,7 +12,7 @@ public enum FrameType: UInt8, Equatable {
     case done = 8
 }
 
-// MARK: Kontrol gövdeleri (JSON, camelCase, alanlar zorunlu; PROTOCOL §9a)
+// MARK: Kontrol gövdeleri (JSON, camelCase, alanlar zorunlu; PROTOCOL §6.2)
 
 public struct ManifestFile: Codable, Equatable {
     public var id: Int
@@ -21,14 +21,14 @@ public struct ManifestFile: Codable, Equatable {
     public var size: Int64
     /// Unix epoch milisaniye.
     public var mtime: Int64
-    /// PROTOCOL §5a: gönderilen kökten göreli klasör yolu (`/` ayırıcı, ≤ 16 seviye, ≤ 1024 karakter); nil ise yazılmaz.
+    /// PROTOCOL §6.7: gönderilen kökten göreli klasör yolu (`/` ayırıcı, ≤ 16 seviye, ≤ 1024 karakter); nil ise yazılmaz.
     public var dir: String?
     public init(id: Int, name: String, size: Int64, mtime: Int64, dir: String? = nil) {
         self.id = id; self.name = name; self.size = size; self.mtime = mtime; self.dir = dir
     }
 }
 
-/// MANIFEST sayfası (PROTOCOL §9a): `{"files":[...],"more":bool}`; `more` yoksa false. Yazarken yalnız true ise yazılır.
+/// MANIFEST sayfası (PROTOCOL §6.3): `{"files":[...],"more":bool}`; `more` yoksa false. Yazarken yalnız true ise yazılır.
 public struct ManifestBody: Codable, Equatable {
     public var files: [ManifestFile]
     public var more: Bool?
@@ -80,7 +80,7 @@ public struct Frame: Equatable {
     public init(type: FrameType, body: Data) { self.type = type; self.body = body }
 }
 
-/// §5 düz metin çerçeve kodlaması: `tür (1 B) || gövde`, en çok 65519 B (Noise şifrelemesi +16 → 65535).
+/// §6.1 düz metin çerçeve kodlaması: `tür (1 B) || gövde`, en çok 65519 B (Noise şifrelemesi +16 → 65535).
 public enum FrameCodec {
     public static let maxPlaintext = 65519
     /// DATA ve kontrol gövdesi üst sınırı.
@@ -149,7 +149,7 @@ public enum FrameCodec {
     }
 }
 
-/// §5 TCP çerçevesi: `uzunluk (2 B big-endian) || Noise mesajı` (1..65535 bayt).
+/// §6.1 TCP çerçevesi: `uzunluk (2 B big-endian) || Noise mesajı` (1..65535 bayt).
 /// Hem el sıkışma hem şifreli taşıma mesajları bu biçimle gider; 20 baytlık ön ek çerçevesizdir.
 public enum TcpFraming {
     public static let lengthPrefixSize = 2

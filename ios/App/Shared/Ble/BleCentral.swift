@@ -11,7 +11,7 @@ protocol BleCentralDelegate: AnyObject {
     func bleCentral(_ central: BleCentral, didDiscover peripheral: CBPeripheral)
 }
 
-/// CoreBluetooth merkezi (central): PROTOCOL §3.
+/// CoreBluetooth merkezi (central): PROTOCOL §4.
 /// - Eşli PC'lere zaman aşımsız "bekleyen bağlantı" (`connect` bitmez; menzile girince bağlanır).
 /// - Durum geri yükleme (`CBCentralManagerOptionRestoreIdentifierKey`) + `bluetooth-central` arka plan modu.
 /// - Eşleştirme için ön planda tarama (`discoverForPairing`) ve tek seferlik bağlantı (`openLink`).
@@ -153,7 +153,7 @@ final class BleCentral: NSObject {
         }
     }
 
-    /// PROTOCOL §3a: oturumu kapat, GATT bağlantısını kes; `didDisconnect` 1 sn sonra yeniden bağlanmayı planlar.
+    /// PROTOCOL §4.3: oturumu kapat, GATT bağlantısını kes; `didDisconnect` 1 sn sonra yeniden bağlanmayı planlar.
     /// Tek seferlik: sıfırlama sürerken (WDR / `didModifyServices` tekrarları) gelen yeni tetikler yok sayılır.
     private func resetSession(_ peripheral: CBPeripheral) {
         let id = peripheral.identifier
@@ -195,7 +195,7 @@ final class BleCentral: NSObject {
 
     private var wantsNearbyScan = false
     private var isPaused = false
-    /// Paylaşım uzantısı açıkken ana uygulama BLE bağlantılarını bırakır (PROTOCOL §3a).
+    /// Paylaşım uzantısı açıkken ana uygulama BLE bağlantılarını bırakır (PROTOCOL §4.4).
     private var isYielding = false
     private var scanRestartTask: Task<Void, Never>?
 

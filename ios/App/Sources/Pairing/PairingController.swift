@@ -3,7 +3,7 @@ import Foundation
 import Observation
 @preconcurrency import WinDropKit
 
-/// Eşleştirme akışı (PROTOCOL §2): QR -> BLE'de PC'yi bul -> XXpsk3 -> `k` doğrulaması ->
+/// Eşleştirme akışı (PROTOCOL §3.2): QR -> BLE'de PC'yi bul -> XXpsk3 -> `k` doğrulaması ->
 /// PC'de kullanıcı onayı -> kaydet + etkin nokta bilgisi.
 @MainActor
 @Observable
@@ -117,7 +117,7 @@ final class PairingController {
                 transport: transport, prefix: Prefix.ble(), localKey: key, psk: invite.secret,
                 expectedRemoteKey: invite.pcPublicKey)
 
-            // PC'de onay: kullanıcı onaylamadan PC bir şey göndermez (PROTOCOL §2.4). Önce `hello`.
+            // PC'de onay: kullanıcı onaylamadan PC bir şey göndermez (PROTOCOL §3.2 madde 4). Önce `hello`.
             phase = .waitingApproval(invite.pcName, channel.verificationCode)
             try await channel.sendSignal(.hello(helloInfo().helloMessage))
 
@@ -126,7 +126,7 @@ final class PairingController {
                 switch message {
                 case .hello:
                     gotHello = true
-                case .pairInfo(let p):   // PROTOCOL §2.7/§4: eşleştirmede etkin nokta bilgisi
+                case .pairInfo(let p):   // PROTOCOL §3.2 madde 7/§5: eşleştirmede etkin nokta bilgisi
                     gotHello = true
                     credentials = HotspotCredentials(ssid: p.ssid, pass: p.pass)
                 case .hotspot(let h):

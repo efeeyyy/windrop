@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 @testable import WinDropKit
 
-/// PROTOCOL §6.3 aktarma sunucusu: oda kimliği vektörü (protocol/vectors/relay.json), sahte WebSocket üstünde IK + aktarım.
+/// PROTOCOL §7.4 aktarma sunucusu: oda kimliği vektörü (protocol/vectors/relay.json), sahte WebSocket üstünde IK + aktarım.
 final class RelayTests: XCTestCase {
     var inbox: URL!
 

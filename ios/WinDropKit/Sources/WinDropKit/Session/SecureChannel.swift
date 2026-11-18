@@ -5,7 +5,7 @@ import CryptoKit
 import Crypto
 #endif
 
-/// Cihaz kimliği = açık anahtarın SHA-256'sının ilk 16 baytı (PROTOCOL §0).
+/// Cihaz kimliği = açık anahtarın SHA-256'sının ilk 16 baytı (PROTOCOL §1).
 public enum DeviceId {
     public static let length = 16
     public static func from(publicKey: Data) -> Data { Data(SHA256.hash(data: publicKey).prefix(length)) }
@@ -13,7 +13,7 @@ public enum DeviceId {
     public static func hex(_ id: Data) -> String { id.map { String(format: "%02x", $0) }.joined() }
 }
 
-/// Eşleştirmesiz ("yakındaki herkes", PROTOCOL §2b) doğrulama kodu: `SHA-256("WinDrop-SAS" || h)`in ilk 4 baytı
+/// Eşleştirmesiz ("yakındaki herkes", PROTOCOL §3.1) doğrulama kodu: `SHA-256("WinDrop-SAS" || h)`in ilk 4 baytı
 /// big-endian UInt32, mod 10000, 4 haneye sıfırla doldurulmuş. `h` el sıkışma bitince el sıkışma karmasıdır.
 public enum VerificationCode {
     public static func compute(handshakeHash h: Data) -> String {
@@ -75,8 +75,8 @@ public final class IgnoredSignals: @unchecked Sendable {
     public var last: String? { lock.lock(); defer { lock.unlock() }; return storedLast }
 }
 
-/// Kanaldan gelen tek mesaj: §5 çerçevesi veya §4 sinyali (BLE oturumunda ayrım: düz metnin ilk baytı `{` ise sinyal,
-/// 1–8 ise çerçeve; PROTOCOL §9a).
+/// Kanaldan gelen tek mesaj: §6 çerçevesi veya §5 sinyali (BLE oturumunda ayrım: düz metnin ilk baytı `{` ise sinyal,
+/// 1–8 ise çerçeve; PROTOCOL §4.2).
 public enum SecureMessage: Equatable {
     case frame(Frame)
     case signal(SignalMessage)
@@ -85,7 +85,7 @@ public enum SecureMessage: Equatable {
 /// Kurulmuş Noise oturumu üstünde çerçeve/sinyal alışverişi. Roller açıktır: iPhone `connect*` (başlatan),
 /// PC `accept*` (yanıtlayan; testlerde kullanılır).
 ///
-/// Kurulmuş sayma (PROTOCOL §1, §9a): IK'de el sıkışmayı yanıtlayan bitirir, bu yüzden başlatan hemen sonra
+/// Kurulmuş sayma (PROTOCOL §2): IK'de el sıkışmayı yanıtlayan bitirir, bu yüzden başlatan hemen sonra
 /// **boş düz metinli** bir taşıma mesajı yollar; yanıtlayan onu yutar ve oturumu ancak o zaman kurulmuş sayar
 /// (`isEstablished`). Yanıtlayan o ana dek veri göndermez. XXpsk3'te el sıkışmayı başlatan bitirir; yanıtlayan
 /// hemen kurulmuş sayılır.
@@ -160,7 +160,7 @@ public final class SecureChannel {
     /// Sıradaki çerçeve veya sinyal; karşı taraf temiz kapattıysa nil.
     ///
     /// Çözülemeyen / bilinmeyen `t` içeren sinyal oturumu DÜŞÜRMEZ: o mesaj atlanır, sıradakine geçilir (DECISIONS 1,
-    /// ileri uyumluluk). Çerçeve (§5) çözme hataları ve Noise hataları eskisi gibi hata verir.
+    /// ileri uyumluluk). Çerçeve (§6.2) çözme hataları ve Noise hataları eskisi gibi hata verir.
     public func receiveMessage() async throws -> SecureMessage? {
         while true {
             let plaintext: Data
@@ -250,7 +250,7 @@ public final class SecureChannel {
         return try makeChannel(transport, prefix, hs, initiator: true, established: true)
     }
 
-    /// Eşleştirmesiz bağlantı (PROTOCOL §2b): ön ek + `Noise_XX` (psk yok), bilinmeyen PC ile. Dönen kanalın
+    /// Eşleştirmesiz bağlantı (PROTOCOL §3.1): ön ek + `Noise_XX` (psk yok), bilinmeyen PC ile. Dönen kanalın
     /// `remoteStaticKey` değeri el sıkışmada öğrenilen PC anahtarıdır (çağıran saklar/karşılaştırır);
     /// `verificationCode` iki ekranda gösterilir. `expectedRemoteStatic` verilmişse (BLE oturumunda öğrenilen PC
     /// anahtarı) 2. mesajdan sonra karşılaştırılır; uyuşmazsa 3. mesaj (kendi statik anahtarımız) gönderilmeden

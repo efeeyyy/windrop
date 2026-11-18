@@ -2,14 +2,14 @@ import Foundation
 
 public enum FolderScanError: Error, Equatable {
     case notADirectory(String)
-    /// Klasör ağacı > 16 seviye (PROTOCOL §5a).
+    /// Klasör ağacı > 16 seviye (PROTOCOL §6.7).
     case tooDeep(String)
     /// Göreli yol > 1024 karakter.
     case pathTooLong(String)
     case tooManyFiles
 }
 
-/// PROTOCOL §5a gönderen: klasörden özyinelemeli dosya listesi. Sembolik bağlar izlenmez (atlanır), boş klasörler taşınmaz.
+/// PROTOCOL §6.7 gönderen: klasörden özyinelemeli dosya listesi. Sembolik bağlar izlenmez (atlanır), boş klasörler taşınmaz.
 /// `dir` = `<klasör adı>/<alt/yol>` (ayırıcı `/`); kök klasörün kendi adı en üst bileşendir.
 public enum FolderScanner {
     /// Dosyaları göreli yola göre sıralı ve `startId`ten artan kimliklerle döndürür (devamda aynı kimlikler için sıra sabit).

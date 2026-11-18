@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Bilinmeyen (XX) bilgisayar için 4 haneli doğrulama kodu: iPhone ve bilgisayar ekranında aynı olmalı (PROTOCOL §2b).
+/// Bilinmeyen (XX) bilgisayar için 4 haneli doğrulama kodu: iPhone ve bilgisayar ekranında aynı olmalı (PROTOCOL §3.1).
 /// Uygulama ve Paylaşım Uzantısı ortak kullanır.
 struct VerificationCodeBanner: View {
     let code: String

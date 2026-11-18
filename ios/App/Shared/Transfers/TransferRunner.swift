@@ -16,14 +16,14 @@ struct OutgoingFile: Sendable, Identifiable, Hashable {
     var securityScoped: Bool
     /// Geçici kopya (fotoğraf seçici); iş bitince silinir.
     var isTemporary: Bool
-    /// PROTOCOL §5a: gönderilen klasör kökünden göreli klasör yolu (`Klasör/alt`, `/` ayırıcı); tek dosyada nil.
+    /// PROTOCOL §6.7: gönderilen klasör kökünden göreli klasör yolu (`Klasör/alt`, `/` ayırıcı); tek dosyada nil.
     var dir: String? = nil
     /// Klasör seçimi: güvenlik kapsamı bu URL için açıldı (klasörün ilk dosyasında yalnız bir kez set edilir; iş bitince kapatılır).
     var scopeURL: URL? = nil
     /// Klasör geçici kopyaysa silinecek kök (Paylaşım uzantısı).
     var tempRoot: URL? = nil
 
-    /// `offer.preview` / arayüz adı (PROTOCOL §5a): klasör içindeyse en üst klasör adı + sonda "/", değilse dosya adı.
+    /// `offer.preview` / arayüz adı (PROTOCOL §6.7): klasör içindeyse en üst klasör adı + sonda "/", değilse dosya adı.
     var displayName: String {
         guard let dir, let top = dir.split(separator: "/", maxSplits: 1).first else { return name }
         return String(top) + "/"
@@ -53,7 +53,7 @@ struct StoredFile: Sendable, Identifiable, Hashable {
     enum MediaKind: Sendable { case photo, video }
 }
 
-/// Veri kanalı kimliği (PROTOCOL §2b: BLE oturumu IK idiyse IK, değilse XX + anahtar eşitliği doğrulaması).
+/// Veri kanalı kimliği (PROTOCOL §3.1: BLE oturumu IK idiyse IK, değilse XX + anahtar eşitliği doğrulaması).
 struct ChannelCrypto: Sendable {
     var localPrivateKey: Data
     /// BLE oturumunda öğrenilen/saklanan PC açık anahtarı.
@@ -127,7 +127,7 @@ enum TransferRunner {
         return summarize(result)
     }
 
-    /// BLE oturumu üstünde gönderim (PROTOCOL §6.4): küçük DATA parçaları, ~20 KB/s pacing; kanal açık BLE oturumunundur.
+    /// BLE oturumu üstünde gönderim (PROTOCOL §7.3): küçük DATA parçaları, ~20 KB/s pacing; kanal açık BLE oturumunundur.
     static func sendOverBle(
         session: BleDataSession, files: [OutgoingFile], progress: @escaping @Sendable (TransferProgress) -> Void
     ) async throws -> TransferSummary {

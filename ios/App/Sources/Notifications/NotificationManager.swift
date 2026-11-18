@@ -1,7 +1,7 @@
 import Foundation
 import UserNotifications
 
-/// Yerel bildirimler (PROTOCOL §7): arka planda gelen `offer` -> bildirim (Kabul / Reddet eylemleri).
+/// Yerel bildirimler (PROTOCOL §8): arka planda gelen `offer` -> bildirim (Kabul / Reddet eylemleri).
 /// - Kabul: `.foreground` eylemi; uygulama öne gelir, teklif kabul edilir, aktarım başlar.
 /// - Reddet: arka plan eylemi; uygulama kısa süre uyanır, `reject` BLE oturumundan gönderilir (arka plan görevi içinde).
 /// - Gövdeye dokunma: uygulama açılır, onay sayfası görünür.

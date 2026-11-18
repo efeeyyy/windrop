@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import WinDropKit
 
 /// Aktarma sunucusu adresi (Ayarlar > Aktarma sunucusu). Adres yalnız burada tutulur; eşten gelen mesajla ASLA değişmez
-/// (PROTOCOL §6 madde 3). App Group varsa uzantı ortak ayarı görür; grup yoksa uzantı kendi `UserDefaults`'unu görür: boşsa aktarma yolu kapalıdır.
+/// (PROTOCOL §7.4). App Group varsa uzantı ortak ayarı görür; grup yoksa uzantı kendi `UserDefaults`'unu görür: boşsa aktarma yolu kapalıdır.
 enum RelaySettings {
     static let key = "relayUrl"
 
@@ -46,7 +46,7 @@ private final class IdleFlag: @unchecked Sendable {
     var fired: Bool { lock.lock(); defer { lock.unlock() }; return value }
 }
 
-/// `URLSessionWebSocketTask` -> WinDropKit `WebSocketLike`. Her ikili mesaj = bir Noise mesajı (PROTOCOL §6.3).
+/// `URLSessionWebSocketTask` -> WinDropKit `WebSocketLike`. Her ikili mesaj = bir Noise mesajı (PROTOCOL §7.4).
 final class RelaySocket: NSObject, WebSocketLike, URLSessionWebSocketDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private var session: URLSession?

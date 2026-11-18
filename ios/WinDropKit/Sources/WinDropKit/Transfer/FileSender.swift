@@ -18,14 +18,14 @@ public struct SendItem {
     /// Unix epoch milisaniye.
     public var mtime: Int64
     public var source: FileSource
-    /// PROTOCOL §5a: gönderilen kökten göreli klasör yolu (`/` ayırıcı); dosya kökteyse nil.
+    /// PROTOCOL §6.7: gönderilen kökten göreli klasör yolu (`/` ayırıcı); dosya kökteyse nil.
     public var dir: String?
     public init(id: Int, name: String, size: Int64, mtime: Int64, source: FileSource, dir: String? = nil) {
         self.id = id; self.name = name; self.size = size; self.mtime = mtime; self.source = source; self.dir = dir
     }
 }
 
-/// PROTOCOL §5 gönderen: MANIFEST (sayfalı) -> her dosya için [alıcıdan RESUME -> FILE_START -> DATA… -> FILE_END] -> DONE bekler.
+/// PROTOCOL §6 gönderen: MANIFEST (sayfalı) -> her dosya için [alıcıdan RESUME -> FILE_START -> DATA… -> FILE_END] -> DONE bekler.
 /// Gelen ACK/CANCEL çerçeveleri gönderim sürerken işlenir (uzak iptal hemen fark edilir). Görev iptali CANCEL yollar.
 public final class FileSender {
     private let channel: SecureChannel
@@ -56,7 +56,7 @@ public final class FileSender {
     /// fırlatır; iptal/politika kesmesi sonuç olarak döner.
     public func run() async throws -> TransferResult {
         do {
-            try await channel.ensureEstablished()   // yanıtlayan: başlatanın boş onay mesajını bekler (§1)
+            try await channel.ensureEstablished()   // yanıtlayan: başlatanın boş onay mesajını bekler (§2)
         } catch SessionError.connectionClosed {
             throw TransferError.connectionLost
         }

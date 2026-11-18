@@ -3,7 +3,7 @@ import UIKit
 
 /// Paylaşım menüsü uzantısının ana sınıfı (Info.plist `NSExtensionPrincipalClass`). SwiftUI arayüzü barındırır.
 /// Uzantı YALNIZ ekranı açıkken Bluetooth'a bağlanır: her çıkış yolunda (tamamlandı, vazgeçildi, ekran kapandı)
-/// `teardown()` tüm bağlantıları iptal eder ve Darwin "inactive" sinyalini gönderir (PROTOCOL §3a).
+/// `teardown()` tüm bağlantıları iptal eder ve Darwin "inactive" sinyalini gönderir (PROTOCOL §4.4).
 @objc(ShareViewController)
 final class ShareViewController: UIViewController {
     private var model: ShareModel?
@@ -12,7 +12,7 @@ final class ShareViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        ShareActivitySignal.post(active: true)   // ana uygulama BLE bağlantılarını bırakır (PROTOCOL §3a)
+        ShareActivitySignal.post(active: true)   // ana uygulama BLE bağlantılarını bırakır (PROTOCOL §4.4)
         // Ana uygulama "active" sinyalini 2 dk sonra (uzantı çökmüş olabilir) zaman aşımıyla bırakır: açıkken tazele.
         heartbeat = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] timer in
             MainActor.assumeIsolated {

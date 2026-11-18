@@ -1,11 +1,11 @@
 import Foundation
 
-// PROTOCOL §4 sinyal mesajları (BLE oturumu içinde): UTF-8 JSON `{"t": "<tür>", ...}`.
+// PROTOCOL §5 sinyal mesajları (BLE oturumu içinde): UTF-8 JSON `{"t": "<tür>", ...}`.
 // Bilinmeyen alanlar yok sayılır. Spesifikasyonda "zorunlu" yazmayan alan çözümde isteğe bağlıdır (DECISIONS 1).
 // Bilinmeyen `t` / çözme hatası `decode`'da hata verir; ama `SecureChannel.receiveMessage` bunu oturumu düşürmeden
 // yalnız o mesajı atlayarak karşılar (ileri uyumluluk).
 //
-// Alan tipleri PROTOCOL §9a: `transferId` = 16 B base64url dolgusuz (22 karakter, bkz. `TransferId`; decode'da
+// Alan tipleri PROTOCOL §5: `transferId` = 16 B base64url dolgusuz (22 karakter, bkz. `TransferId`; decode'da
 // katı doğrulanır); `wifi` dize (`none`/`connected`); `caps` [String]; `count`/`v`/`port` Int; `total` Int64; `btAudio` Bool.
 
 public struct HelloMessage: Codable, Equatable {
@@ -69,7 +69,7 @@ public struct HotspotMessage: Codable, Equatable {
     }
 }
 
-/// `pairInfo` (PC→iPhone, yalnız eşleştirme kanalında; PROTOCOL §2.7, §4): etkin nokta SSID/parolası.
+/// `pairInfo` (PC→iPhone, yalnız eşleştirme kanalında; PROTOCOL §3.2 madde 7, §5): etkin nokta SSID/parolası.
 public struct PairInfo: Codable, Equatable {
     public var ssid: String
     public var pass: String
@@ -102,13 +102,13 @@ public struct SignalCancelMessage: Codable, Equatable {
     public init(transferId: String) { self.transferId = transferId }
 }
 
-/// `bleData` (PC→iPhone, PROTOCOL §6.4a): veri yolu BLE oturumudur; gönderen MANIFEST'i BLE'den başlatır, alıcı bekler.
+/// `bleData` (PC→iPhone, PROTOCOL §7.3): veri yolu BLE oturumudur; gönderen MANIFEST'i BLE'den başlatır, alıcı bekler.
 public struct BleDataMessage: Codable, Equatable {
     public var transferId: String
     public init(transferId: String) { self.transferId = transferId }
 }
 
-/// `pushId` (iPhone→PC, yalnız tanıdık/eşli PC'nin şifreli BLE kanalında, PROTOCOL §6.5): aktarma sunucusundaki push kaydı kimliği
+/// `pushId` (iPhone→PC, yalnız tanıdık/eşli PC'nin şifreli BLE kanalında, PROTOCOL §9): aktarma sunucusundaki push kaydı kimliği
 /// (32 küçük hex). Biçim kodlama/çözmede denetlenmez; alan zorunludur.
 public struct PushIdMessage: Codable, Equatable {
     public var pushId: String

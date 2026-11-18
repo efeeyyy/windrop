@@ -3,7 +3,7 @@ import SwiftUI
 /// Kullanıcıya yazılı uyarılar (ARCHITECTURE "Uyarılar uygulamada yazılı olacak").
 enum HowItWorksContent {
     /// (1) Uygulama uygulama değiştiricide kapatılırsa PC telefonu göremez.
-    /// `PUSH_ENABLED` (ücretli hesap + APNs, PROTOCOL §6.5): metin değişir.
+    /// `PUSH_ENABLED` (ücretli hesap + APNs, PROTOCOL §9): metin değişir.
     static var closedAppNote: String {
         #if PUSH_ENABLED
         return String(localized: "Uygulamayı kapatsanız da bilgisayardan gelen dosyalar için bildirim alırsınız (internet gerekir).")

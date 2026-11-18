@@ -42,7 +42,7 @@ enum FilePreparer {
         }
     }
 
-    /// Klasörlerin dosyalarını (PROTOCOL §5a) özyinelemeli listeler; sembolik bağlar izlenmez, boş klasörler taşınmaz.
+    /// Klasörlerin dosyalarını (PROTOCOL §6.7) özyinelemeli listeler; sembolik bağlar izlenmez, boş klasörler taşınmaz.
     /// Her klasör için güvenlik kapsamlı erişim açılır (ilk dosyanın `scopeURL`'ü ile `release`'te kapatılır). Ağır olabilir:
     /// ana iş parçacığı dışında çağrılmalı.
     static func outgoing(fromImportedFolders urls: [URL]) -> (files: [OutgoingFile], error: String?) {

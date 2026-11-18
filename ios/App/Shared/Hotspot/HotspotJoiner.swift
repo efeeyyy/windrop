@@ -10,7 +10,7 @@ enum HotspotJoinOutcome: Sendable, Equatable {
     case manualRequired
 }
 
-/// PC'nin Mobil Etkin Noktasına katılma (PROTOCOL §6.2).
+/// PC'nin Mobil Etkin Noktasına katılma (PROTOCOL §7.2).
 /// `NEHotspotConfiguration` yalnız ücretli hesapta (`HOTSPOT_ENTITLEMENT` bayrağı, Release-Hotspot).
 enum HotspotJoiner {
     static var automaticJoinAvailable: Bool {

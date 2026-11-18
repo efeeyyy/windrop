@@ -2,8 +2,8 @@ import Foundation
 import Observation
 import WinDropKit
 
-/// Tanıdık bilgisayar kaydı (PROTOCOL §0, §2b). `id` = açık anahtarın SHA-256'sının ilk 16 baytı (hex; Kit `DeviceId`).
-/// `autoAccept` yalnız QR ile eşleştirilenlerde true (PROTOCOL §7); onayla "tanıdık" olanlarda false.
+/// Tanıdık bilgisayar kaydı (PROTOCOL §1, §3.1). `id` = açık anahtarın SHA-256'sının ilk 16 baytı (hex; Kit `DeviceId`).
+/// `autoAccept` yalnız QR ile eşleştirilenlerde true (PROTOCOL §8); onayla "tanıdık" olanlarda false.
 struct KnownPC: Codable, Identifiable, Equatable, Sendable {
     var id: String
     /// Kayıt anındaki ad; arayüzde her zaman bu gösterilir (`hello.name` değil).

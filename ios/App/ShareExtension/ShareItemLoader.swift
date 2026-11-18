@@ -41,7 +41,7 @@ enum ShareItemLoader {
         provider.hasItemConformingToTypeIdentifier(UTType.folder.identifier)
     }
 
-    /// Öğeyi gönderilecek dosyalara çevirir: klasör ise (PROTOCOL §5a) içeriği geçici dizine kopyalanıp özyinelemeli taranır
+    /// Öğeyi gönderilecek dosyalara çevirir: klasör ise (PROTOCOL §6.7) içeriği geçici dizine kopyalanıp özyinelemeli taranır
     /// (her dosya `dir` taşır, sembolik bağlar izlenmez); değilse tek dosya.
     @MainActor
     static func loadFiles(from provider: NSItemProvider) async throws -> [OutgoingFile] {

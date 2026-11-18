@@ -1,8 +1,8 @@
 import Foundation
 
-/// PROTOCOL §3 BLE parçalama: bir Noise mesajı (en çok 8192 bayt) GATT yüklerine bölünür.
+/// PROTOCOL §4.2 BLE parçalama: bir Noise mesajı (en çok 8192 bayt) GATT yüklerine bölünür.
 /// Yük = `1 B başlık || parça`; başlık bit7 = son parça, bit0–6 = mesaj sıra no (mod 128).
-/// Sıra no mesaj başınadır: bir mesajın tüm parçaları aynı no'yu taşır (PROTOCOL §9a).
+/// Sıra no mesaj başınadır: bir mesajın tüm parçaları aynı no'yu taşır (PROTOCOL §4.2).
 /// `mtu` ATT MTU'dur (en az 23); tek GATT yükü en çok `mtu − 3`, parça verisi en çok `mtu − 4` bayttır.
 /// 20 baytlık ön ek parçalanmaz ve sayılmaz.
 public enum BleFragmenter {
@@ -54,7 +54,7 @@ public enum BleFragmenter {
 }
 
 /// Bir yöndeki GATT yüklerinden Noise mesajlarını birleştiren durum makinesi (G/Ç yok).
-/// Herhangi bir hata sonrası nesne kalıcı bozulur: PROTOCOL §3 gereği oturum düşer, yeni el sıkışma gerekir.
+/// Herhangi bir hata sonrası nesne kalıcı bozulur: PROTOCOL §4.2 gereği oturum düşer, yeni el sıkışma gerekir.
 public final class BleReassembler {
     private var buffer = Data()
     private var expectedSequence: Int

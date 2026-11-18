@@ -226,7 +226,7 @@ private final class NWConnectAttempt: @unchecked Sendable {
     }
 }
 
-/// PROTOCOL §6.1: adaylara paralel bağlanır (aday başına 1,5 sn), ilk başarılı kazanır.
+/// PROTOCOL §7.1: adaylara paralel bağlanır (aday başına 1,5 sn), ilk başarılı kazanır.
 enum DataClient {
     /// Tek tur: tüm adaylara paralel deneme.
     static func connect(

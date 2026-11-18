@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 @testable import WinDropKit
 
-/// PROTOCOL §6.4: küçük dosya BLE oturumu üstünden (bellek içi GATT bağlantısı, MTU 185).
+/// PROTOCOL §7.3: küçük dosya BLE oturumu üstünden (bellek içi GATT bağlantısı, MTU 185).
 /// iPhone tarafı SignalHub gibi davranır: tek okuma döngüsü sinyalleri ayırır, çerçeveleri `FrameReader`'a besler.
 final class BleTransferTests: XCTestCase {
     let phoneKey = NoisePrivateKey()

@@ -94,6 +94,31 @@ jobs:
           echo "--- concurrency uyarıları (sayı) ---"
           grep -E "warning:.*(Sendable|actor-isolated|concurrency)" "$RUNNER_TEMP/xcodebuild.log" | sort -u | wc -l || true
 
+      # CODE_SIGNING_ALLOWED=NO ile yetkiler ikiliye gömülmez; Sideloadly/SideStore ise App Group'u ikilinin
+      # imzasındaki yetkilerden okur. Yetkiler ad-hoc imzayla gömülür (kullanıcının aracı kendi hesabıyla yeniden imzalar).
+      - name: Yetkileri göm (ad-hoc imza)
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/WinDrop.xcarchive/Products/Applications/WinDrop.app"
+          APPEX="$APP/PlugIns/WinDropShare.appex"
+          BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
+          echo "Paket kimliği: $BID"
+          # İç içe kod önce imzalanır (gömülü framework/dylib varsa), sonra uzantı, en son uygulama.
+          find "$APP" \( -name '*.framework' -o -name '*.dylib' \) -prune -print | while read -r f; do
+            codesign --force --sign - --timestamp=none "$f"
+          done
+          sign() {  # $1 = yetki dosyası (ios/App altında), $2 = paket
+            local ent="$RUNNER_TEMP/$1"
+            sed -e "s/[$](WINDROP_BUNDLE_ID)/$BID/g" "ios/App/$1" > "$ent"
+            plutil -lint "$ent"
+            codesign --force --sign - --timestamp=none --generate-entitlement-der --entitlements "$ent" "$2"
+            codesign -d --entitlements :- "$2" 2>/dev/null | grep -F "group.$BID" \
+              || { echo "HATA: $2 içinde group.$BID yetkisi yok"; exit 1; }
+          }
+          sign WinDropShare.entitlements "$APPEX"
+          sign WinDrop.entitlements "$APP"
+          codesign --verify --deep --strict "$APP"
+
       - name: IPA oluştur (Payload/WinDrop.app + PlugIns/WinDropShare.appex)
         run: |
           APP="$RUNNER_TEMP/WinDrop.xcarchive/Products/Applications/WinDrop.app"

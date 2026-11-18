@@ -24,7 +24,7 @@ final class NoNotifications: OfferNotifying {
 }
 
 /// Aktarımların yaşam döngüsü: teklif -> kabul -> adres/etkin nokta -> TCP -> Kit FileSender/FileReceiver
-/// (PROTOCOL §2b, §4, §6, §7). `pcID` her yerde PC'nin açık anahtar kimliğidir (`NearbyPeer.id`).
+/// (PROTOCOL §3.1, §5, §7, §8). `pcID` her yerde PC'nin açık anahtar kimliğidir (`NearbyPeer.id`).
 @MainActor
 @Observable
 final class TransferCoordinator {
@@ -43,14 +43,14 @@ final class TransferCoordinator {
     @ObservationIgnored var rejectsIncomingOffers = false
     /// iPhone şu an Wi-Fi'a bağlı mı? `hotspot` yalnız `wifi=none` iken işlenir; bağlanmazsa güvenli varsayılan: bağlı say.
     @ObservationIgnored var isWifiConnected: @MainActor () -> Bool = { true }
-    /// Bu cihazda Bluetooth ses etkin mi? (PROTOCOL §6.4: BLE veri yolu yalnız false iken.) Bilinmezse temkinli: true.
+    /// Bu cihazda Bluetooth ses etkin mi? (PROTOCOL §7.3: BLE veri yolu yalnız false iken.) Bilinmezse temkinli: true.
     @ObservationIgnored var isBluetoothAudioActive: @MainActor () -> Bool = { true }
     /// Ayardaki aktarma sunucusu adresi (`relayUrl`); boş/okunamıyorsa nil = aktarma yolu kapalı. Uzantı kendi ayarını okur.
     @ObservationIgnored var relayUrl: () -> String? = { RelaySettings.configuredURL() }
-    /// Gelen teklif hız sınırı (PROTOCOL §2b, §5): kimlik başına tanıdık 5/dk; bilinmeyenler için TOPLAM 3/dk (anahtar üreterek aşılamaz).
+    /// Gelen teklif hız sınırı (PROTOCOL §3.4, §6.5): kimlik başına tanıdık 5/dk; bilinmeyenler için TOPLAM 3/dk (anahtar üreterek aşılamaz).
     @ObservationIgnored private var knownOfferTimes: [String: [Date]] = [:]
     @ObservationIgnored private var unknownOfferTimes: [Date] = []
-    /// Reddedilen bilinmeyen anahtardan sonra 2 dk sessizlik (PROTOCOL §2b).
+    /// Reddedilen bilinmeyen anahtardan sonra 2 dk sessizlik (PROTOCOL §3.4).
     @ObservationIgnored private var silencedUntil: [String: Date] = [:]
     static let rejectSilence: TimeInterval = 120
     @ObservationIgnored private var offerWatchers: [String: Task<Void, Never>] = [:]
@@ -101,7 +101,7 @@ final class TransferCoordinator {
         var numbered = files
         for index in numbered.indices { numbered[index].id = index }
         let total = numbered.reduce(Int64(0)) { $0 + $1.size }
-        // Klasör dosyaları için klasör adı (PROTOCOL §5a: `offer.preview` klasör adlarını gösterebilir); tekrarsız, sıralı.
+        // Klasör dosyaları için klasör adı (PROTOCOL §6.7: `offer.preview` klasör adlarını gösterebilir); tekrarsız, sıralı.
         var seen = Set<String>()
         let labels = numbered.map(\.displayName).filter { seen.insert($0).inserted }
         let transferId = TransferId.random().description
@@ -195,7 +195,7 @@ final class TransferCoordinator {
                 beginDirect(item, candidates: addr.candidates, peer: peer)
             }
         case .hotspot(let hotspot):
-            // Yalnız onaylanmış aktarımda ve iPhone o an Wi-Fi'a bağlı değilken (PROTOCOL §6.2).
+            // Yalnız onaylanmış aktarımda ve iPhone o an Wi-Fi'a bağlı değilken (PROTOCOL §7.2).
             if let item = item(withID: hotspot.transferId), item.pcID == peer.id, hasConsent(item), !isWifiConnected() {
                 beginHotspot(item, message: hotspot, peer: peer)
             }
@@ -207,7 +207,7 @@ final class TransferCoordinator {
                 finishCleanup(item)
             }
         case .bleData(let message):
-            // Yolu PC seçer (PROTOCOL §6.4a): gönderen MANIFEST'i BLE'den başlatır, alıcı BLE'den MANIFEST bekler.
+            // Yolu PC seçer (PROTOCOL §7.3): gönderen MANIFEST'i BLE'den başlatır, alıcı BLE'den MANIFEST bekler.
             if let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), !item.isFinished,
                !item.pathWon, canUseBle(item) {
                 // PC `addr`/`hotspot` yollarını bıraktı: açık yol beklemeleri kapatılır (DECISIONS 5), sonra BLE.
@@ -247,7 +247,7 @@ final class TransferCoordinator {
         }
     }
 
-    /// Gelen teklif hız sınırı (PROTOCOL §2b, §5): tanıdık kimlik başına 5/dk; bilinmeyen cihazlar için TOPLAM 3/dk.
+    /// Gelen teklif hız sınırı (PROTOCOL §3.4, §6.5): tanıdık kimlik başına 5/dk; bilinmeyen cihazlar için TOPLAM 3/dk.
     private func allowOffer(from peer: NearbyPeer) -> Bool {
         let now = Date()
         if peer.isKnown {
@@ -288,7 +288,7 @@ final class TransferCoordinator {
               let tid = TransferId.parse(offer.transferId),
               offer.count > 0, offer.count <= TransferLimits.maxFiles, offer.total >= 0 else { return }
         if !peer.isKnown {
-            // Bilinmeyen: reddedilen anahtardan 2 dk sessizlik; aynı anda en çok 1 bekleyen teklif (PROTOCOL §2b).
+            // Bilinmeyen: reddedilen anahtardan 2 dk sessizlik; aynı anda en çok 1 bekleyen teklif (PROTOCOL §3.4).
             if isSilenced(peer) {
                 sendReject(tid.description, to: peer.id, reason: "silenced")
                 return
@@ -302,11 +302,11 @@ final class TransferCoordinator {
             sendReject(tid.description, to: peer.id, reason: "rate_limited")
             return
         }
-        // Önizlemede sonda "/" klasör demektir (PROTOCOL §5a); ad yine temizlenir, "/" arayüz için korunur.
+        // Önizlemede sonda "/" klasör demektir (PROTOCOL §6.7); ad yine temizlenir, "/" arayüz için korunur.
         let names = offer.preview.prefix(5).map { entry -> String in
             entry.hasSuffix("/") ? FileNameSanitizer.sanitize(String(entry.dropLast())) + "/" : FileNameSanitizer.sanitize(entry)
         }
-        // Otomatik kabul yalnız QR ile eşleştirilmiş PC'den, Ayarlar'da açıksa ve boyut sınırı içinde (PROTOCOL §5, §7);
+        // Otomatik kabul yalnız QR ile eşleştirilmiş PC'den, Ayarlar'da açıksa ve boyut sınırı içinde (PROTOCOL §6.5, §8);
         // "tanıdık" (onayla eklenen) PC'lerden gelen her teklif sorulur.
         let auto = peer.isKnown && peer.autoAccept && AutoAcceptSettings.isEnabled && offer.total <= AutoAcceptSettings.limit
         let item = TransferItem(
@@ -318,7 +318,7 @@ final class TransferCoordinator {
         item.peerSnapshot = peer
         items.insert(item, at: 0)
 
-        // Kabulden önce boş alan (PROTOCOL §5): yetmiyorsa teklifi sorgusuz reddet (`no_space`).
+        // Kabulden önce boş alan (PROTOCOL §6.5): yetmiyorsa teklifi sorgusuz reddet (`no_space`).
         if !hasEnoughSpace(for: offer.total) {
             item.state = .failed
             item.errorMessage = String(localized: "Yeterli boş alan yok.")
@@ -421,7 +421,7 @@ final class TransferCoordinator {
     }
 
     /// Kota uyarısı onaylandı (iki tarafta da kullanıcı onaylar; reddetmek = `cancel`): aktarma odasına bağlanılır
-    /// (PROTOCOL §6.3). Bağlantı/el sıkışma başarısızsa `path relay_fail` gider ve aktarım başarısız olur.
+    /// (PROTOCOL §7.4). Bağlantı/el sıkışma başarısızsa `path relay_fail` gider ve aktarım başarısız olur.
     func confirmRelay(_ item: TransferItem) {
         guard item.state == .awaitingRelayConsent, item.task == nil else { return }
         guard let endpoint = item.relayEndpoint, let peer = signals.peer(item.pcID) else {
@@ -448,7 +448,7 @@ final class TransferCoordinator {
     }
 
     /// `relay {transferId, token}`: yalnız onaylanmış aktarımda. Adres mesajdan değil ayardan (`relayUrl`) gelir
-    /// (PROTOCOL §6 madde 3); ayar boş/geçersizse veya token bozuksa `relay_fail` gider. Kullanıcı onayı beklenir.
+    /// (PROTOCOL §7.4); ayar boş/geçersizse veya token bozuksa `relay_fail` gider. Kullanıcı onayı beklenir.
     private func handleRelay(_ message: RelayMessage, from peer: NearbyPeer) {
         guard let item = item(withID: message.transferId), item.pcID == peer.id, hasConsent(item), !item.isFinished,
               !item.pathWon, item.task == nil, item.state == .awaitingPeer || !item.attempts.isEmpty,
@@ -476,7 +476,7 @@ final class TransferCoordinator {
         }
     }
 
-    // MARK: Veri yolu (PROTOCOL §6)
+    // MARK: Veri yolu (PROTOCOL §7)
 
     /// `addr` (wifi=connected): adaylara paralel TCP. Etkin nokta beklenirken de kabul edilir ve onunla yarışır:
     /// ilk başarılı bağlantı kazanır, diğer deneme iptal edilir (`claimPath`).
@@ -604,7 +604,7 @@ final class TransferCoordinator {
         }
     }
 
-    /// Tüm denemeler başarısız: yolu PC seçer (`bleData` veya `relay`, §6.3/§6.4a). Kota uyarısı `relay` gelince gösterilir.
+    /// Tüm denemeler başarısız: yolu PC seçer (`bleData` veya `relay`, §7.4/§7.3). Kota uyarısı `relay` gelince gösterilir.
     /// PC yeni yolu 30 sn içinde bildirmezse satır hatayla biter (`watchPath`).
     private func awaitNextPath(_ item: TransferItem) {
         guard !item.isFinished else { return }
@@ -675,7 +675,7 @@ final class TransferCoordinator {
         approvalWatchers.removeValue(forKey: item.id)?.cancel()
     }
 
-    /// PROTOCOL §5: kabulden önce `total` <= boş alan − pay.
+    /// PROTOCOL §6.5: kabulden önce `total` <= boş alan − pay.
     private func hasEnoughSpace(for total: Int64) -> Bool {
         guard total > 0 else { return true }
         let url = URL(fileURLWithPath: NSHomeDirectory())
@@ -806,9 +806,9 @@ final class TransferCoordinator {
         notifications.postResult(transferId: item.id, body: body)
     }
 
-    // MARK: BLE küçük dosya yolu (PROTOCOL §6.4)
+    // MARK: BLE küçük dosya yolu (PROTOCOL §7.3)
 
-    /// BLE yolunu PC seçer (`bleData`, §6.4a); burada yalnız yerel sınırlar: toplam <= 64 KB ve bu cihazda Bluetooth ses yok.
+    /// BLE yolunu PC seçer (`bleData`, §7.3); burada yalnız yerel sınırlar: toplam <= 64 KB ve bu cihazda Bluetooth ses yok.
     private func canUseBle(_ item: TransferItem) -> Bool {
         item.totalBytes <= TransferLimits.bleMaxTotalBytes && !isBluetoothAudioActive()
     }

@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 @testable import WinDropKit
 
-/// Bellek içi uçtan uca: Prefix (prologue) + IK / XXpsk3 + TCP ve BLE taşıma + SecureChannel (PROTOCOL §1, §3, §5).
+/// Bellek içi uçtan uca: Prefix (prologue) + IK / XXpsk3 + TCP ve BLE taşıma + SecureChannel (PROTOCOL §2, §4, §6).
 final class EndToEndTests: XCTestCase {
     let phoneKey = NoisePrivateKey()   // iPhone (başlatan)
     let pcKey = NoisePrivateKey()      // PC (yanıtlayan)

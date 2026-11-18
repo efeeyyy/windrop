@@ -1,6 +1,6 @@
 import Foundation
 
-/// 16 baytlık aktarım kimliği (PROTOCOL §1 ön ek; §4 JSON'da 16 B base64url, dolgusuz, 22 karakter).
+/// 16 baytlık aktarım kimliği (PROTOCOL §2 ön ek; §5 JSON'da 16 B base64url, dolgusuz, 22 karakter).
 public struct TransferId: Hashable, CustomStringConvertible {
     public static let length = 16
     public let bytes: Data

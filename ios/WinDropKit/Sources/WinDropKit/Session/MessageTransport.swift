@@ -10,7 +10,7 @@ public enum SessionError: Error, Equatable {
     case peerKeyMismatch
     case connectionClosed
     case transportMismatch
-    /// Yanıtlayan, başlatandan ilk geçerli taşıma mesajı gelmeden veri gönderemez (§1).
+    /// Yanıtlayan, başlatandan ilk geçerli taşıma mesajı gelmeden veri gönderemez (§2).
     case notEstablished
     case protocolViolation(String)
 }

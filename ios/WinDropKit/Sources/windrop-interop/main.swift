@@ -24,7 +24,7 @@ import Darwin
 //                --out DIR --count N --total BYTES         C# -> Swift (Swift alıcı)
 //   relay-phone  --relay-url wss://H[:P] --token <b64url 43 | 64 hex> --mode send|receive --transfer-id <b64url>
 //                --pattern ik|xx --my-key <hex32> --peer-pub <hex32> [send: dosyalar... | receive: --out DIR --count N --total BYTES]
-//                PROTOCOL §6.3: aktarma sunucusunda `phone` rolüyle bağlanır (ön ek taşıma=3), sonra send/receive-from gibi çalışır.
+//                PROTOCOL §7.4: aktarma sunucusunda `phone` rolüyle bağlanır (ön ek taşıma=3), sonra send/receive-from gibi çalışır.
 //   pubkey       --my-key <hex32>                          açık anahtarı yazdırır
 //
 // Çıktı: "KEY=değer" satırları (betikler ayrıştırır). Çıkış kodu: 0 = Completed, 1 = diğer sonuç, 2 = hata.
@@ -177,7 +177,7 @@ if command == "pubkey" {
     exit(0)
 }
 
-// C# `signals` ile birebir aynı değerler (PROTOCOL §4/§9a).
+// C# `signals` ile birebir aynı değerler (PROTOCOL §5).
 func sampleSignals() -> [SignalMessage] {
     let id = "AQIDBAUGBwgJCgsMDQ4PEA"
     return [
@@ -256,7 +256,7 @@ func sha256Hex(of url: URL) throws -> String {
     return hasher.finalize().map { String(format: "%02x", $0) }.joined()
 }
 
-/// PROTOCOL §6.3: `URLSessionWebSocketTask` (FoundationNetworking'de var) -> `WebSocketLike`. Bağlantı hatası ilk
+/// PROTOCOL §7.4: `URLSessionWebSocketTask` (FoundationNetworking'de var) -> `WebSocketLike`. Bağlantı hatası ilk
 /// gönderme/almada görünür (sunucu 409/410/429 dönerse yükseltme başarısız olur).
 final class InteropWebSocket: WebSocketLike, @unchecked Sendable {
     private let task: URLSessionWebSocketTask
