@@ -1,6 +1,6 @@
 # STATUS — devir notu
 
-Son güncelleme: 2026-11-15. Yeni oturum önce bunu, sonra `docs/review/DECISIONS.md`, gerekirse
+Son güncelleme: 2026-11-18. Yeni oturum önce bunu, sonra `docs/review/DECISIONS.md`, gerekirse
 `ARCHITECTURE.md` / `PROTOCOL.md` okur. Ayrıntılı geçmiş git log'da.
 
 ## Ne bu proje
@@ -10,17 +10,17 @@ aktarma sunucusu (izolasyonlu ağ, veri kotası onayıyla). Uçtan uca Noise (IK
 UX (Efe): kurulumsuz, eşleştirme isteğe bağlı (XX + alıcı onayı + 4 haneli kod), izinler yalnız "Gönder"de,
 gelen medya Galeri'ye en yeni tarihle, paylaşım menüsü rehberi, tema Sistem/Açık/Koyu, TR + EN.
 
-## Kod ve doğrulama (2026-11-15)
+## Kod ve doğrulama (2026-11-18)
 | Parça | Yer | Durum |
 |---|---|---|
 | C# çekirdek | `windows/src/WinDrop.Core` | 340 test geçiyor |
 | Windows servisleri | `windows/src/WinDrop.Platform` | 211 test geçiyor |
 | Windows uygulaması (WPF) | `windows/src/WinDrop.App` | Derleniyor, 0 uyarı |
 | Swift çekirdek | `ios/WinDropKit` | 113 test (SwiftBox WSL) |
-| iOS uygulaması + uzantı | `ios/App` (XcodeGen) | CI yeşil (run 43595692985), IPA `dist/WinDrop-unsigned.ipa` (1,55 MB, 14 Kas) |
+| iOS uygulaması + uzantı | `ios/App` (XcodeGen) | CI yeşil (run 44389711940), IPA `dist/WinDrop-unsigned.ipa` + Release `v0.3.0` (1,56 MB, 18 Kas) |
 | Aktarma/push sunucusu | `relay/` | 52 test; Cloudflare'e henüz kurulmadı |
 | Çapraz uyum | `windows/tools/WinDrop.Interop` | TCP 6/6 + relay 3/3 PASS |
-| CI | `.github/workflows/{ios,interop,windows,relay}.yml` | Yol filtreli + concurrency; hepsi yeşil |
+| CI | `.github/workflows/{ios,interop,windows,relay}.yml` + `ios-release.yml` (elle) | Yol filtreli + concurrency; hepsi yeşil. macOS arm64 kapasite kısıtında iş atanmayıp iptal olabilir → `gh run rerun <id> --failed` |
 
 Komutlar:
 - Windows: `dotnet test windows\WinDrop.slnx` (dotnet: `C:\Program Files\dotnet\dotnet.exe`)
@@ -28,25 +28,31 @@ Komutlar:
 - Çapraz: `wsl -d SwiftBox -u root -- bash -lc "bash /mnt/c/Users/Efe/Desktop/WinDrop/windows/tools/WinDrop.Interop/run-interop.sh"`
 - Windows paket: `build\publish.ps1 -Version x.y.z` → `dist\WinDrop-win-x64.zip`
 - iOS çeviri denetimi: `py -3 ios\App\Localization\check-xcstrings.py`
+- iOS Release (yeniden derlemeden, son başarılı iOS CI IPA'sı): `gh workflow run ios-release.yml -f version=x.y.z`
 
-## ŞU AN YARIM (2026-11-15) — ilk iş bunlar
-1. **Tamam (18 Kas):** `fix/windows-app-review` main'e birleştirildi (hızlı ileri, `00f18ba`). İçerik: Windows
-   inceleme düzeltmeleri (Core+Platform+App+kurulum, `docs/review/windows-app-fixes.md`) + yeniden düzenlenmiş `PROTOCOL.md`.
-2. **Birlikte güncelleme:** Windows **0.3.0 bu PC'ye kuruldu** (15 Kas; `dist\WinDrop-win-x64.zip`). Yeni sürümde
-   `QUIT` ile zarif kapanma canlı doğrulandı. Sıra Efe'de: `dist\WinDrop-unsigned.ipa`'yı Sideloadly ile yükle
-   (ücretsiz hesap: 7 günde bir yeniden yükleme), sonra iki yönde aktarım + teklif penceresini dene
-   (pencere odak çalmıyor; 60 sn'de fark edilmezse ret — ses/yanıp sönme yok, gerekirse eklenir).
-3. **PROTOCOL.md `§` atıfları:** bölüm numaraları değişti (eski → yeni: PROTOCOL.md Ek A). Kod yorumları ve
-   diğer belgelerdeki ~350 atıf eski numarayı taşıyor: `docs/review/protocol-section-refs.txt`. Mekanik
-   düzeltme; `ios/` dosyalarına dokunmak macOS CI dakikası harcar — iOS değişikliğiyle birlikte yap.
-4. **Kod–belge uyuşmazlıkları (belge değişmedi, karar gerek):** `protocol-consistency.md` U12 (iOS `rate` ↔
+## ŞU AN YARIM (2026-11-18) — ilk iş bunlar
+1. **Cihaz denemesi (Efe):** Windows 0.3.0 bu PC'de kurulu. iOS 0.3.0: GitHub Release `v0.3.0` (`8f77917`) ya da
+   `dist\WinDrop-unsigned.ipa` (aynı dosya, SHA256 `7e5c4e9e…`). IPA artık App Group yetkisini ad-hoc imzayla
+   taşıyor → Sideloadly/SideStore grubu görür, uygulama ile paylaşım uzantısı tek kimlik olmalı (Ayarlar > Tanılama
+   "Ortak kimlik"). Denenecek: iki yönde aktarım, paylaşım menüsünden gönderim, PC teklif penceresi (odak çalmıyor,
+   60 sn'de ret; ses/yanıp sönme yok).
+2. **SideStore'a geçiş (Efe kararı: önce dene):** Kurulum yolu iloader (Windows) + iPhone'da LocalDevVPN; sonra
+   yenileme bilgisayarsız. SideStore paket kimliğini değiştirebilir (`.TEAMID` eki) → PC iPhone'u yeni cihaz görür,
+   yeniden tanışma gerekir. Grup adı `group.<yeni kimlik>` olur; `SharedGroup` bunu dener. Doğrulanmadı: uzantı ve
+   grubun SideStore'da gerçekten paylaşılması, eduroam'da yenileme, kararlı 0.6.x'te oturum açma sorunu (alpha/nightly
+   gerekebilir). Ücretsiz hesap: SideStore dahil 3 uygulama, haftada 10 App ID (uzantı da sayılıyor olabilir).
+3. **Kod–belge uyuşmazlıkları (belge değişmedi, karar gerek):** `protocol-consistency.md` U12 (iOS `rate` ↔
    belge `rate_limited`), U13 (`caps.relay` gönderilmiyor), U14 (`relay` yalnız PC→iPhone), U25 (`btAudio` ile
    BLE kesmesi yalnız PC'de), U22 (klasör kuralları platformlar arası farklı).
-5. Ertelenen inceleme maddeleri: `windows-core-fixes.md`, `windows-app-fixes.md`, `ios-app-fixes.md` sonundaki
+4. Ertelenen inceleme maddeleri: `windows-core-fixes.md`, `windows-app-fixes.md`, `ios-app-fixes.md` sonundaki
    "ertelendi" listeleri.
-6. Karar bekleyen: iOS "eşli bilgisayarlardan otomatik kabul" varsayılanı açık (inceleme riskli buldu; Efe'ye soruldu).
-7. Ortam: bu makinede git `user.name`/`user.email` ayarlı değil; commit için `git -c user.name=... -c user.email=...`
-   (önceki commit'lerdeki kimlik) kullanıldı.
+5. Karar bekleyen: iOS "eşli bilgisayarlardan otomatik kabul" varsayılanı açık (inceleme riskli buldu; Efe'ye soruldu).
+6. Ortam: bu makinede git `user.name`/`user.email` ayarlı değil; commit için `git -c user.name=... -c user.email=...`
+   (önceki commit'lerdeki kimlik) kullanıldı. `fix/windows-app-review` dalı birleştirildi, silinmedi.
+
+Yapıldı (15–18 Kas): Windows inceleme düzeltmeleri main'de; PROTOCOL.md yeniden düzenlendi ve tüm kod/belge `§`
+atıfları yeni numaralarda (kalan yalnız `docs/review/` tarihsel raporları: `docs/review/protocol-section-refs.txt`);
+RollingFileLog kararsız testi düzeltildi; iOS IPA'ya yetki gömme; `ios-release.yml`.
 
 ## Kurulum / ortam notları (önemli)
 - **Claude kabuğu MSIX sanallaştırması altında:** `%LOCALAPPDATA%` okuma/yazma sanal kopyaya gidebilir.
