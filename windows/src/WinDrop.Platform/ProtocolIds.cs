@@ -1,7 +1,7 @@
 namespace WinDrop.Platform;
 
 /// <summary>
-/// PROTOCOL §3 BLE UUID'leri (2026-10-17'de rastgele üretildi; ölçüm aracının <c>ProbeUuids</c> değerlerinden bağımsız).
+/// PROTOCOL §4.1 BLE UUID'leri (2026-10-17'de rastgele üretildi; ölçüm aracının <c>ProbeUuids</c> değerlerinden bağımsız).
 /// </summary>
 public static class ProtocolIds
 {

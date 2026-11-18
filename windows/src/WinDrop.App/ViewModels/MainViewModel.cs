@@ -29,7 +29,7 @@ public sealed class DeviceViewModel
     public string Name => Info.Name;
     public bool IsNearby => Info.IsNearby;
     public bool CanPush => Info.CanPush;
-    /// <summary>Gönderilebilir: yakında ya da push bildirimiyle ulaşılabilir (§6.5).</summary>
+    /// <summary>Gönderilebilir: yakında ya da push bildirimiyle ulaşılabilir (§9).</summary>
     public bool IsReachable => Info.IsNearby || Info.CanPush;
     public string BadgeText => Strings.Get(Info.IsNearby ? "Device.Nearby" : Info.CanPush ? "Device.Push" : "Device.Away");
 

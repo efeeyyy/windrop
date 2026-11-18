@@ -19,7 +19,7 @@ ajanlar buna göre yazar.
 - **BleSignalServer:** 128 bit servis UUID'si (`ProtocolIds` sınıfında sabit), `c2p` / `p2c`.
   Her bağlantı için: ön ek → Noise yanıtlayan (eşleştirme modunda XXpsk3, değilse IK) → parçalama →
   `SignalMessage` olayları. Reklam: önce servis UUID'si; `Aborted` olursa yerel ad + servis verisi
-  ile yeniden dener (PROTOCOL §9). Eşleştirme modu yalnız QR ekrandayken açıktır.
+  ile yeniden dener (PROTOCOL §4.1). Eşleştirme modu yalnız QR ekrandayken açıktır.
 - **DataListener:** TCP 53600 (IPv4+IPv6). Ön ek → `transferId` beklenen bir aktarıma ait değilse
   kapat → IK yanıtlayan; karşı anahtar, o aktarımın eşi değilse kapat → aktarım motoruna devret.
 - **HotspotManager:** `NetworkOperatorTetheringManager`. Açmadan önce mevcut yapılandırmayı kaydeder,
@@ -35,7 +35,7 @@ ajanlar buna göre yazar.
 - **Eşleştir:** "iPhone ekle" → QR (QRCoder) + eşleştirme modu 2 dk → iPhone XXpsk3 → PC'de onay
   diyaloğu → güvenilen listeye ekle → etkin nokta bilgisini gönder.
 - **PC'den gönder:** dosya seçimi / sürükle-bırak / `--send` → yakındaki (BLE bağlı) eşli cihaz
-  listesi → `offer` (p2c) → `accept` → yol seçimi (§6) → aktarım ilerlemesi.
+  listesi → `offer` (p2c) → `accept` → yol seçimi (§7) → aktarım ilerlemesi.
 - **PC'ye gelen:** `offer` → onay bildirimi (otomatik kabul ayarı) → `accept` + `addr`/`hotspot` →
   iPhone bağlanır → alınan dosya indirme klasörüne (MOTW ile) → "Klasörde göster".
 

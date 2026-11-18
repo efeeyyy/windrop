@@ -15,7 +15,7 @@ public class DuplicateIdentityTests
         await using var h = new Harness();
         var longName = "Efe\u0007'nin‮ " + new string('x', 80);
         using var phone = await h.ConnectPhoneAsync(WifiState.Connected, helloName: longName);
-        // PROTOCOL §0 (windows-core #11): kayıtlı ad eşleştirme anındaki addır; hello.name kaydı değiştirmez.
+        // PROTOCOL §1 (windows-core #11): kayıtlı ad eşleştirme anındaki addır; hello.name kaydı değiştirmez.
         var device = Assert.Single(h.Trusted.List());
         Assert.Equal("Test iPhone", device.Name);
         Assert.Equal("Test iPhone", Assert.Single(h.Coord.NearbyPeers).Name);

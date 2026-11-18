@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// 16 baytlık aktarım kimliği (PROTOCOL §1 ön ek, §4 JSON'da 16 B base64url, dolgusuz).
+/// 16 baytlık aktarım kimliği (PROTOCOL §2 ön ek, §5 JSON'da 16 B base64url, dolgusuz).
 /// Değişmezdir; sözlük anahtarı olarak kullanılabilir.
 /// </summary>
 [JsonConverter(typeof(TransferIdJsonConverter))]

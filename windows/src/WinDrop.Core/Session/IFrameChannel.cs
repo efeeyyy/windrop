@@ -3,16 +3,16 @@ using WinDrop.Core.Protocol;
 namespace WinDrop.Core.Session;
 
 /// <summary>
-/// §5 çerçevelerini yollayıp alan kanal: <c>FileSender</c>/<c>FileReceiver</c> yalnız buna dayanır.
+/// §6 çerçevelerini yollayıp alan kanal: <c>FileSender</c>/<c>FileReceiver</c> yalnız buna dayanır.
 /// <see cref="SecureChannel"/> (TCP/aktarma/BLE oturumunun kendisi) ve BLE sinyal oturumu üstünde çerçeve ayıran
-/// uyarlayıcı (PROTOCOL §6.4) bunu uygular.
+/// uyarlayıcı (PROTOCOL §7.3) bunu uygular.
 /// </summary>
 public interface IFrameChannel
 {
     /// <summary>DATA gövdesi üst sınırı (tür baytı düşülmüş). BLE'de 8192 − 16 − 1 = 8175.</summary>
     int MaxFrameBodySize { get; }
 
-    /// <summary>Yanıtlayanda ilk geçerli taşıma mesajı gelene kadar bekler (§1 0-RTT yok).</summary>
+    /// <summary>Yanıtlayanda ilk geçerli taşıma mesajı gelene kadar bekler (§2 0-RTT yok).</summary>
     ValueTask EnsureEstablishedAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Hazır kodlanmış çerçeveyi (<see cref="FrameCodec"/>) yollar.</summary>

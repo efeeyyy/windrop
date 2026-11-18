@@ -21,7 +21,7 @@ public sealed class DeviceService : IDeviceService
         _rt.Pairing.AlreadyPaired += n => _ui.Post(_ => AlreadyPaired?.Invoke(this, n), null);
     }
 
-    /// <summary>Eşli + tanıdık cihazlar ve (PROTOCOL §2b) yakındaki bilinmeyen iPhone'lar (iPhone'un kurduğu BLE bağlantısı + hello).</summary>
+    /// <summary>Eşli + tanıdık cihazlar ve (PROTOCOL §3.1) yakındaki bilinmeyen iPhone'lar (iPhone'un kurduğu BLE bağlantısı + hello).</summary>
     public IReadOnlyList<DeviceInfo> Devices
     {
         get

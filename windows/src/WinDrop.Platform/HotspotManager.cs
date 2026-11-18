@@ -24,7 +24,7 @@ public sealed record HotspotSnapshot(string Ssid, string Passphrase, TetheringWi
 }
 
 /// <summary>
-/// Mobil etkin nokta (PROTOCOL §6.2). <see cref="StartAsync"/> kullanıcının mevcut ayarını kaydeder, WinDrop SSID/parolasını
+/// Mobil etkin nokta (PROTOCOL §7.2). <see cref="StartAsync"/> kullanıcının mevcut ayarını kaydeder, WinDrop SSID/parolasını
 /// (2,4 GHz tercih) yazar ve başlatır; <see cref="StopAsync"/> durdurur ve eski ayarı geri yükler. Kullanıcı etkin noktayı
 /// zaten açmışsa hiçbir şeye dokunulmaz (<c>false</c>). Yedek <c>hotspot-backup.bin</c> (DPAPI) çökme sonrası
 /// <see cref="RecoverAsync"/> ile geri yüklemeyi sağlar.
@@ -112,7 +112,7 @@ public sealed class HotspotManager : IAsyncDisposable, IHotspotController
                 bool othersActive;
                 lock (_timerLock) othersActive = _activeTransfers > 1;
                 if (othersActive) { ArmIdleTimer(); return true; }
-                // Parola yenilendi (PROTOCOL §6.2): açık kalan etkin nokta eski parolayla çalışıyor; yenisiyle yeniden başlat.
+                // Parola yenilendi (PROTOCOL §7.2): açık kalan etkin nokta eski parolayla çalışıyor; yenisiyle yeniden başlat.
                 try
                 {
                     await TryStopAsync(mgr).ConfigureAwait(false);

@@ -8,7 +8,7 @@ namespace WinDrop.Platform;
 public delegate Task PeerSessionHandler(PeerSession session, CancellationToken cancellationToken);
 
 /// <summary>
-/// BLE bağlantısından (<see cref="IBleLink"/>) oturum üretir (PROTOCOL §1, §2b, §9a): ön ek → eşleştirme modu açıksa XXpsk3
+/// BLE bağlantısından (<see cref="IBleLink"/>) oturum üretir (PROTOCOL §2, §3.1): ön ek → eşleştirme modu açıksa XXpsk3
 /// (<see cref="PairingService"/>), değilse IK + <see cref="TrustedDevices"/> → ilk taşıma mesajı → <see cref="SessionHandler"/>.
 /// GATT'tan bağımsızdır; gerçek BLE yığını <see cref="BleSignalServer"/> içindedir, testte bellek içi bağlantı verilir.
 /// </summary>
@@ -35,11 +35,11 @@ public sealed class SignalSessionAcceptor
     public TimeSpan HandshakeTimeout { get; set; } = TimeSpan.FromSeconds(15);
 
     /// <summary>Bir BLE bağlantısını baştan sona yürütür; bağlantı koptuğunda veya oturum bittiğinde döner. Hata fırlatmaz.
-    /// Protokol hatasıyla biterse istemciye <c>WDR</c> gönderir (PROTOCOL §3a) ama yeniden senkron beklemez.</summary>
+    /// Protokol hatasıyla biterse istemciye <c>WDR</c> gönderir (PROTOCOL §4.3) ama yeniden senkron beklemez.</summary>
     public async Task RunLinkAsync(IBleLink link, CancellationToken ct) => await RunOnceAsync(link, ct).ConfigureAwait(false);
 
     /// <summary>
-    /// PROTOCOL §3a: <see cref="RunLinkAsync"/> gibi, ama oturum protokol hatasıyla bittiğinde (<c>WDR</c> gönderildikten sonra)
+    /// PROTOCOL §4.3: <see cref="RunLinkAsync"/> gibi, ama oturum protokol hatasıyla bittiğinde (<c>WDR</c> gönderildikten sonra)
     /// aynı bağlantıdan geçerli bir 20 baytlık ön ek gelene kadar yazmaları sessizce yok sayar, ön ek gelince oturumu baştan kurar.
     /// Bağlantı kopunca (<see cref="IBleLink.ReceiveAsync"/> null) veya <paramref name="ct"/> iptal edilince döner.
     /// </summary>
@@ -124,7 +124,7 @@ public sealed class SignalSessionAcceptor
             {
                 channel = await SecureChannel.AcceptAutoAsync(transport, key,
                     k => _trusted.FindByPublicKey(k.ToArray()) is not null,   // IK: yalnız listedeki
-                    _ => true,                                                // XX: yakındaki herkes (§2b); onay teklifte
+                    _ => true,                                                // XX: yakındaki herkes (§3.1); onay teklifte
                     mode?.Psk, hs.Token).ConfigureAwait(false);
             }
             catch (Exception ex) when (mode is not null && ex is (NoiseException or ProtocolException) and not BleSessionRestartException)
@@ -200,7 +200,7 @@ public sealed class SignalSessionAcceptor
 
         if (fault && !ct.IsCancellationRequested)
         {
-            // PROTOCOL §3a: iPhone oturumun öldüğünü bilmez; tek bildirimle haber ver (en iyi çaba, abone yoksa atlanır).
+            // PROTOCOL §4.3: iPhone oturumun öldüğünü bilmez; tek bildirimle haber ver (en iyi çaba, abone yoksa atlanır).
             try
             {
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);

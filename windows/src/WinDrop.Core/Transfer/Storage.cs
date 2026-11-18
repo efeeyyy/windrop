@@ -9,15 +9,15 @@ public interface IFileSource
 {
     string Name { get; }
     long Size { get; }
-    /// <summary>Unix epoch milisaniye (PROTOCOL §9a).</summary>
+    /// <summary>Unix epoch milisaniye (PROTOCOL §6.2).</summary>
     long MtimeMs { get; }
-    /// <summary>PROTOCOL §5a: seçilen klasörün adı + göreli alt yol ('/' ayırıcı); klasör dışı dosyada null.</summary>
+    /// <summary>PROTOCOL §6.7: seçilen klasörün adı + göreli alt yol ('/' ayırıcı); klasör dışı dosyada null.</summary>
     string? Dir => null;
     /// <summary>Dosyayı 0. bayttan okumak üzere açar (gönderen, devamda ilk <c>offset</c> baytı yeniden hash'ler).</summary>
     ValueTask<Stream> OpenReadAsync(CancellationToken cancellationToken);
 }
 
-/// <summary>Kısmi dosya anahtarı: <c>(eş kimliği, transferId, dosya id)</c> (PROTOCOL §5).</summary>
+/// <summary>Kısmi dosya anahtarı: <c>(eş kimliği, transferId, dosya id)</c> (PROTOCOL §6.4).</summary>
 public readonly record struct PartialKey(string PeerId, TransferId TransferId, int FileId);
 
 /// <summary>Alıcının kısmi dosya deposu. Üretim uygulaması <see cref="FileSystemPartialStore"/>.</summary>
@@ -66,7 +66,7 @@ public interface IPartialFile : IAsyncDisposable
     ValueTask SyncAckAsync(long ackedOffset, CancellationToken cancellationToken);
 
     /// <summary>Doğrulanan dosyayı hedefe taşır (<paramref name="safeName"/> temizlenmiş ad; çakışmada "ad (2).ext"),
-    /// tamamlanma kaydını yazar. Saklanan yolu döndürür. <paramref name="safeDir"/> (§5a, <see cref="RelativeDirectory.Parse"/> çıktısı)
+    /// tamamlanma kaydını yazar. Saklanan yolu döndürür. <paramref name="safeDir"/> (§6.7, <see cref="RelativeDirectory.Parse"/> çıktısı)
     /// null değilse dosya indirme klasörü altındaki bu alt klasöre gider; en üst klasör çakışmasında "ad (2)" aktarım başına bir kez çözülür.</summary>
     ValueTask<string> CommitAsync(string safeName, IReadOnlyList<string>? safeDir, string sha256Hex, CancellationToken cancellationToken);
 
@@ -92,7 +92,7 @@ public sealed class FileSystemFileSource : IFileSource
 {
     private readonly string _path;
 
-    /// <param name="dir">PROTOCOL §5a göreli klasör yolu (null: klasör dışı dosya).</param>
+    /// <param name="dir">PROTOCOL §6.7 göreli klasör yolu (null: klasör dışı dosya).</param>
     public FileSystemFileSource(string path, string? dir = null)
     {
         var info = new FileInfo(path);
@@ -248,7 +248,7 @@ public sealed class FileSystemPartialStore : IPartialStore
     private static readonly object RootsLock = new();
 
     /// <summary>
-    /// §5a: <paramref name="safeDir"/> için hedef dizini oluşturur ve döndürür. En üst klasör çakışmasında "ad (2)" yalnız bir kez
+    /// §6.7: <paramref name="safeDir"/> için hedef dizini oluşturur ve döndürür. En üst klasör çakışmasında "ad (2)" yalnız bir kez
     /// (aktarım başına, <c>roots.json</c> içinde saklanır; devam oturumunda da aynı) çözülür, aynı aktarımın tüm dosyaları aynı köke gider.
     /// Sonuç, <see cref="FinalDirectory"/> altında kalır (<see cref="Path.GetFullPath(string)"/> ile doğrulanır), aksi halde <see cref="ProtocolException"/>.
     /// </summary>

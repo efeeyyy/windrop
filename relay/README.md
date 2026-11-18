@@ -2,7 +2,7 @@
 
 Cloudflare Worker + Durable Object. İki WinDrop istemcisi (PC ve iPhone) doğrudan veya etkin nokta
 yoluyla bağlanamazsa, uçtan uca şifreli baytları bu sunucu üzerinden aktarır. Esas spesifikasyon:
-`docs/PROTOCOL.md` §6.3. Sunucuyu Efe kendi Cloudflare hesabına kurar; bu depo hesaba giriş yapmaz.
+`docs/PROTOCOL.md` §7.4. Sunucuyu Efe kendi Cloudflare hesabına kurar; bu depo hesaba giriş yapmaz.
 
 ## Arayüz
 
@@ -13,7 +13,7 @@ yoluyla bağlanamazsa, uçtan uca şifreli baytları bu sunucu üzerinden aktar�
   - IP başına dakikada 10'dan fazla yeni oda → 429 (`Retry-After: 60`)
 - Yalnız **ikili** WebSocket mesajları (≤ 65535 B) karşıya sırayla iletilir.
 - `POST /v1/push/register` `{deviceToken, env}` ve `POST /v1/push/<pushId>` `{from}`: APNs push
-  (`docs/PROTOCOL.md` §6.5). Ayrıntı aşağıda "Push bildirimi (APNs)".
+  (`docs/PROTOCOL.md` §9). Ayrıntı aşağıda "Push bildirimi (APNs)".
 
 | Durum | Sonuç |
 |---|---|
@@ -118,7 +118,7 @@ Bu değerler yazım anındaki bilgiden alınmıştır ve **doğrulanmamıştır*
 
 ## Güvenlik modeli
 
-- **Sunucu içerik göremez.** Kanal uçtan uca Noise ile şifrelidir (`docs/PROTOCOL.md` §1, §6); sunucu
+- **Sunucu içerik göremez.** Kanal uçtan uca Noise ile şifrelidir (`docs/PROTOCOL.md` §2, §6); sunucu
   yalnız şifreli bloklar, boyutları ve zamanlarını görür. Dosya adı bile şifrelidir. Kimlik doğrulama
   Noise anahtarlarıyla istemcilerdedir; sunucuda hesap, parola, anahtar yoktur.
 - **Oda erişimi:** `roomId = SHA-256("WinDrop-relay" || token)[0:32]`; token URL'ye girmez ve tek

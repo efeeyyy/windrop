@@ -18,7 +18,7 @@ public class RemoveDeviceTests
         Assert.Empty(h.Coord.NearbyPeers);
 
         using var cts = new CancellationTokenSource(T.Wait);
-        Assert.Equal(BleResync.Marker, await phone.Link.ReceiveAsync(cts.Token));   // §3a WDR
+        Assert.Equal(BleResync.Marker, await phone.Link.ReceiveAsync(cts.Token));   // §4.3 WDR
     }
 
     [Fact]

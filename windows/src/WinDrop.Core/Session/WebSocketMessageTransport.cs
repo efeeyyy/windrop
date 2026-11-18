@@ -4,7 +4,7 @@ using WinDrop.Core.Protocol;
 namespace WinDrop.Core.Session;
 
 /// <summary>
-/// Aktarma sunucusu (PROTOCOL §6.3) WebSocket'i üstünde Noise taşıması: <b>her ikili WebSocket mesajı bir Noise mesajıdır</b>
+/// Aktarma sunucusu (PROTOCOL §7.4) WebSocket'i üstünde Noise taşıması: <b>her ikili WebSocket mesajı bir Noise mesajıdır</b>
 /// (1..65535 bayt, uzunluk öneki yok; sunucu mesaj sınırlarını korur). 20 baytlık ön ek ve sürüm uyuşmazlığı yanıtı da ayrı
 /// birer ikili mesajdır. Metin mesajı veya kapanış çerçevesi hata sayılır: metin <see cref="ProtocolException"/>,
 /// kapanış/kopma <see cref="IOException"/> (aktarım katmanı bunu "bağlantı koptu, devam edilebilir" olarak ele alır).

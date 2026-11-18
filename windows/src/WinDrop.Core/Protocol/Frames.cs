@@ -5,8 +5,8 @@ using System.Text.Json.Serialization.Metadata;
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// Veri kanalı çerçeve türü (PROTOCOL §5). PROTOCOL §9a: Spesifikasyon tür baytının sayısal değerlerini vermiyor;
-/// aşağıdaki değerler 1'den başlayıp §5'teki sıra ile atandı. iOS tarafı aynı tabloyu kullanmalı.
+/// Veri kanalı çerçeve türü (PROTOCOL §6.2). PROTOCOL §6.2: Spesifikasyon tür baytının sayısal değerlerini vermiyor;
+/// aşağıdaki değerler 1'den başlayıp §6.2'deki sıra ile atandı. iOS tarafı aynı tabloyu kullanmalı.
 /// </summary>
 public enum FrameType : byte
 {
@@ -20,12 +20,12 @@ public enum FrameType : byte
     Done = 8,
 }
 
-// JSON kontrol gövdeleri (§5). PROTOCOL §9a: alan tipleri belirtilmedi — id: tamsayı (int), size: bayt (long),
+// JSON kontrol gövdeleri (§6.2). PROTOCOL §6.2: alan tipleri belirtilmedi — id: tamsayı (int), size: bayt (long),
 // mtime: Unix epoch milisaniye (long; yeniden başlatmada "mtime değişti mi" karşılaştırması için
 // alt saniye çözünürlüğü korunur), sha256: 64 karakterlik küçük harf onaltılık dize, offset: bayt (long).
 // Alan adları spesifikasyondaki gibi küçük harf/camelCase. Spesifikasyondaki alanlar zorunludur.
 
-/// <summary>MANIFEST.files[] öğesi. <paramref name="Dir"/> (PROTOCOL §5a): isteğe bağlı, gönderilen kökten göreli klasör yolu
+/// <summary>MANIFEST.files[] öğesi. <paramref name="Dir"/> (PROTOCOL §6.7): isteğe bağlı, gönderilen kökten göreli klasör yolu
 /// ('/' ayırıcı, ilk bileşen seçilen klasörün adı); null ise JSON'a yazılmaz.</summary>
 public sealed record ManifestFile(
     [property: JsonRequired] int Id,
@@ -51,7 +51,7 @@ public sealed record FileEndBody([property: JsonRequired] int Id, [property: Jso
 /// <summary>ACK {id, offset} (alıcı).</summary>
 public sealed record AckBody([property: JsonRequired] int Id, [property: JsonRequired] long Offset);
 
-/// <summary>CANCEL. PROTOCOL §9a: alan listelenmedi; gövde boş nesne <c>{}</c> olabilir, isteğe bağlı <c>reason</c> taşır.</summary>
+/// <summary>CANCEL. PROTOCOL §6.2: alan listelenmedi; gövde boş nesne <c>{}</c> olabilir, isteğe bağlı <c>reason</c> taşır.</summary>
 public sealed record CancelBody(string? Reason = null);
 
 /// <summary>DONE {ok, failed: [id]} (alıcı → gönderen, sonuç).</summary>
@@ -74,7 +74,7 @@ internal sealed partial class ControlJsonContext : JsonSerializerContext;
 public readonly record struct Frame(FrameType Type, ReadOnlyMemory<byte> Body);
 
 /// <summary>
-/// §5 düz metin çerçeve kodlaması: <c>tür (1 B) || gövde</c>, en çok 65519 B; Noise şifrelemesi
+/// §6.1 düz metin çerçeve kodlaması: <c>tür (1 B) || gövde</c>, en çok 65519 B; Noise şifrelemesi
 /// çağıranda (etiket +16 → en çok 65535). Kontrol gövdeleri UTF-8 JSON, DATA ham bayttır.
 /// </summary>
 public static class FrameCodec

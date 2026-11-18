@@ -10,7 +10,7 @@ namespace WinDrop.Platform;
 public delegate Task DataSessionHandler(SecureChannel channel);
 
 /// <summary>
-/// Veri kanalında beklenen aktarımlar (PROTOCOL §5): <c>transferId → (eşin açık anahtarı, işleyici)</c>.
+/// Veri kanalında beklenen aktarımlar (PROTOCOL §6.1): <c>transferId → (eşin açık anahtarı, işleyici)</c>.
 /// Kayıt <see cref="IDisposable"/> ile kaldırılır; kaldırılınca etkin bağlantı da kapanır.
 /// </summary>
 public sealed class PendingTransferTable
@@ -106,7 +106,7 @@ public sealed class PendingTransferTable
 }
 
 /// <summary>
-/// TCP veri kanalı dinleyicisi (PROTOCOL §5; port 53600, IPv4+IPv6). Ön ek → <c>transferId</c> bekleyen aktarımlarda yoksa kapat →
+/// TCP veri kanalı dinleyicisi (PROTOCOL §6.1; port 53600, IPv4+IPv6). Ön ek → <c>transferId</c> bekleyen aktarımlarda yoksa kapat →
 /// IK yanıtlayan; karşı anahtar o aktarımın eşi değilse kapat → kayıtlı işleyiciye devret.
 /// Aynı <c>transferId</c>'ye ikinci (doğrulanmış) bağlantı eskisini kapatır; kimliği doğrulanmamış bağlantı etkin oturuma dokunamaz.
 /// </summary>
@@ -213,7 +213,7 @@ public sealed class DataListener : IAsyncDisposable
             }
 
             var expected = entry;
-            // IK (tanıdık/eşli) veya XX (bilinmeyen, §2b): her ikisinde karşı anahtar, aktarımın BLE oturumundaki eşle aynı olmalı.
+            // IK (tanıdık/eşli) veya XX (bilinmeyen, §3.1): her ikisinde karşı anahtar, aktarımın BLE oturumundaki eşle aynı olmalı.
             Func<ReadOnlyMemory<byte>, bool> samePeer = key => expected is not null && key.Span.SequenceEqual(expected.PeerKey);
             var channel = await SecureChannel.AcceptAutoAsync(
                 new PrefixReplayTransport(transport, raw), _localKey, samePeer, samePeer, null, hs.Token).ConfigureAwait(false);
@@ -224,7 +224,7 @@ public sealed class DataListener : IAsyncDisposable
                     PlatformLog.Write($"DataListener {remote}: el sıkışma deseni {channel.Kind}, BLE oturumu {required}; kapatıldı.");
                     return;
                 }
-                await channel.EnsureEstablishedAsync(hs.Token).ConfigureAwait(false);   // PROTOCOL §1: 0-RTT yok
+                await channel.EnsureEstablishedAsync(hs.Token).ConfigureAwait(false);   // PROTOCOL §2: 0-RTT yok
                 if (!entry!.TrySetActive(holder))
                 {
                     PlatformLog.Write($"DataListener {remote}: aktarım kaydı artık yok ya da başka bir veri oturumu sürüyor, kapatıldı.");

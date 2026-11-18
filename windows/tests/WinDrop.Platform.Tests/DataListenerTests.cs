@@ -67,7 +67,7 @@ public class DataListenerTests : IDisposable
     [Fact]
     public async Task PcAsSender_IphoneAsReceiver_TransfersFile()
     {
-        // Yön veri akışından bağımsız (PROTOCOL §5): iPhone bağlanır ama alıcıdır.
+        // Yön veri akışından bağımsız (PROTOCOL §6.1): iPhone bağlanır ama alıcıdır.
         var id = TransferId.Create();
         var data = T.Random(200_000, 9);
         var done = new TaskCompletionSource<TransferResult>();

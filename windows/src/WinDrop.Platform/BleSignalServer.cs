@@ -17,12 +17,12 @@ public enum BleAdvertisingMode
 }
 
 /// <summary>
-/// PROTOCOL §3: PC = GATT sunucusu (<c>c2p</c>: WriteWithoutResponse + Write, <c>p2c</c>: Notify). Her istemci için bir
+/// PROTOCOL §4.1: PC = GATT sunucusu (<c>c2p</c>: WriteWithoutResponse + Write, <c>p2c</c>: Notify). Her istemci için bir
 /// <see cref="IBleLink"/> (gelen yazmalar → sıralı kuyruk; giden → o istemciye <c>NotifyValueAsync</c>) üretir ve
 /// <see cref="SignalSessionAcceptor"/>'a verir. Çalışan GATT kodu <c>WinDrop.BleProbe/ProbeServer.cs</c>'ten uyarlanmıştır.
 /// <para>Reklam: önce 128 bit servis UUID'si; <c>Aborted</c> olursa (Realtek RTL8852BE'de olur) servis, ölçümde çalışmış
 /// SIG tabanlı 32 bit UUID altında yeniden kurulur. GattServiceProvider reklamdan servis UUID'sini çıkaramaz; eşleşmiş
-/// iPhone zaten bekleyen bağlantıyla gelir (PROTOCOL §3), ilk keşif yerel ad + bu UUID'dir.</para>
+/// iPhone zaten bekleyen bağlantıyla gelir (PROTOCOL §4.1), ilk keşif yerel ad + bu UUID'dir.</para>
 /// </summary>
 public sealed class BleSignalServer : IAsyncDisposable
 {
@@ -91,7 +91,7 @@ public sealed class BleSignalServer : IAsyncDisposable
     }
 
     /// <summary>
-    /// Yerel ad işareti (PROTOCOL §3): <c>GattServiceProvider</c> reklamına yerel ad koyamaz (Windows bilgisayar adını kullanır) ve
+    /// Yerel ad işareti (PROTOCOL §4.1): <c>GattServiceProvider</c> reklamına yerel ad koyamaz (Windows bilgisayar adını kullanır) ve
     /// <c>BluetoothLEAdvertisementPublisher</c> <c>LocalName</c>'i bu makinede reddeder (ArgumentException, 2026-10-17 ölçümü).
     /// Bu yüzden ikinci, bağlanılamaz bir reklam yayınlanır: üretici verisi <c>0xFFFF</c> = <c>"WD" || sürüm || "WinDrop-<ad>"</c>;
     /// iPhone ön planda filtresiz tararken bunu (veya servis UUID'sini) görüp PC'yi tanır. En iyi çaba; hata günlüğe yazılır.
@@ -290,7 +290,7 @@ public sealed class BleSignalServer : IAsyncDisposable
             throw new IOException($"BLE bildirimi gönderilemedi ({status}).");
         }
 
-        /// <summary>PROTOCOL §3a: <c>WDR</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>
+        /// <summary>PROTOCOL §4.3: <c>WDR</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>
         public ValueTask SendResetAsync(CancellationToken cancellationToken) => NotifyMarkerAsync(BleResync.Marker, "WDR");
 
         /// <summary>DECISIONS 2: <c>WDU</c> tek bildirim; abone yoksa beklemeden atlanır.</summary>

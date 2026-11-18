@@ -8,7 +8,7 @@ using Xunit;
 
 namespace WinDrop.Platform.Tests;
 
-/// <summary>PROTOCOL §2b: eşleştirmesiz "yakındaki herkes" modu (Noise XX, alıcı onayı, tanıdık cihaz, doğrulama kodu).</summary>
+/// <summary>PROTOCOL §3.1: eşleştirmesiz "yakındaki herkes" modu (Noise XX, alıcı onayı, tanıdık cihaz, doğrulama kodu).</summary>
 public class NearbyEveryoneTests
 {
     [Fact]

@@ -26,7 +26,7 @@ public partial class IncomingOfferWindow : Window
         InitializeComponent();
         _onResult = onResult;
         MessageText.Text = Strings.Plural("Offer.Text", offer.FileCount, offer.SenderName, offer.FileCount, ByteFormat.Size(offer.TotalBytes));
-        // PROTOCOL §5a: preview girdisi "/" ile bitiyorsa klasör adıdır. Adlar karşı cihazdan geldiği için temizlenerek gösterilir.
+        // PROTOCOL §6.7: preview girdisi "/" ile bitiyorsa klasör adıdır. Adlar karşı cihazdan geldiği için temizlenerek gösterilir.
         var preview = (offer.Preview ?? []).Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
         var folders = preview.Where(p => p.EndsWith('/')).Select(p => FileNameSanitizer.Sanitize(p)).ToArray();
         var files = preview.Where(p => !p.EndsWith('/')).Select(p => FileNameSanitizer.Sanitize(p)).ToArray();

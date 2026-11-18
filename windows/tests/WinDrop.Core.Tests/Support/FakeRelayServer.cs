@@ -45,7 +45,7 @@ internal sealed class LocalWsServer : IAsyncDisposable
 }
 
 /// <summary>
-/// relay/src/index.ts davranışının test sahtesi (PROTOCOL §6.3): <c>/v1/room/&lt;32 hex&gt;?role=pc|phone</c>; ilk pc + ilk phone eşlenir,
+/// relay/src/index.ts davranışının test sahtesi (PROTOCOL §7.4): <c>/v1/room/&lt;32 hex&gt;?role=pc|phone</c>; ilk pc + ilk phone eşlenir,
 /// aynı rol ikinci kez 409, kapanmış oda 410; ikili mesajlar sırayla karşıya geçer, eş gelmeden önce gelenler tamponlanır,
 /// bir taraf kapanınca öbürü de kapanır. <see cref="RejectStatus"/> verilirse bağlantı o HTTP durumuyla reddedilir (ör. 429).
 /// </summary>

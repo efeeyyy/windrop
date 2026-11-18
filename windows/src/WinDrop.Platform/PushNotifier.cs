@@ -25,7 +25,7 @@ public enum PushOutcome
 public sealed record PushResult(PushOutcome Outcome, int? Status = null);
 
 /// <summary>
-/// PROTOCOL §6.5 tetik: <c>POST &lt;relayUrl&gt;/v1/push/&lt;pushId&gt;</c> <c>{"from": "&lt;PC adı, ≤ 40&gt;"}</c>.
+/// PROTOCOL §9 tetik: <c>POST &lt;relayUrl&gt;/v1/push/&lt;pushId&gt;</c> <c>{"from": "&lt;PC adı, ≤ 40&gt;"}</c>.
 /// pushId asla loglanmaz. Sunucu cevabı yalnız durum koduyla yorumlanır.
 /// </summary>
 public sealed class PushNotifier : IDisposable

@@ -4,7 +4,7 @@ using WinDrop.Core.Noise;
 namespace WinDrop.Platform;
 
 /// <summary>
-/// Kalıcı X25519 cihaz anahtarı (PROTOCOL §0). <c>identity.bin</c>: DPAPI(CurrentUser) ile korunan
+/// Kalıcı X25519 cihaz anahtarı (PROTOCOL §1). <c>identity.bin</c>: DPAPI(CurrentUser) ile korunan
 /// <c>sürüm(1) || özel anahtar(32)</c>. Yüklenen anahtar dışa aktarılamaz.
 /// </summary>
 public sealed class IdentityStore

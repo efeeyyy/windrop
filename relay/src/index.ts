@@ -1,4 +1,4 @@
-// WinDrop aktarma sunucusu (docs/PROTOCOL.md §6.3).
+// WinDrop aktarma sunucusu (docs/PROTOCOL.md §7.4).
 // Sunucu yalnız şifreli baytları iletir; içerik, roomId ve IP LOGLANMAZ (yalnız toplu sayaçlar).
 import { DurableObject } from "cloudflare:workers";
 import { rateLimitIp } from "./ip";
@@ -10,7 +10,7 @@ export interface Env {
   ROOM: DurableObjectNamespace<Room>;
   IP_LIMITER: DurableObjectNamespace<IpLimiter>;
   PUSH_REGISTRY: DurableObjectNamespace<PushRegistry>;
-  /** APNs sırları (§6.5); eksikse /v1/push/* 501 döner. `wrangler secret put` ile girilir. */
+  /** APNs sırları (§9); eksikse /v1/push/* 501 döner. `wrangler secret put` ile girilir. */
   APNS_KEY_P8?: string;
   APNS_KEY_ID?: string;
   APNS_TEAM_ID?: string;
@@ -19,7 +19,7 @@ export interface Env {
 
 type Role = "pc" | "phone";
 
-/** Sınırlar (PROTOCOL.md §6.3). */
+/** Sınırlar (PROTOCOL.md §7.4). */
 export const LIMITS = {
   maxMessageBytes: 65535,
   preBufferBytes: 1024 * 1024,

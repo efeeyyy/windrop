@@ -6,7 +6,7 @@ public class ProtocolException : Exception
     public ProtocolException(string message) : base(message) { }
 }
 
-/// <summary>Taşıma türü (PROTOCOL §1 ön ek, 4. bayt).</summary>
+/// <summary>Taşıma türü (PROTOCOL §2 ön ek, 4. bayt).</summary>
 public enum TransportKind : byte
 {
     Ble = 1,
@@ -15,11 +15,11 @@ public enum TransportKind : byte
 }
 
 /// <summary>
-/// PROTOCOL §1 açık ön ek (20 bayt, şifresiz): <c>"WD" || sürüm (1) || taşıma (1) || transferId (16)</c>.
+/// PROTOCOL §2 açık ön ek (20 bayt, şifresiz): <c>"WD" || sürüm (1) || taşıma (1) || transferId (16)</c>.
 /// Aynı 20 bayt Noise prologue olarak da kullanılır (<see cref="Bytes"/>). BLE'de transferId 16 sıfır bayttır.
-/// <para>PROTOCOL §9a: Ön ek BLE'de parçalanmaz, <c>c2p</c>'ye tek (20 bayt = en küçük ATT yükü, MTU 23) ham yazma
+/// <para>PROTOCOL §4.2: Ön ek BLE'de parçalanmaz, <c>c2p</c>'ye tek (20 bayt = en küçük ATT yükü, MTU 23) ham yazma
 /// olarak gider; spesifikasyon "parçalama birimi tek Noise mesajıdır" der, ön eki açıkça dışarıda bırakmaz.</para>
-/// <para>PROTOCOL §9a: Sürüm uyuşmazlığı yanıtı <c>0xFF || sürüm</c> iki bayttır ("tek bayt 0xFF || sürüm" ifadesi
+/// <para>PROTOCOL §2: Sürüm uyuşmazlığı yanıtı <c>0xFF || sürüm</c> iki bayttır ("tek bayt 0xFF || sürüm" ifadesi
 /// 0xFF'in tek bayt başlık olduğu biçiminde okundu). Alıcı bunu TCP'de ilk baytın 0xFF olmasından
 /// (gerçek bir el sıkışma yanıtının uzunluk üst baytı en çok 0x00'dır) ve BLE'de ilk parça başlığının
 /// 0x80 olmamasından (ilk mesajın sıra no 0 + son parça = 0x80/0x00) ayırt eder.</para>

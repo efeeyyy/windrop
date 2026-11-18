@@ -14,7 +14,7 @@ using WinDrop.Platform;
 //          [dosyalar...]            (mode=send: bu dosyalar Swift'e gönderilir)
 //   relay-pc --relay-url URL --token <43 karakter base64url | 64 hex> --my-key <hex32> --peer-pub <hex32> --transfer-id <b64url>
 //          --pattern ik|xx [--mode receive|send] [--out DIR] [--count N --total BYTES] [--timeout SN] [dosyalar...]
-//          PC rolünde (yanıtlayan) aktarma odasına (PROTOCOL §6.3, role=pc) bağlanır; odaya girince "RELAY_READY room=<id>" yazar,
+//          PC rolünde (yanıtlayan) aktarma odasına (PROTOCOL §7.4, role=pc) bağlanır; odaya girince "RELAY_READY room=<id>" yazar,
 //          iPhone (Swift, başlatan) token'dan aynı odaya girer. Sonrası serve ile aynı (HANDSHAKE/FILE/OUTCOME/SERVER_DONE satırları).
 //   Çıkış kodu: 0 = beklenen sayıda aktarım tamamlandı (veya expect=0 ve oturum yok), 3 = zaman aşımı, 1 = beklenmeyen oturum.
 
@@ -55,7 +55,7 @@ internal static class Cli
         }
     }
 
-    /// <summary>Swift `signals` ile birebir aynı değerler (PROTOCOL §4/§9a).</summary>
+    /// <summary>Swift `signals` ile birebir aynı değerler (PROTOCOL §5).</summary>
     private static List<SignalMessage> SampleSignals()
     {
         var id = TransferId.Parse("AQIDBAUGBwgJCgsMDQ4PEA");
@@ -217,7 +217,7 @@ internal static class Cli
         return await runner.FinishAsync();
     }
 
-    /// <summary>relay-pc: PC rolünde (yanıtlayan) aktarma odasına bağlanır (PROTOCOL §6.3); iPhone başlatandır.</summary>
+    /// <summary>relay-pc: PC rolünde (yanıtlayan) aktarma odasına bağlanır (PROTOCOL §7.4); iPhone başlatandır.</summary>
     private static async Task<int> RelayPcAsync(Opts o)
     {
         var runner = new SessionRunner(o);

@@ -8,7 +8,7 @@ using WinDrop.Core.Protocol;
 namespace WinDrop.Core.Session;
 
 /// <summary>
-/// PROTOCOL §6.3 aktarma sunucusu odası: token, oda kimliği ve adres. Token JSON'da (<c>relay</c> sinyali) 32 baytın
+/// PROTOCOL §7.4 aktarma sunucusu odası: token, oda kimliği ve adres. Token JSON'da (<c>relay</c> sinyali) 32 baytın
 /// base64url'üdür (dolgusuz, 43 karakter; <see cref="TransferId"/> ile aynı kodlama); oda kimliği <b>ham 32 bayttan</b> türetilir.
 /// </summary>
 public static class RelayRoom
@@ -129,7 +129,7 @@ public sealed class RelayPcSession(SecureChannel channel, WebSocketMessageTransp
 }
 
 /// <summary>
-/// PC tarafı (PROTOCOL §6.3 "Sırası"): odaya <c>role=pc</c> olarak bağlanır; iPhone (başlatan) bağlanınca ön ek + el sıkışma
+/// PC tarafı (PROTOCOL §7.4 "Sırası"): odaya <c>role=pc</c> olarak bağlanır; iPhone (başlatan) bağlanınca ön ek + el sıkışma
 /// ilk mesajını yollar, PC <b>yanıtlar</b>. Eş anahtarı BLE oturumundakiyle aynı olmalı; ön ekteki transferId ve (verilmişse)
 /// el sıkışma deseni (IK/XX) denetlenir. TCP veri kanalı (<c>DataListener</c>) ile aynı kurallar.
 /// </summary>
@@ -163,7 +163,7 @@ public static class RelayPcClient
                 throw new ProtocolException("Aktarma ön ekindeki transferId beklenenle uyuşmuyor.");
             if (requiredKind is { } kind && channel.Kind != kind)
                 throw new ProtocolException($"El sıkışma deseni {channel.Kind}, BLE oturumu {kind}.");
-            await channel.EnsureEstablishedAsync(timeout.Token).ConfigureAwait(false);   // PROTOCOL §1: 0-RTT yok
+            await channel.EnsureEstablishedAsync(timeout.Token).ConfigureAwait(false);   // PROTOCOL §2: 0-RTT yok
             return new RelayPcSession(channel, transport);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

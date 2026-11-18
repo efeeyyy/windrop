@@ -10,12 +10,12 @@ public interface IFileNameExistence
 }
 
 /// <summary>
-/// PROTOCOL §5 "Dosya adı (alıcı)" kuralları: yalnız son yol bileşeni; <c>..</c>, <c>/</c>, <c>\</c>,
+/// PROTOCOL §6.6 "Dosya adı (alıcı)" kuralları: yalnız son yol bileşeni; <c>..</c>, <c>/</c>, <c>\</c>,
 /// <c>:</c> (NTFS akışı), denetim karakterleri ve Windows ayrılmış adları reddedilmez, <c>_</c> ile
 /// değiştirilir/öne <c>_</c> eklenir; sondaki nokta/boşluk silinir; üzerine yazılmaz ("ad (2).ext").
-/// <para>PROTOCOL §9a: Spesifikasyon "reddedilir veya değiştirilir" der; burada her zaman değiştirilir (adı bozuk
+/// <para>PROTOCOL §6.6: Spesifikasyon "reddedilir veya değiştirilir" der; burada her zaman değiştirilir (adı bozuk
 /// dosya yine kaydedilebilsin). Sonuç hiçbir girdide boş olmaz (en kötü ihtimalle <see cref="FallbackName"/>).</para>
-/// <para>PROTOCOL §9a: Spesifikasyonda olmayan ek sertleştirmeler: Windows'ta geçersiz <c>&lt; &gt; " | ? *</c>, C1 denetim
+/// <para>PROTOCOL §6.6: Spesifikasyonda olmayan ek sertleştirmeler: Windows'ta geçersiz <c>&lt; &gt; " | ? *</c>, C1 denetim
 /// karakterleri, çift yönlü metin denetimleri (U+202A–E, U+2066–9, LRM/RLM/ALM; ".exe" sahteciliği) ve eşleşmemiş
 /// vekil (surrogate) karakterleri <c>_</c> olur; COM¹/²/³, CONIN$, CONOUT$ da ayrılmış sayılır; uzunluk sınırı
 /// 255 UTF-16 kod birimidir (NTFS), uzantı (≤ 20 karakter ise) korunur.</para>

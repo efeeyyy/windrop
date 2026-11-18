@@ -4,7 +4,7 @@ using Xunit;
 
 namespace WinDrop.Platform.Tests;
 
-/// <summary>PROTOCOL §3a: oturum protokol hatasıyla ölünce WDR, ardından eski yazmaları yok sayma, yeni ön ekle yeniden kurulum.</summary>
+/// <summary>PROTOCOL §4.3: oturum protokol hatasıyla ölünce WDR, ardından eski yazmaları yok sayma, yeni ön ekle yeniden kurulum.</summary>
 public class BleResyncTests
 {
     private static async Task<byte[]> ReceiveAsync(MemoryBleLink link)

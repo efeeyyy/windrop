@@ -1,9 +1,9 @@
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// PROTOCOL §5 TCP çerçevesi: <c>uzunluk (2 B big-endian) || Noise mesajı</c> (1..65535 bayt).
+/// PROTOCOL §6.1 TCP çerçevesi: <c>uzunluk (2 B big-endian) || Noise mesajı</c> (1..65535 bayt).
 /// Hem el sıkışma mesajları hem şifreli taşıma mesajları bu biçimle gider; ön ek (20 bayt) çerçevesizdir.
-/// <para>PROTOCOL §9a: Sıfır uzunluklu çerçeve geçersiz sayılır (en küçük Noise mesajı bir etiket/anahtar taşır).</para>
+/// <para>PROTOCOL §6.1: Sıfır uzunluklu çerçeve geçersiz sayılır (en küçük Noise mesajı bir etiket/anahtar taşır).</para>
 /// </summary>
 public static class TcpFraming
 {
@@ -35,7 +35,7 @@ public static class TcpFraming
         ReadCoreAsync(stream, detectVersionMismatch: false, cancellationToken);
 
     /// <summary>
-    /// El sıkışma aşamasındaki okuma: ilk bayt 0xFF ise bu bir uzunluk öneki değil, §1 sürüm uyuşmazlığı yanıtıdır
+    /// El sıkışma aşamasındaki okuma: ilk bayt 0xFF ise bu bir uzunluk öneki değil, §2 sürüm uyuşmazlığı yanıtıdır
     /// (<c>0xFF || sürüm</c>; el sıkışma mesajları küçüktür, uzunluk üst baytı 0x00'dır) →
     /// <see cref="VersionMismatchException"/> (yerel sürüm 0 = bilinmiyor).
     /// </summary>

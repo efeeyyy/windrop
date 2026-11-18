@@ -4,7 +4,7 @@ using WinDrop.Core.Protocol;
 
 namespace WinDrop.Core.Session;
 
-/// <summary>Cihaz kimliği = açık anahtarın SHA-256'sının ilk 16 baytı (PROTOCOL §0).</summary>
+/// <summary>Cihaz kimliği = açık anahtarın SHA-256'sının ilk 16 baytı (PROTOCOL §1).</summary>
 public static class DeviceId
 {
     public const int Length = 16;
@@ -17,23 +17,23 @@ public static class DeviceId
     public static string HexFromPublicKey(ReadOnlySpan<byte> publicKey) => ToHex(FromPublicKey(publicKey));
 }
 
-/// <summary>Güvenilen listede olmayan bir başlatan (IK) — bağlantı kesilir (PROTOCOL §1).</summary>
+/// <summary>Güvenilen listede olmayan bir başlatan (IK) — bağlantı kesilir (PROTOCOL §2).</summary>
 public sealed class PeerNotTrustedException(byte[] remotePublicKey)
     : Exception("Karşı cihaz güvenilen listede değil.")
 {
     public byte[] RemotePublicKey { get; } = remotePublicKey;
 }
 
-/// <summary>Kanalın kurulduğu Noise deseni (PROTOCOL §1, §2, §2b).</summary>
+/// <summary>Kanalın kurulduğu Noise deseni (PROTOCOL §2, §3.2, §3.1).</summary>
 public enum HandshakeKind { IK, XX, XXpsk3 }
 
-/// <summary>Kanaldan gelen tek mesaj: ya §5 çerçevesi ya §4 sinyali.</summary>
+/// <summary>Kanaldan gelen tek mesaj: ya §6 çerçevesi ya §5 sinyali.</summary>
 public sealed record SecureMessage(Frame? Frame, SignalMessage? Signal);
 
 /// <summary>
 /// Kurulmuş Noise oturumu üstünde çerçeve/sinyal alışverişi. Ön ek + el sıkışma statik fabrikalarla yapılır
 /// (<see cref="ConnectIkAsync"/>, <see cref="AcceptIkAsync"/>, eşleştirme için XXpsk3 karşılıkları).
-/// <para><b>Kurulmuş sayma kuralı (PROTOCOL §1):</b> IK'de el sıkışmayı yanıtlayan bitirir (msg2), yani başlatanın
+/// <para><b>Kurulmuş sayma kuralı (PROTOCOL §2):</b> IK'de el sıkışmayı yanıtlayan bitirir (msg2), yani başlatanın
 /// ilk mesajı yeniden oynatılabilir. Bu yüzden yanıtlayan, başlatandan ilk <i>geçerli taşıma mesajı</i> gelene kadar
 /// <see cref="IsEstablished"/> = false kalır ve veri gönderemez (<see cref="SendFrameAsync"/> istisna atar);
 /// <see cref="EnsureEstablishedAsync"/> bu mesajı bekler. Başlatan, IK'de el sıkışmadan hemen sonra otomatik
@@ -72,7 +72,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
     public byte[] RemoteDeviceId { get; }
     public byte[] HandshakeHash { get; }
 
-    /// <summary>Kurulumda kullanılan el sıkışma deseni (PROTOCOL §1, §2b).</summary>
+    /// <summary>Kurulumda kullanılan el sıkışma deseni (PROTOCOL §2, §3.1).</summary>
     public HandshakeKind Kind { get; }
     public TransportKind Transport => Prefix.Transport;
 
@@ -97,7 +97,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
     internal async ValueTask SendPlaintextAsync(ReadOnlyMemory<byte> plaintext, CancellationToken cancellationToken)
     {
         if (!_established)
-            throw new InvalidOperationException("Oturum kurulmadı: önce EnsureEstablishedAsync (PROTOCOL §1, 0-RTT yok).");
+            throw new InvalidOperationException("Oturum kurulmadı: önce EnsureEstablishedAsync (PROTOCOL §2, 0-RTT yok).");
         await SendUncheckedAsync(plaintext, cancellationToken).ConfigureAwait(false);
     }
 
@@ -158,7 +158,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
         }
     }
 
-    /// <summary>Yalnız §5 çerçevesi bekler; sinyal gelirse <see cref="ProtocolException"/>.</summary>
+    /// <summary>Yalnız §6 çerçevesi bekler; sinyal gelirse <see cref="ProtocolException"/>.</summary>
     public async ValueTask<Frame?> ReceiveFrameAsync(CancellationToken cancellationToken = default)
     {
         var m = await ReceiveAsync(cancellationToken).ConfigureAwait(false);
@@ -166,7 +166,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
         return m.Frame ?? throw new ProtocolException("Çerçeve beklenirken sinyal mesajı geldi.");
     }
 
-    /// <summary>Yalnız §4 sinyali bekler; çerçeve gelirse <see cref="ProtocolException"/>.</summary>
+    /// <summary>Yalnız §5 sinyali bekler; çerçeve gelirse <see cref="ProtocolException"/>.</summary>
     public async ValueTask<SignalMessage?> ReceiveSignalAsync(CancellationToken cancellationToken = default)
     {
         var m = await ReceiveAsync(cancellationToken).ConfigureAwait(false);
@@ -263,7 +263,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
         return Finish(transport, prefix, hs, initiator: false, established: false);
     }
 
-    /// <summary>Yanıtlayan (PC), eşleştirme: XXpsk3. Başlatanın anahtarı <see cref="RemoteStaticPublicKey"/>'dedir; PC onayı (§2.4) çağırandadır.</summary>
+    /// <summary>Yanıtlayan (PC), eşleştirme: XXpsk3. Başlatanın anahtarı <see cref="RemoteStaticPublicKey"/>'dedir; PC onayı (§3.2) çağırandadır.</summary>
     public static async Task<SecureChannel> AcceptPairingAsync(
         IMessageTransport transport, NoiseKeyPair localStatic, ReadOnlyMemory<byte> psk,
         CancellationToken cancellationToken = default, byte supportedVersion = Prefix.CurrentVersion)
@@ -281,7 +281,7 @@ public sealed class SecureChannel : IFrameChannel, IDisposable
         return Finish(transport, prefix, hs, initiator: false, established: true, kind: HandshakeKind.XXpsk3);
     }
 
-    // ---------------------------------------------------------------- PROTOCOL §2b: yakındaki herkes (XX) ve otomatik yanıtlayan
+    // ---------------------------------------------------------------- PROTOCOL §3.1: yakındaki herkes (XX) ve otomatik yanıtlayan
 
     /// <summary>Noise XX ilk mesajı (yalnız <c>e</c>, boş yük): 32 bayt.</summary>
     public const int XxFirstMessageSize = 32;

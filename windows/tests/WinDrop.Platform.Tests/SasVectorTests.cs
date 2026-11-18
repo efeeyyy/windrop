@@ -5,7 +5,7 @@ using Xunit;
 namespace WinDrop.Platform.Tests;
 
 /// <summary>
-/// PROTOCOL §2b ortak vektörü (protocol/vectors/sas.json; Swift üretti, bağımsız Node referansıyla doğrulandı):
+/// PROTOCOL §3.1 ortak vektörü (protocol/vectors/sas.json; Swift üretti, bağımsız Node referansıyla doğrulandı):
 /// sabit anahtarlarla Noise_XX → el sıkışma özeti → 4 haneli doğrulama kodu. C# aynı özeti ve aynı kodu üretmelidir.
 /// </summary>
 public class SasVectorTests

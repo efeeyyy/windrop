@@ -5,7 +5,7 @@ using WinDrop.Core.Session;
 namespace WinDrop.Platform;
 
 /// <summary>
-/// PROTOCOL §6.4: küçük dosyalar için BLE sinyal oturumu üstünde §5 çerçeveleri. Oturumun tek okuyucusu
+/// PROTOCOL §7.3: küçük dosyalar için BLE sinyal oturumu üstünde §6 çerçeveleri. Oturumun tek okuyucusu
 /// <see cref="TransferCoordinator.HandleSessionAsync"/> döngüsüdür; gelen çerçeveleri <see cref="Post"/> ile buraya verir.
 /// Gönderme hız sınırlıdır (Bluetooth sesi kesmesin; ARCHITECTURE "Ölçüm bulguları").
 /// </summary>
@@ -41,7 +41,7 @@ internal sealed class BleDataChannel : IFrameChannel, IDisposable
 
     public SecureChannel Session => _session;
 
-    /// <summary>PROTOCOL §6.4a: BLE DATA parçası ≤ 2048 B (iOS seçimi); MANIFEST sayfaları da bu sınıra göre bölünür.</summary>
+    /// <summary>PROTOCOL §7.3: BLE DATA parçası ≤ 2048 B (iOS seçimi); MANIFEST sayfaları da bu sınıra göre bölünür.</summary>
     public const int MaxDataChunk = 2048;
 
     public int MaxFrameBodySize => Math.Min(_session.MaxFrameBodySize, MaxDataChunk);

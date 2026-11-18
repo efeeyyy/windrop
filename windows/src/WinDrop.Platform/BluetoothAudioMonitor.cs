@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace WinDrop.Platform;
 
 /// <summary>
-/// Bluetooth ses çıkışının anlık durumu (PROTOCOL §4 <c>btAudio</c>).
+/// Bluetooth ses çıkışının anlık durumu (PROTOCOL §5 <c>btAudio</c>).
 /// <para><see cref="ActiveSession"/>: o an çalan ses oturumu var mı; <c>null</c> = anlaşılamadı.</para>
 /// </summary>
 public readonly record struct BluetoothAudioState(bool DefaultOutputIsBluetooth, bool? ActiveSession, string? DeviceName)  // DeviceName: tanı amaçlı "ad [veriyolu]"

@@ -1,13 +1,13 @@
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// PROTOCOL §3 BLE parçalama: bir Noise mesajı (en çok 8192 bayt) GATT yazma/bildirim yüklerine bölünür.
+/// PROTOCOL §4.2 BLE parçalama: bir Noise mesajı (en çok 8192 bayt) GATT yazma/bildirim yüklerine bölünür.
 /// Yük = <c>1 B başlık || parça</c>; başlık bit7 = son parça, bit0–6 = mesaj sıra no (mod 128).
-/// <para>PROTOCOL §9a: "mesaj sıra no" harfi harfine okundu: <b>bir mesajın tüm parçaları aynı sıra no'yu taşır</b>,
+/// <para>PROTOCOL §4.2: "mesaj sıra no" harfi harfine okundu: <b>bir mesajın tüm parçaları aynı sıra no'yu taşır</b>,
 /// no mesaj başına bir artar (parça başına değil). Alternatif okuma (her parça için artan sayaç) iOS ile
 /// uyuşmazlık demektir; netleştirilmeli. Parça kaybı bu okumada sıra no ile değil Noise etiketi/uzunluğuyla
 /// yakalanır, tüm bir mesajın kaybı sıra no atlamasıyla.</para>
-/// <para>PROTOCOL §9a: <c>mtu</c> ATT MTU'dur (en az 23); tek GATT yükü en çok <c>mtu − 3</c> bayt, dolayısıyla parça
+/// <para>PROTOCOL §4.2: <c>mtu</c> ATT MTU'dur (en az 23); tek GATT yükü en çok <c>mtu − 3</c> bayt, dolayısıyla parça
 /// verisi en çok <c>mtu − 4</c> bayttır. Her yönün sıra sayacı 0'dan başlar ve her yeni oturumda (yeni
 /// el sıkışma) sıfırlanır; 20 baytlık ön ek parçalanmaz ve sayılmaz.</para>
 /// </summary>
@@ -69,7 +69,7 @@ public static class BleFragmenter
 
 /// <summary>
 /// Bir yöndeki GATT yüklerinden Noise mesajlarını birleştiren durum makinesi (G/Ç yok).
-/// Herhangi bir hata sonrası nesne kalıcı olarak bozulur: PROTOCOL §3 gereği oturum düşer, yeni el sıkışma gerekir.
+/// Herhangi bir hata sonrası nesne kalıcı olarak bozulur: PROTOCOL §4.2 gereği oturum düşer, yeni el sıkışma gerekir.
 /// </summary>
 public sealed class BleReassembler
 {

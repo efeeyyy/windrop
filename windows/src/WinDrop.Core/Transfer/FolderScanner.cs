@@ -15,7 +15,7 @@ public sealed class FolderScanException(string message, FolderScanError kind = F
 }
 
 /// <summary>
-/// PROTOCOL §5a gönderen: verilen yollar arasındaki klasörleri özyinelemeli tarar. Symlink/junction (reparse point) izlenmez
+/// PROTOCOL §6.7 gönderen: verilen yollar arasındaki klasörleri özyinelemeli tarar. Symlink/junction (reparse point) izlenmez
 /// (içerideki bağlantılar atlanır ve loglanır; kullanıcının açıkça seçtiği kök klasör izlenir). Gizli/sistem dosyaları gönderilir;
 /// erişilemeyen dosya/klasör atlanır ve loglanır. <c>dir</c> = seçilen klasörün adı + göreli alt yol ('/' ayırıcı).
 /// Sınırlar (≤ 16 seviye, ≤ 1024 karakter, ≤ <see cref="TransferLimits.MaxFiles"/> dosya) gönderimden önce <see cref="FolderScanException"/> olur.

@@ -7,7 +7,7 @@ using WinDrop.Core.Session;
 namespace WinDrop.Core.Transfer;
 
 /// <summary>
-/// PROTOCOL §5 gönderen: MANIFEST → (alıcıdan RESUME → FILE_START → DATA… → FILE_END) her dosya için → DONE bekler.
+/// PROTOCOL §6 gönderen: MANIFEST → (alıcıdan RESUME → FILE_START → DATA… → FILE_END) her dosya için → DONE bekler.
 /// Devamda ilk <c>offset</c> baytı yeniden okunup hash'e katılır (SHA-256 her zaman 0. bayttan). Arka planda bir okuyucu
 /// ACK/RESUME/CANCEL/DONE çerçevelerini alır; böylece uzak iptal gönderim sürerken fark edilir.
 /// Tek kullanımlıktır (bir oturum, bir <see cref="RunAsync"/>).
@@ -37,7 +37,7 @@ public sealed class FileSender
     {
         if (Interlocked.Exchange(ref _used, 1) != 0) throw new InvalidOperationException("FileSender tek kullanımlıktır.");
 
-        await _channel.EnsureEstablishedAsync(cancellationToken).ConfigureAwait(false);   // yanıtlayan isek: §1 0-RTT yok
+        await _channel.EnsureEstablishedAsync(cancellationToken).ConfigureAwait(false);   // yanıtlayan isek: §2 0-RTT yok
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var inbox = new Inbox();
@@ -70,7 +70,7 @@ public sealed class FileSender
     private async Task<TransferResult> SendAllAsync(Inbox inbox, Dictionary<int, long> resumeOffsets, CancellationToken token)
     {
         var chunk = Math.Min(TransferLimits.DefaultChunkSize, _channel.MaxFrameBodySize);
-        // PROTOCOL §9a MANIFEST sayfalama: her çerçevenin JSON gövdesi ≤ limit; son sayfa more=false.
+        // PROTOCOL §6.3 MANIFEST sayfalama: her çerçevenin JSON gövdesi ≤ limit; son sayfa more=false.
         const int envelope = 32;   // {"files":[],"more":true} + pay
         var limit = Math.Min(FrameCodec.MaxBody, _channel.MaxFrameBodySize);
         var page = new List<ManifestFile>();

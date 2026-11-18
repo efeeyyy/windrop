@@ -28,7 +28,7 @@ public interface IMessageTransport
     ValueTask<byte[]?> ReceiveMessageAsync(bool handshakePhase, CancellationToken cancellationToken);
 }
 
-/// <summary>TCP (doğrudan, etkin nokta) veya aktarma (<see cref="TransportKind.Relay"/>) akışı üstünde §5 çerçevelemesi.</summary>
+/// <summary>TCP (doğrudan, etkin nokta) veya aktarma (<see cref="TransportKind.Relay"/>) akışı üstünde §6.1 çerçevelemesi.</summary>
 public sealed class TcpMessageTransport : IMessageTransport
 {
     private readonly Stream _stream;
@@ -79,7 +79,7 @@ public interface IBleLink
     ValueTask<byte[]?> ReceiveAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// PROTOCOL §3a: oturum protokol hatasıyla bittiğinde istemciye tek bildirim olarak <see cref="BleResync.Marker"/> gönderir.
+    /// PROTOCOL §4.3: oturum protokol hatasıyla bittiğinde istemciye tek bildirim olarak <see cref="BleResync.Marker"/> gönderir.
     /// Gerçek bağlantı, abone yoksa sessizce atlar; varsayılan uygulama düz <see cref="SendAsync"/>'tir.
     /// </summary>
     ValueTask SendResetAsync(CancellationToken cancellationToken) => SendAsync(BleResync.Marker, cancellationToken);
@@ -91,7 +91,7 @@ public interface IBleLink
     ValueTask SendUnknownAsync(CancellationToken cancellationToken) => SendAsync(BleResync.UnknownMarker, cancellationToken);
 }
 
-/// <summary>PROTOCOL §3a: BLE oturum sıfırlama işareti.</summary>
+/// <summary>PROTOCOL §4.3: BLE oturum sıfırlama işareti.</summary>
 public static class BleResync
 {
     /// <summary>ASCII <c>WDR</c> (3 bayt): PC → iPhone, parçalama başlığı yok.</summary>
@@ -104,7 +104,7 @@ public static class BleResync
 /// <summary>Oturum ortasında yeni BLE ön eki alındı; ön ek <see cref="BleMessageTransport.RestartPrefix"/> içindedir.</summary>
 public sealed class BleSessionRestartException() : ProtocolException("BLE istemcisi oturumu yeniden başlattı (yeni ön ek).");
 
-/// <summary>BLE oturumu: Noise mesajı <see cref="BleFragmenter"/> ile parçalanır, §9a gereği sıra no mesaj başınadır.</summary>
+/// <summary>BLE oturumu: Noise mesajı <see cref="BleFragmenter"/> ile parçalanır, §4.2 gereği sıra no mesaj başınadır.</summary>
 public sealed class BleMessageTransport : IMessageTransport
 {
     private readonly IBleLink _link;
@@ -160,7 +160,7 @@ public sealed class BleMessageTransport : IMessageTransport
                 if (_midMessage) throw new ProtocolException("BLE bağlantısı mesaj ortasında koptu.");
                 return null;
             }
-            // PROTOCOL §3a: oturum ortasında tam 20 bayt geçerli BLE ön eki = istemci oturumu yeniden başlatıyor.
+            // PROTOCOL §4.3: oturum ortasında tam 20 bayt geçerli BLE ön eki = istemci oturumu yeniden başlatıyor.
             if (payload.Length == Prefix.Length && Prefix.TryDecode(payload, out var restart) && restart.Transport == TransportKind.Ble)
             {
                 RestartPrefix = payload;

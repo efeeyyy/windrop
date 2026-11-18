@@ -5,7 +5,7 @@ using Xunit;
 
 namespace WinDrop.Core.Tests.Transfer;
 
-/// <summary>PROTOCOL §5a klasör gönderme: tarama, MANIFEST <c>dir</c>, alıcı yol güvenliği, üst klasör çakışması, devam ettirme.</summary>
+/// <summary>PROTOCOL §6.7 klasör gönderme: tarama, MANIFEST <c>dir</c>, alıcı yol güvenliği, üst klasör çakışması, devam ettirme.</summary>
 public sealed class FolderTransferTests : IDisposable
 {
     private readonly Rig _rig = new();

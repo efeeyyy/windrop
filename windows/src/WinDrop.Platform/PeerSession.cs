@@ -3,7 +3,7 @@ using WinDrop.Core.Session;
 namespace WinDrop.Platform;
 
 /// <summary>
-/// Kurulmuş BLE sinyal oturumu: iPhone ile IK (tanıdık/eşli) veya XX (bilinmeyen, PROTOCOL §2b) kanalı (PROTOCOL §3, §4).
+/// Kurulmuş BLE sinyal oturumu: iPhone ile IK (tanıdık/eşli) veya XX (bilinmeyen, PROTOCOL §3.1) kanalı (PROTOCOL §4.1, §5).
 /// <see cref="Wifi"/>/<see cref="BtAudio"/>/<see cref="Caps"/> iPhone'un <c>hello</c>/<c>status</c> mesajlarından gelir.
 /// </summary>
 public sealed class PeerSession : IDisposable
@@ -40,7 +40,7 @@ public sealed class PeerSession : IDisposable
     /// <summary>Eşin açık anahtarı (BLE oturumunda doğrulanmış).</summary>
     public byte[] PublicKey { get; }
 
-    /// <summary>Arayüzde gösterilen ad: kayıtlıysa kayıttaki ad (PROTOCOL §0), değilse temizlenmiş <c>hello.name</c>.</summary>
+    /// <summary>Arayüzde gösterilen ad: kayıtlıysa kayıttaki ad (PROTOCOL §1), değilse temizlenmiş <c>hello.name</c>.</summary>
     public string Name => _name;
 
     /// <summary>Kayıtlı ad yoksa <c>hello</c> adını kullanır.</summary>
@@ -55,7 +55,7 @@ public sealed class PeerSession : IDisposable
     /// <summary>QR ile eşli (otomatik kabul yalnız buna açık).</summary>
     public volatile bool IsPaired;
 
-    /// <summary>XX oturumunda 4 haneli doğrulama kodu (PROTOCOL §2b); IK/XXpsk3 oturumunda null.</summary>
+    /// <summary>XX oturumunda 4 haneli doğrulama kodu (PROTOCOL §3.1); IK/XXpsk3 oturumunda null.</summary>
     public string? VerificationCode { get; }
 
     /// <summary>iPhone <c>hello</c> gönderdi (yakındaki cihaz listesinde görünür).</summary>
@@ -70,7 +70,7 @@ public sealed class PeerSession : IDisposable
 
     public volatile bool BtAudio;
 
-    /// <summary>Oturum protokol/şifre hatasıyla bitti (PROTOCOL §3a: iPhone'a sıfırlama işareti gider).</summary>
+    /// <summary>Oturum protokol/şifre hatasıyla bitti (PROTOCOL §4.3: iPhone'a sıfırlama işareti gider).</summary>
     public volatile bool Faulted;
 
     public volatile IReadOnlyList<string> Caps = [];

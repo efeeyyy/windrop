@@ -4,7 +4,7 @@ using Xunit;
 
 namespace WinDrop.Core.Tests.Session;
 
-/// <summary>PROTOCOL §6.3: token, oda kimliği (ortak vektör protocol/vectors/relay.json) ve aktarma adresi.</summary>
+/// <summary>PROTOCOL §7.4: token, oda kimliği (ortak vektör protocol/vectors/relay.json) ve aktarma adresi.</summary>
 public class RelayRoomTests
 {
     private static JsonElement[] Vectors()

@@ -1,6 +1,6 @@
 # Ortak test vektörleri
 
-PROTOCOL §1: Windows ve iOS Noise uygulamaları resmi vektörlerden geçmeden kullanılmaz.
+PROTOCOL §2: Windows ve iOS Noise uygulamaları resmi vektörlerden geçmeden kullanılmaz.
 
 ## cacophony.txt
 
@@ -21,6 +21,6 @@ PROTOCOL §1: Windows ve iOS Noise uygulamaları resmi vektörlerden geçmeden k
   N, K, X) desenlerde taşıma mesajlarının hepsini başlatan gönderir. `init_psks`/`resp_psks` psk belirteçlerinin
   kullanım sırasıdır.
 
-- `sas.json`: PROTOCOL §2b doğrulama kodu vektörü (sabit anahtarlarla bir `Noise_XX` el sıkışması, `handshake_hash`, `sas` = 4 hane). Kaynak: bağımsız Node referansı (Swift ve C# testleri aynı değeri doğrular).
+- `sas.json`: PROTOCOL §3.1 doğrulama kodu vektörü (sabit anahtarlarla bir `Noise_XX` el sıkışması, `handshake_hash`, `sas` = 4 hane). Kaynak: bağımsız Node referansı (Swift ve C# testleri aynı değeri doğrular).
 
-- `relay.json`: PROTOCOL §6.3 `roomId = hex(SHA-256("WinDrop-relay" || token))[0:32]` vektörleri. `token` 32 ham bayttır; `relay` sinyalinde 43 karakterlik dolgusuz base64url (`token_b64url`) olarak taşınır, oda kimliği ham bayttan hesaplanır. Kaynak: bağımsız Python (hashlib) referansı; C# testi `RelayRoomTests`, Swift testi aynı değeri doğrulamalıdır.
+- `relay.json`: PROTOCOL §7.4 `roomId = hex(SHA-256("WinDrop-relay" || token))[0:32]` vektörleri. `token` 32 ham bayttır; `relay` sinyalinde 43 karakterlik dolgusuz base64url (`token_b64url`) olarak taşınır, oda kimliği ham bayttan hesaplanır. Kaynak: bağımsız Python (hashlib) referansı; C# testi `RelayRoomTests`, Swift testi aynı değeri doğrulamalıdır.

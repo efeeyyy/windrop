@@ -6,7 +6,7 @@ using WinDrop.App.Services;
 namespace WinDrop.App.Views;
 
 /// <summary>
-/// Aktarma sunucusu (internet/hücresel veri) kullanımı için onay (PROTOCOL §6.3). 60 sn içinde yanıt yoksa iptal;
+/// Aktarma sunucusu (internet/hücresel veri) kullanımı için onay (PROTOCOL §7.4). 60 sn içinde yanıt yoksa iptal;
 /// onaylanmadan aktarma sunucusuna bağlanılmaz.
 /// </summary>
 public partial class RelayApprovalWindow : Window

@@ -6,10 +6,10 @@ namespace WinDrop.Platform;
 
 /// <summary>
 /// Güvenilen cihaz. <see cref="Name"/> eşleştirme/ilk kabul anındaki addır; arayüz hep bunu gösterir.
-/// <see cref="IsFamiliar"/>: QR ile eşleştirilmedi, PROTOCOL §2b "yakındaki herkes" modunda alıcı onayıyla hatırlandı
+/// <see cref="IsFamiliar"/>: QR ile eşleştirilmedi, PROTOCOL §3.1 "yakındaki herkes" modunda alıcı onayıyla hatırlandı
 /// (sonraki bağlantılar IK; otomatik kabul <b>yok</b>). false = QR ile eşli.
 /// <see cref="LastBleId"/>/<see cref="LastSeen"/>: en son bağlanılan BLE bağlantı kimliği ve zamanı (yinelenen kayıtları ayırt etmek için); yoksa null.
-/// <see cref="PushId"/>: cihazın aktarma sunucusundaki push kaydı kimliği (PROTOCOL §6.5; yalnız cihazın kendi bildirimiyle, biçimi doğrulanmış); yoksa null.
+/// <see cref="PushId"/>: cihazın aktarma sunucusundaki push kaydı kimliği (PROTOCOL §9; yalnız cihazın kendi bildirimiyle, biçimi doğrulanmış); yoksa null.
 /// </summary>
 public sealed record TrustedDevice(byte[] PublicKey, string Name, DateTimeOffset PairedAt, bool IsFamiliar = false, string? PushId = null,
     string? LastBleId = null, DateTimeOffset? LastSeen = null)

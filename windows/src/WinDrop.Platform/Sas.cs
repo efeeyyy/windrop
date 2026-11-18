@@ -3,7 +3,7 @@ using System.Text;
 
 namespace WinDrop.Platform;
 
-/// <summary>PROTOCOL §2b doğrulama kodu: <c>SHA-256("WinDrop-SAS" || h)</c>'nin ilk 4 baytı (big-endian uint32) mod 10000, 4 hane.</summary>
+/// <summary>PROTOCOL §3.1 doğrulama kodu: <c>SHA-256("WinDrop-SAS" || h)</c>'nin ilk 4 baytı (big-endian uint32) mod 10000, 4 hane.</summary>
 public static class Sas
 {
     public static string Compute(ReadOnlySpan<byte> handshakeHash)

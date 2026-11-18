@@ -13,7 +13,7 @@ aktarım peer'e doğrudan TCP'ye dayanır; client isolation ikisini de keser.
 1. **Taşımadan bağımsız şifreli kanal.** Uygulama verisi her zaman uçtan uca şifreli bir
    oturumdan geçer; BLE, LAN ve aktarma sunucusu yalnız bayt taşır. Aktarma sunucusu içeriği
    göremez. Şifreleme kendi icadımız olmaz: **Noise Protocol Framework** (eşleştirme `XXpsk3`,
-   sonraki bağlantılar `IK`; ayrıntı `PROTOCOL.md` §1), iki tarafta da resmi test vektörleriyle doğrulanır.
+   sonraki bağlantılar `IK`; ayrıntı `PROTOCOL.md` §2), iki tarafta da resmi test vektörleriyle doğrulanır.
    - Windows: NSec (libsodium) veya denetlenmiş bir Noise kütüphanesi. iOS: CryptoKit.
 2. **Cihaz kimliği ve eşleştirme.** Her cihazın kalıcı X25519 anahtarı var. İlk eşleştirme QR
    ile (6 haneli kod yalnız ileride PAKE/CPace ile; psk olarak kullanılamaz); sonra güvenilen cihaz listesi. LocalSend'deki
@@ -51,7 +51,7 @@ aktarım peer'e doğrudan TCP'ye dayanır; client isolation ikisini de keser.
 - Uygulama açılınca **kurulum/eşleştirme adımı yok**. İzinler (Bluetooth, yerel ağ, fotoğraflar)
   yalnız kullanıcı **Paylaş/Gönder**'e bastığında istenir (iOS'ta CBCentralManager vb. tembel oluşturulur).
 - Gönder'e basınca yakındaki cihazlar AirDrop gibi **kendiliğinden belirir**; kullanıcı birine dokunur.
-- Bu nedenle QR eşleştirme **zorunlu değil**; ilk temas "yakındaki herkes" modunda (PROTOCOL §2b):
+- Bu nedenle QR eşleştirme **zorunlu değil**; ilk temas "yakındaki herkes" modunda (PROTOCOL §3.1):
   Noise XX + **alıcı ekranında onay** (AirDrop'taki gibi) + iki ekranda gösterilen 4 haneli doğrulama
   kodu (isteğe bağlı karşılaştırma). Kabul edilen karşı taraf "tanıdık cihaz" olarak hatırlanır;
   sonraki bağlantılar IK. QR eşleştirme yalnız "otomatik kabul" için isteğe bağlı kalır.
@@ -107,7 +107,7 @@ Efe'nin gereksinimleri (2026-10-16):
 - 2. yol **tamamen otomatik ve hızlı**; kullanıcı hiçbir adım yapmaz. Uygulanacak: PC başına tek,
   sabit SSID/parola (eşleştirmede rastgele üretilir, türetilmez), böylece iOS katılma onayı yalnız
   ilk seferde çıkar (iOS'un kendi onayı kaldırılamaz). iPhone hiçbir Wi-Fi'da değilse etkin nokta
-  `offer` anında, doğrudan yol denenmeden açılır (PROTOCOL §6).
+  `offer` anında, doğrudan yol denenmeden açılır (PROTOCOL §7.2).
 - 3. yol (aktarma) sessizce kullanılmaz: ağ izolasyonlu ve cihazlar doğrudan ulaşamıyorsa
   **"İnternet/mobil veri kullanılacak (X MB)" uyarısı ve onay**. Kullanıcı aksi halde Drive gibi
   bir servise yükler; bizim yolun farkı uçtan uca şifreli olması (sunucu içeriği göremez) —

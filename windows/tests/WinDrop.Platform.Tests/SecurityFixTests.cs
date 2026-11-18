@@ -19,7 +19,7 @@ internal static class Poll
     }
 }
 
-/// <summary>PROTOCOL §6.2: etkin nokta parolası eşli/tanıdık olmayan eş için aktarım sonunda yenilenir.</summary>
+/// <summary>PROTOCOL §7.2: etkin nokta parolası eşli/tanıdık olmayan eş için aktarım sonunda yenilenir.</summary>
 public class HotspotRotationTests
 {
     private static string WriteSendFile(Harness h)

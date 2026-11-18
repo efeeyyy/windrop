@@ -5,7 +5,7 @@ using Windows.Networking.Connectivity;
 
 namespace WinDrop.Platform;
 
-/// <summary>Yerel adres adayı (PROTOCOL §6.1 <c>addr</c> için).</summary>
+/// <summary>Yerel adres adayı (PROTOCOL §7.1 <c>addr</c> için).</summary>
 public sealed record CandidateAddress(IPAddress Address, string InterfaceName, bool IsWifi);
 
 public static class NetworkInfo

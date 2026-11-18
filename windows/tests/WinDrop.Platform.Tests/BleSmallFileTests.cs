@@ -5,7 +5,7 @@ using Xunit;
 
 namespace WinDrop.Platform.Tests;
 
-/// <summary>PROTOCOL §6.4: küçük dosyalar BLE oturumundan (TCP/etkin nokta mümkün değilken), btAudio ve boyut kapılarıyla.</summary>
+/// <summary>PROTOCOL §7.3: küçük dosyalar BLE oturumundan (TCP/etkin nokta mümkün değilken), btAudio ve boyut kapılarıyla.</summary>
 public class BleSmallFileTests
 {
     private static string WriteFile(Harness h, string name, byte[] data)
@@ -28,7 +28,7 @@ public class BleSmallFileTests
         return (snap, offer);
     }
 
-    /// <summary>§6.4a: PC önce `bleData` yollar, sonra MANIFEST ile başlar.</summary>
+    /// <summary>§7.3: PC önce `bleData` yollar, sonra MANIFEST ile başlar.</summary>
     private static async Task ExpectBleDataAsync(Phone phone, TransferId id)
     {
         var bd = Assert.IsType<BleDataMessage>(await phone.ReceiveAsync());
@@ -213,7 +213,7 @@ public class BleSmallFileTests
         var rx = await new FileReceiver(spy, T.Store(h.Dir.Path, "phone"),
             new ReceiverOptions(h.PcId, offer.TransferId, new OfferInfo(offer.Count, offer.Total))).RunAsync().WaitAsync(T.Wait);
         Assert.Equal(TransferOutcome.Completed, rx.Outcome);
-        Assert.Equal(2048, spy.MaxData);   // §6.4a: ≤ 2048 B (20 000 B → tam dolu parçalar)
+        Assert.Equal(2048, spy.MaxData);   // §7.3: ≤ 2048 B (20 000 B → tam dolu parçalar)
         Assert.Equal(TransferPhase.Completed, (await h.Coord.WaitAsync(snap.Id).WaitAsync(T.Wait)).Phase);
     }
 

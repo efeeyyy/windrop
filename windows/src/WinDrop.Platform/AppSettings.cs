@@ -34,7 +34,7 @@ public sealed class AppSettings
     public bool AutoStartEnabled { get; set; }
 
     /// <summary>
-    /// Aktarma sunucusu adresi (PROTOCOL §6.3; kendi Cloudflare sunucunuz, <c>relay\README.md</c>): <c>host</c> veya <c>wss://host</c>.
+    /// Aktarma sunucusu adresi (PROTOCOL §7.4; kendi Cloudflare sunucunuz, <c>relay\README.md</c>): <c>host</c> veya <c>wss://host</c>.
     /// Boş = aktarma yolu kapalı ("yol yok"). Uygulamada ayarlıdır, eşten gelen mesajla değişmez.
     /// </summary>
     public string RelayUrl { get; set; } = "";

@@ -1,7 +1,7 @@
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// PROTOCOL §1 sürüm uyuşmazlığı: yanıtlayan <c>0xFF || desteklenen sürüm</c> gönderip kapatır;
+/// PROTOCOL §2 sürüm uyuşmazlığı: yanıtlayan <c>0xFF || desteklenen sürüm</c> gönderip kapatır;
 /// kullanıcıya "güncelleme gerekli" gösterilebilsin diye hem başlatan hem yanıtlayan tarafta fırlatılır.
 /// </summary>
 public sealed class VersionMismatchException : ProtocolException

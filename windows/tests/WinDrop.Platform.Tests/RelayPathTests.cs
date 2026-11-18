@@ -6,7 +6,7 @@ using Xunit;
 
 namespace WinDrop.Platform.Tests;
 
-/// <summary>PROTOCOL §6.3: doğrudan yol başarısız + BLE uygun değil + RelayUrl dolu → kullanıcı onayı → aktarma sunucusu (sahte relay).</summary>
+/// <summary>PROTOCOL §7.4: doğrudan yol başarısız + BLE uygun değil + RelayUrl dolu → kullanıcı onayı → aktarma sunucusu (sahte relay).</summary>
 public class RelayPathTests
 {
     private static string WriteFile(Harness h, string name, byte[] data)

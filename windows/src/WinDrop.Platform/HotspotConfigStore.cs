@@ -10,7 +10,7 @@ public sealed record HotspotConfig(string Ssid, string Passphrase)
 }
 
 /// <summary>
-/// PROTOCOL §6.2: ilk çağrıda rastgele SSID (<c>WinDrop-</c> + 32 bit base32) ve parola (128 bit base32, 26 karakter)
+/// PROTOCOL §7.2: ilk çağrıda rastgele SSID (<c>WinDrop-</c> + 32 bit base32) ve parola (128 bit base32, 26 karakter)
 /// üretilir, <c>hotspot.bin</c>'de DPAPI ile saklanır; türetilmez.
 /// </summary>
 public sealed class HotspotConfigStore
@@ -38,7 +38,7 @@ public sealed class HotspotConfigStore
     }
 
     /// <summary>
-    /// Parolayı yeniler (SSID aynı kalır) ve saklar. PROTOCOL §6.2: eşli/tanıdık olmayan bir eşe etkin nokta bilgisi
+    /// Parolayı yeniler (SSID aynı kalır) ve saklar. PROTOCOL §7.2: eşli/tanıdık olmayan bir eşe etkin nokta bilgisi
     /// verildiyse, aktarım bitince (iptal/hata dahil) çağrılır; eşli cihazların <c>hotspot</c> iletisi güncel parolayı taşır.
     /// </summary>
     public HotspotConfig RotatePassphrase()

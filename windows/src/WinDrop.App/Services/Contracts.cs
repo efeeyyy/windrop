@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace WinDrop.App.Services;
 
 /// <summary>Eşli cihaz. <see cref="Name"/> eşleştirme anındaki addır.</summary>
-/// <param name="CanPush">PROTOCOL §6.5: yakında değil ama push bildirimiyle uyandırılabilir (pushId kayıtlı + aktarma sunucusu adresi dolu).</param>
+/// <param name="CanPush">PROTOCOL §9: yakında değil ama push bildirimiyle uyandırılabilir (pushId kayıtlı + aktarma sunucusu adresi dolu).</param>
 /// <param name="IsPaired">QR ile eşli (false = tanıdık).</param>
 /// <param name="LastSeen">Son görülme zamanı (kayıtlı cihazlarda); bilinmiyorsa null.</param>
 public sealed record DeviceInfo(string Id, string Name, bool IsNearby, bool CanPush = false, bool IsTrusted = true,
@@ -106,16 +106,16 @@ public sealed partial class TransferItem : ObservableObject
     /// <summary>Başarısız/iptal/reddedilen aktarımın anlaşılır nedeni (seçili arayüz dilinde).</summary>
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
 
-    /// <summary>Telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor (PROTOCOL §6.5).</summary>
+    /// <summary>Telefona push bildirimi gönderildi, telefonun bağlanması bekleniyor (PROTOCOL §9).</summary>
     [ObservableProperty] public partial bool PushPending { get; set; }
 }
 
 /// <summary>Eşli cihazdan gelen teklif; gönderen adı eşleştirme kaydından gelir.</summary>
-/// <param name="VerificationCode">Eşleştirmesiz (XX) oturumda 4 haneli doğrulama kodu (PROTOCOL §2b); yoksa null.</param>
+/// <param name="VerificationCode">Eşleştirmesiz (XX) oturumda 4 haneli doğrulama kodu (PROTOCOL §3.1); yoksa null.</param>
 public sealed record IncomingOffer(string OfferId, string SenderName, int FileCount, long TotalBytes, string? VerificationCode = null,
     IReadOnlyList<string>? Preview = null);
 
-/// <summary>Aktarma sunucusu (internet/hücresel veri) yolu için kullanıcı onayı (PROTOCOL §6.3).</summary>
+/// <summary>Aktarma sunucusu (internet/hücresel veri) yolu için kullanıcı onayı (PROTOCOL §7.4).</summary>
 public sealed record RelayApproval(string TransferId, string DeviceName, long TotalBytes);
 
 public interface ITransferService

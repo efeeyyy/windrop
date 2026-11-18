@@ -5,7 +5,7 @@ using WinDrop.Core.Session;
 
 namespace WinDrop.Platform;
 
-/// <summary>Açık eşleştirme modu (QR ekranda): tek kullanımlık 32 baytlık sır + süre (PROTOCOL §2).</summary>
+/// <summary>Açık eşleştirme modu (QR ekranda): tek kullanımlık 32 baytlık sır + süre (PROTOCOL §3.2).</summary>
 public sealed class PairingMode
 {
     private readonly PairingService _owner;
@@ -36,7 +36,7 @@ public enum PairingOutcome { Failed, Paired, AlreadyPaired }
 public sealed record PairingRequestInfo(string RequestId, string DeviceName, string? VerificationCode = null);
 
 /// <summary>
-/// PROTOCOL §2: QR yükü, 2 dk eşleştirme modu, XXpsk3 sonrası UI onayı → <see cref="TrustedDevices"/> →
+/// PROTOCOL §3.2: QR yükü, 2 dk eşleştirme modu, XXpsk3 sonrası UI onayı → <see cref="TrustedDevices"/> →
 /// etkin nokta bilgisi (<c>pairInfo</c>) şifreli kanaldan. Sır tek kullanımlıktır: başarılı XXpsk3 el sıkışmasında (onaydan
 /// önce) tüketilir — QR fotoğrafıyla gelen biri ikinci deneme yapamaz; reddedilirse yeni QR gerekir.
 /// Başarısız denemelere hız sınırı (1/sn) uygulanır; sayaçla QR iptal edilmez.

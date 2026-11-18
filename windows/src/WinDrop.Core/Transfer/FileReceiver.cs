@@ -4,7 +4,7 @@ using WinDrop.Core.Session;
 
 namespace WinDrop.Core.Transfer;
 
-/// <summary>Alıcı ayarları (PROTOCOL §5 sınırları). <see cref="PeerId"/> = <see cref="DeviceId.HexFromPublicKey"/>.</summary>
+/// <summary>Alıcı ayarları (PROTOCOL §6.5 sınırları). <see cref="PeerId"/> = <see cref="DeviceId.HexFromPublicKey"/>.</summary>
 public sealed record ReceiverOptions(string PeerId, TransferId TransferId, OfferInfo Offer)
 {
     /// <summary>Kabulden önce <c>total ≤ boş alan − pay</c>.</summary>
@@ -15,7 +15,7 @@ public sealed record ReceiverOptions(string PeerId, TransferId TransferId, Offer
 }
 
 /// <summary>
-/// PROTOCOL §5 alıcı. MANIFEST'i sınırlara karşı doğrular; her dosya için kısmi depodan devam ofsetini bulur
+/// PROTOCOL §6 alıcı. MANIFEST'i sınırlara karşı doğrular; her dosya için kısmi depodan devam ofsetini bulur
 /// (boyut/mtime değiştiyse baştan), RESUME yollar, DATA'yı yazar, ACK'ten önce <c>flush(true)</c> yapar,
 /// FILE_END'de 0. bayttan SHA-256'yı denetler; uyuşmazsa dosyayı siler ve <c>DONE.failed</c>'e koyar.
 /// <para>İptal (CANCEL, yerel veya uzak) ve politika kesmeleri bu aktarımın kısmi dosyalarını siler;
@@ -137,7 +137,7 @@ public sealed class FileReceiver
             if (f.Size < 0) throw new AbortException($"negative size for file {f.Id}");
             if (f.Name.Length > _options.MaxNameLength)
                 throw new AbortException($"file name longer than {_options.MaxNameLength} characters (id {f.Id})");
-            RelativeDirectory.Parse(f.Dir);   // §5a: geçersiz dir → ProtocolException (hiçbir dosya yazılmadan)
+            RelativeDirectory.Parse(f.Dir);   // §6.7: geçersiz dir → ProtocolException (hiçbir dosya yazılmadan)
             if (long.MaxValue - total < f.Size) throw new AbortException("manifest total overflows");
             total += f.Size;
         }

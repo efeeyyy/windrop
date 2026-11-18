@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// PROTOCOL §4 sinyal mesajları. Gövde UTF-8 JSON <c>{"t": "&lt;tür&gt;", ...}</c>, alanlar camelCase.
+/// PROTOCOL §5 sinyal mesajları. Gövde UTF-8 JSON <c>{"t": "&lt;tür&gt;", ...}</c>, alanlar camelCase.
 /// Bilinmeyen alanlar yok sayılır; bilinmeyen/eksik <c>t</c> ve eksik zorunlu alan <see cref="SignalDecodeException"/> (tek mesaj atılır, oturum sürer).
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "t")]
@@ -60,7 +60,7 @@ public sealed record HotspotMessage(
     string? Ssid = null,
     string? Pass = null) : SignalMessage;
 
-/// <summary>pairInfo (PC→iPhone, yalnız eşleştirme kanalında, PC onayından sonra): etkin nokta SSID/parolası (§2.7, §6.2).</summary>
+/// <summary>pairInfo (PC→iPhone, yalnız eşleştirme kanalında, PC onayından sonra): etkin nokta SSID/parolası (§3.2, §7.2).</summary>
 public sealed record PairInfoMessage(
     [property: JsonRequired] string Ssid,
     [property: JsonRequired] string Pass) : SignalMessage
@@ -81,16 +81,16 @@ public sealed record PathMessage(
 /// <summary>cancel (iki yön). Veri kanalındaki CANCEL çerçevesinden ayrıdır.</summary>
 public sealed record CancelSignalMessage([property: JsonRequired] TransferId TransferId) : SignalMessage;
 
-/// <summary>bleData (PC→iPhone, PROTOCOL §6.4a): aktarım BLE oturumu üstünden §5 çerçeveleriyle yapılacak; gönderen taraf MANIFEST ile başlar.</summary>
+/// <summary>bleData (PC→iPhone, PROTOCOL §7.3): aktarım BLE oturumu üstünden §6 çerçeveleriyle yapılacak; gönderen taraf MANIFEST ile başlar.</summary>
 public sealed record BleDataMessage([property: JsonRequired] TransferId TransferId) : SignalMessage;
 
 /// <summary>
-/// pushId (iPhone→PC, yalnız tanıdık/eşli cihazın şifreli BLE kanalında, PROTOCOL §6.5): aktarma sunucusundaki push kaydı kimliği.
+/// pushId (iPhone→PC, yalnız tanıdık/eşli cihazın şifreli BLE kanalında, PROTOCOL §9): aktarma sunucusundaki push kaydı kimliği.
 /// Biçim (<see cref="PushIds.IsValid"/>) kodlama/çözmede denetlenmez: geçersiz değeri alan taraf mesajı yok sayar, oturumu düşürmez.
 /// </summary>
 public sealed record PushIdMessage([property: JsonRequired] string PushId) : SignalMessage;
 
-/// <summary>§6.5 pushId biçimi.</summary>
+/// <summary>§9 pushId biçimi.</summary>
 public static class PushIds
 {
     public const int Length = 32;
@@ -130,7 +130,7 @@ public static class PathResult
 [JsonSerializable(typeof(SignalMessage))]
 internal sealed partial class SignalJsonContext : JsonSerializerContext;
 
-/// <summary>§4 sinyal mesajı kodlama/çözme. Düz metin üst sınırı: 8192 − 16 (etiket) = 8176 bayt (BLE Noise mesajı ≤ 8192).</summary>
+/// <summary>§5 sinyal mesajı kodlama/çözme. Düz metin üst sınırı: 8192 − 16 (etiket) = 8176 bayt (BLE Noise mesajı ≤ 8192).</summary>
 /// <summary>
 /// Tek bir sinyal mesajı çözülemedi (bozuk JSON, bilinmeyen <c>t</c>, eksik zorunlu alan, geçersiz değer). Taşıma durumu bozulmamıştır:
 /// alıcı mesajı atar ve oturumu sürdürür (DECISIONS 1). Taşıma/şifre hataları düz <see cref="ProtocolException"/> kalır.

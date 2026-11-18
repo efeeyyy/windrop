@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace WinDrop.Core.Transfer;
 
-/// <summary>PROTOCOL §5 sabitleri.</summary>
+/// <summary>PROTOCOL §6 sabitleri.</summary>
 public static class TransferLimits
 {
     public const int MaxFiles = 10_000;

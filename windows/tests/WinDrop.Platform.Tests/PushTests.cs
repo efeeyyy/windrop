@@ -122,7 +122,7 @@ internal sealed class ManualTimeProvider : TimeProvider
     }
 }
 
-/// <summary>PROTOCOL §6.5: pushId kaydı ve bildirimle uyandırma (uzaktaki tanıdık/eşli cihaza gönderim).</summary>
+/// <summary>PROTOCOL §9: pushId kaydı ve bildirimle uyandırma (uzaktaki tanıdık/eşli cihaza gönderim).</summary>
 public class PushTests
 {
     private const string PushId = "0123456789abcdef0123456789abcdef";

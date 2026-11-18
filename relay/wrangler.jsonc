@@ -1,5 +1,5 @@
 {
-  // WinDrop aktarma sunucusu. Ayrıntı: docs/PROTOCOL.md §6.3 ve relay/README.md
+  // WinDrop aktarma sunucusu. Ayrıntı: docs/PROTOCOL.md §7.4 ve relay/README.md
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "windrop-relay",
   "main": "src/index.ts",

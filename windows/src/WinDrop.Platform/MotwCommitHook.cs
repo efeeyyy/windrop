@@ -2,7 +2,7 @@ using WinDrop.Core.Transfer;
 
 namespace WinDrop.Platform;
 
-/// <summary>Alınan her dosyaya Mark-of-the-Web (Zone.Identifier) yazar (PROTOCOL §5).</summary>
+/// <summary>Alınan her dosyaya Mark-of-the-Web (Zone.Identifier) yazar (PROTOCOL §6.6).</summary>
 public sealed class MotwCommitHook : IFileCommitHook
 {
     /// <summary>Taşımadan önce <c>.part</c> dosyasına yazılır: aynı sürücüde akış taşımayla gelir, işaretsiz pencere kalmaz.</summary>

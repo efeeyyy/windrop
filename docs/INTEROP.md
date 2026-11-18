@@ -37,7 +37,7 @@ wsl -d SwiftBox -u root -- bash -lc "bash /mnt/c/Users/Efe/Desktop/WinDrop/windo
 | (c) C#→Swift 2 dosya, IK ve XX | PASS (2×2 SHA-256 eşleşti); XX'te SAS aynı (`0635`) |
 | (d1) yanlış transferId | Swift `connectionClosed`; C# günlüğü: "tanınmayan transferId, kapatıldı"; işleyici çağrılmadı |
 | (d2) doğru transferId, yabancı anahtar | Swift `connectionClosed`; C#: "güvenilmeyen/yanlış eş anahtarı, kapatıldı" |
-| (d3) BLE oturumu IK iken TCP'de XX | el sıkışma bitti, C# "el sıkışma deseni XX, BLE oturumu IK; kapatıldı" (§9a), Swift `connectionLost` |
+| (d3) BLE oturumu IK iken TCP'de XX | el sıkışma bitti, C# "el sıkışma deseni XX, BLE oturumu IK; kapatıldı" (§2), Swift `connectionLost` |
 | (e) 200 MB, Swift 66,9 MB'ta `SIGKILL` (çıkış 137), yeniden başlat | C# `SESSION_LOST=ConnectionLostException`; 2. oturumda `RESUME file=1 offset=63360000` (son ACK, 4 MB katı); SHA-256 doğru (`6ee6235e…a04b`) |
 
 Test paketleri: `dotnet test windows\WinDrop.slnx` — Core 260/260, Platform 100/100 (Platform'da `WifiNone_StartsHotspot…` bir kez Swift
@@ -48,10 +48,10 @@ testleriyle paralel koşarken düştü, tek başına ve sonraki tam koşuda geç
    Linux/OpenSSL 3'te `CryptographicException` atar. Protokol hatası değil, taşınabilirlik hatası (üretim yalnız Windows); ama çapraz denemeyi
    engelledi. Düzeltme: Noise §4.3 HKDF'i `HMACSHA256` ile elle yapmak (temp = HMAC(ck, ""), out1 = HMAC(temp, 0x01), out2 = HMAC(temp, out1‖0x02)).
    cacophony vektörleri (59) ve tüm Core testleri geçmeye devam ediyor.
-2. **Swift `SignalMessage`'ta `pairInfo` yoktu** (PROTOCOL §4/§2.7; `PairingController` `.pairInfo` kullanıyordu). Eklendi: `PairInfo {ssid, pass}`,
+2. **Swift `SignalMessage`'ta `pairInfo` yoktu** (PROTOCOL §5/§3.2; `PairingController` `.pairInfo` kullanıyordu). Eklendi: `PairInfo {ssid, pass}`,
    `case pairInfo(PairInfo)`, `t: "pairInfo"` (`Sources/WinDropKit/Protocol/SignalMessages.swift`); gidiş-dönüş testi `ProtocolTests` listesinde; C# testi
    `SignalMessagesTests`'e eklendi. C# ile JSON uyumu yukarıdaki `signals` senaryosunda doğrulandı.
-3. SAS: **uyuşmazlık yok.** İki taraf da PROTOCOL §2b/§9a'ya uyuyor (ilk 4 bayt big-endian uint32 mod 10000, 4 hane sıfır dolgulu).
+3. SAS: **uyuşmazlık yok.** İki taraf da PROTOCOL §3.1/§3.1'ya uyuyor (ilk 4 bayt big-endian uint32 mod 10000, 4 hane sıfır dolgulu).
 4. Başka kodlama/akış uyumsuzluğu bulunmadı: ön ek, desen ayrımı (IK 96 / XX 32 bayt), IK boş onay mesajı, TCP çerçeveleme, MANIFEST/RESUME/ACK/DONE,
    64000 B DATA, tam dosya SHA-256, devam ofseti iki yönde uyumlu.
 
@@ -63,7 +63,7 @@ Küçük test yardımcıları: `Core` projesine `InternalsVisibleTo WinDrop.Plat
 - Swift aracı yalnız bağlanan taraftır; Swift dinleyici/C# bağlanan yönü PROTOCOL gereği yoktur.
 - Windows'ta (yerel) aynı araç yalnız derlendi (`dotnet build`); çapraz çalıştırma WSL içinde yapıldı.
 
-## Aktarma sunucusu (relay) yolu — PROTOCOL §6.3
+## Aktarma sunucusu (relay) yolu — PROTOCOL §7.4
 Aynı iki araç, doğrudan TCP yerine aktarma odası üzerinden de çalışır. iPhone başlatan (Noise initiator, `role=phone`, ön ek taşıma=3), PC yanıtlayan (`role=pc`).
 Oda kimliği token'dan türetilir (`RelayRoom.ComputeRoomId` / `RelayRoom.roomId`); sunucu yalnız şifreli baytları iletir.
 

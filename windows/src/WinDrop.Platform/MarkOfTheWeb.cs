@@ -2,7 +2,7 @@ using System.Text;
 
 namespace WinDrop.Platform;
 
-/// <summary>Alınan dosyaya <c>Zone.Identifier</c> NTFS akışı (ZoneId=3, İnternet bölgesi) yazar (PROTOCOL §5).</summary>
+/// <summary>Alınan dosyaya <c>Zone.Identifier</c> NTFS akışı (ZoneId=3, İnternet bölgesi) yazar (PROTOCOL §6.6).</summary>
 public static class MarkOfTheWeb
 {
     public const string StreamName = "Zone.Identifier";

@@ -1,4 +1,4 @@
-// APNs push bildirimi (docs/PROTOCOL.md §6.5). Cihaz belirteci YALNIZ PushRegistry deposunda durur;
+// APNs push bildirimi (docs/PROTOCOL.md §9). Cihaz belirteci YALNIZ PushRegistry deposunda durur;
 // belirteç ve pushId asla loglanmaz (yalnız toplu sayaçlar).
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./index";

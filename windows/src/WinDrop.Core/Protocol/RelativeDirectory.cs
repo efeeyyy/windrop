@@ -1,8 +1,8 @@
 namespace WinDrop.Core.Protocol;
 
 /// <summary>
-/// PROTOCOL §5a <c>dir</c> alanı: gönderilen kökten göreli klasör yolu, ayırıcı <c>/</c>, en çok 16 seviye, toplam ≤ 1024 karakter.
-/// Alıcı her bileşeni ayrı ayrı §5 ad kurallarıyla temizler; <c>.</c>, <c>..</c>, boş bileşen, <c>\</c> ve mutlak yol
+/// PROTOCOL §6.7 <c>dir</c> alanı: gönderilen kökten göreli klasör yolu, ayırıcı <c>/</c>, en çok 16 seviye, toplam ≤ 1024 karakter.
+/// Alıcı her bileşeni ayrı ayrı §6.6 ad kurallarıyla temizler; <c>.</c>, <c>..</c>, boş bileşen, <c>\</c> ve mutlak yol
 /// (başta <c>/</c> veya sürücü harfi) → <see cref="ProtocolException"/>.
 /// </summary>
 public static class RelativeDirectory
